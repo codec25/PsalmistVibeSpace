@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frequency Analysis | Master Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #05070a; --panel: #0b101a; --blue: #4facfe;
+            --gold: #ffcc00; --green: #00ff88; --pink: #e94560; --border: #1e2544;
+        }
+
+        body {
+            margin: 0; background: var(--bg); color: #fff;
+            font-family: 'Orbitron', sans-serif; display: flex;
+            flex-direction: column; align-items: center; min-height: 100vh;
+        }
+
+        .analyzer-card {
+            width: 95%; max-width: 950px; background: var(--panel);
+            border: 1px solid var(--border); border-radius: 20px;
+            margin-top: 20px; padding: 30px; box-sizing: border-box;
+            text-align: center; box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .header-text { font-size: 0.7rem; letter-spacing: 5px; color: #444; margin-bottom: 20px; text-transform: uppercase; }
+        .big-query { font-size: 4rem; font-weight: 900; color: var(--blue); margin: 10px 0; }
+
+        .btn-generate {
+            width: 100%; padding: 18px; background: var(--blue); color: #000;
+            border: none; border-radius: 10px; font-family: 'Orbitron';
+            font-weight: 900; font-size: 1rem; cursor: pointer;
+            margin-bottom: 10px; transition: 0.3s;
+        }
+
+        .answer-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px; }
+
+        .btn-answer {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            padding: 15px; border-radius: 10px; color: #fff; font-family: 'Orbitron';
+            font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 0.8rem;
+        }
+        .btn-answer.correct { background: var(--green) !important; color: #000; }
+        .btn-answer.wrong { background: var(--pink) !important; color: #fff; }
+
+        /* Keyboard */
+        .ref-keyboard {
+            width: 100%; height: 120px; background: #fff; border-radius: 4px;
+            display: flex; position: relative; overflow: hidden; margin-top: 10px;
+        }
+        .white-key { flex: 1; border-right: 1px solid #ccc; background: white; cursor: pointer; transition: 0.1s; }
+        .white-key.active { background: #ddd; }
+        .black-key { 
+            width: 1.6%; height: 60%; background: #000; position: absolute; 
+            z-index: 2; margin-left: -0.8%; cursor: pointer; transition: 0.1s;
+        }
+        .black-key.active { background: #444; }
+        .key-highlight { background: var(--gold) !important; box-shadow: inset 0 0 15px rgba(0,0,0,0.3); z-index: 3; }
+
+        /* Controls */
+        .controls-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 20px; }
+        .mode-toggle { font-size: 0.6rem; color: var(--gold); letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #222; border: 1px solid #444; }
+        .dot.on { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+
+        /* Analytics Section */
+        .analytics-container {
+            width: 95%; max-width: 950px; margin-top: 20px; background: #000;
+            border-radius: 15px; padding: 20px; border: 1px solid #111;
+        }
+
+        .hud { width: 100%; max-width: 950px; display: flex; justify-content: space-between; margin-top: 15px; font-size: 0.8rem; padding: 0 10px; }
+        .hidden { display: none !important; }
+        canvas { max-height: 200px; }
+    </style>
+</head>
+<body>
+
+    <div class="hud">
+        <div style="color: var(--gold)">STREAK: <span id="streak">0</span></div>
+        <div style="color: var(--blue)">ACCURACY: <span id="acc-val">0</span>%</div>
+        <div style="color: var(--green)">XP: <span id="xp">0</span></div>
+    </div>
+
+    <div class="analyzer-card">
+        <div id="game-ui">
+            <div class="header-text">Frequency Analysis</div>
+            <div class="big-query" id="displayChar">?</div>
+            <button class="btn-generate" onclick="generateChallenge()">GENERATE SIGNAL</button>
+            <div class="answer-grid" id="answerGrid">
+                <button class="btn-answer" id="ans-0">--</button>
+                <button class="btn-answer" id="ans-1">--</button>
+                <button class="btn-answer" id="ans-2">--</button>
+                <button class="btn-answer" id="ans-3">--</button>
+            </div>
+        </div>
+
+        <div id="freeplay-header" class="header-text hidden" style="color: var(--gold); margin-bottom: 30px;">FREE PLAY & CHORD ENGINE</div>
+
+        <div class="ref-keyboard" id="keyboard"></div>
+        <div id="midi-info" style="font-size: 0.5rem; color: #444; margin-top: 10px;">MIDI: WAITING...</div>
+
+        <div class="controls-row">
+            <div class="mode-toggle" onclick="toggleCoach()">
+                <div id="coachDot" class="dot"></div> COACH: <span id="coachStatus">OFF</span>
+            </div>
+            <div class="mode-toggle" onclick="toggleFreePlay()">
+                <div id="freeDot" class="dot"></div> FREE PLAY: <span id="freeStatus">OFF</span>
+            </div>
+            <select id="chordType" style="background: #000; color: var(--gold); border: 1px solid #333; font-family: 'Orbitron'; font-size: 0.6rem;">
+                <option value="none">SINGLE NOTE</option>
+                <option value="maj">MAJOR</option><option value="min">MINOR</option>
+                <option value="dim">DIMINISHED</option><option value="sus4">SUS4</option>
+                <option value="maj7">MAJOR 7</option><option value="min7">MINOR 7</option>
+                <option value="dom7">DOMINANT 7</option><option value="add9">ADD 9</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="analytics-container">
+        <div class="header-text" style="margin-bottom: 10px;">Performance Analytics</div>
+        <canvas id="accuracyChart"></canvas>
+    </div>
+
+    <script>
+        let audioCtx, chart;
+        const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const chords = { maj: [0, 4, 7], min: [0, 3, 7], dim: [0, 3, 6], sus4: [0, 5, 7], maj7: [0, 4, 7, 11], min7: [0, 3, 7, 10], dom7: [0, 4, 7, 10], add9: [0, 4, 7, 14] };
+        
+        let currentTarget = "", targetMidi = 0, currentFreq = 0, streak = 0, coachMode = false, freePlay = false;
+        let sessionData = { attempts: 0, correct: 0, history: [] };
+
+        // --- CHART SETUP ---
+        function initChart() {
+            const ctx = document.getElementById('accuracyChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'Accuracy %', data: [], borderColor: '#4facfe', tension: 0.4, fill: true, backgroundColor: 'rgba(79, 172, 254, 0.1)' }]},
+                options: { scales: { y: { min: 0, max: 100, ticks: { color: '#444' } }, x: { display: false } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // --- MIDI & AUDIO ---
+        if (navigator.requestMIDIAccess) navigator.requestMIDIAccess().then(access => {
+            document.getElementById('midi-info').innerText = "MIDI: READY";
+            for (let input of access.inputs.values()) input.onmidimessage = (m) => {
+                let [cmd, note, vel] = m.data;
+                if (cmd === 144 && vel > 0) { handleInput(note); visualize(note, true); }
+                else if (cmd === 128 || (cmd === 144 && vel === 0)) visualize(note, false);
+            };
+        });
+
+        function playSound(freqs) {
+            if (!audioCtx) audioCtx = new AudioContext();
+            freqs.forEach(f => {
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.frequency.value = f;
+                g.gain.setValueAtTime(0, audioCtx.currentTime);
+                g.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.2);
+                osc.connect(g); g.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 1.2);
+            });
+        }
+
+        function handleInput(midi) {
+            if (freePlay) {
+                const type = document.getElementById('chordType').value;
+                if (type === 'none') playSound([440 * Math.pow(2, (midi - 69) / 12)]);
+                else playSound(chords[type].map(i => 440 * Math.pow(2, ((midi + i) - 69) / 12)));
+            } else if (currentTarget) {
+                const inputName = notes[midi % 12] + (Math.floor(midi / 12) - 1);
+                checkAnswer(inputName);
+            }
+        }
+
+        // --- GAME LOGIC ---
+        function generateChallenge() {
+            document.querySelectorAll('.white-key, .black-key').forEach(k => k.classList.remove('key-highlight'));
+            const n = notes[Math.floor(Math.random() * 12)], o = Math.floor(Math.random() * 2) + 3;
+            currentTarget = n + o;
+            targetMidi = (o + 1) * 12 + notes.indexOf(n);
+            currentFreq = 440 * Math.pow(2, (targetMidi - 69) / 12);
+            playSound([currentFreq]);
+            if (coachMode) highlight(targetMidi);
+            setupButtons(currentTarget);
+        }
+
+        function setupButtons(correct) {
+            const opts = [correct];
+            while(opts.length < 4) {
+                let r = notes[Math.floor(Math.random() * 12)] + (Math.floor(Math.random() * 2) + 3);
+                if(!opts.includes(r)) opts.push(r);
+            }
+            opts.sort(() => Math.random() - 0.5).forEach((opt, i) => {
+                const b = document.getElementById(`ans-${i}`);
+                b.innerText = opt; b.className = 'btn-answer'; b.disabled = false;
+                b.onclick = () => checkAnswer(opt);
+            });
+        }
+
+        function checkAnswer(input) {
+            if (document.getElementById('ans-0').disabled) return;
+            sessionData.attempts++;
+            const isCorrect = (input === currentTarget);
+            if (isCorrect) { sessionData.correct++; streak++; } else { streak = 0; highlight(targetMidi); }
+            
+            document.querySelectorAll('.btn-answer').forEach(b => {
+                b.disabled = true;
+                if (b.innerText === currentTarget) b.classList.add('correct');
+                else if (b.innerText === input && !isCorrect) b.classList.add('wrong');
+            });
+
+            updateHUD();
+            currentTarget = "";
+        }
+
+        function updateHUD() {
+            const acc = Math.round((sessionData.correct / sessionData.attempts) * 100);
+            document.getElementById('acc-val').innerText = acc;
+            document.getElementById('streak').innerText = streak;
+            chart.data.labels.push("");
+            chart.data.datasets[0].data.push(acc);
+            chart.update();
+        }
+
+        // --- HELPERS ---
+        function highlight(midi) {
+            const o = Math.floor(midi / 12) - 1, n = midi % 12;
+            const wMap = [0, null, 1, null, 2, 3, null, 4, null, 5, null, 6];
+            const bMap = [null, 0, null, 1, null, null, 2, null, 3, null, 4, null];
+            if (bMap[n] !== null) document.getElementById(`bk-${(o-3)*5 + bMap[n]}`)?.classList.add('key-highlight');
+            else document.getElementById(`wk-${(o-3)*7 + wMap[n]}`)?.classList.add('key-highlight');
+        }
+
+        function visualize(midi, active) {
+            const o = Math.floor(midi / 12) - 1, n = midi % 12;
+            const wMap = [0, null, 1, null, 2, 3, null, 4, null, 5, null, 6];
+            const bMap = [null, 0, null, 1, null, null, 2, null, 3, null, 4, null];
+            let el = (bMap[n] !== null) ? document.getElementById(`bk-${(o-3)*5 + bMap[n]}`) : document.getElementById(`wk-${(o-3)*7 + wMap[n]}`);
+            if (el) active ? el.classList.add('active') : el.classList.remove('active');
+        }
+
+        function buildRefKeyboard() {
+            const kb = document.getElementById('keyboard');
+            const pattern = [true, true, false, true, true, true, false];
+            let bIdx = 0;
+            for (let i = 0; i < 28; i++) { // 4 Octaves
+                const wk = document.createElement('div'); wk.className = 'white-key'; wk.id = `wk-${i}`;
+                kb.appendChild(wk);
+                if (pattern[i % 7] && i < 27) {
+                    const bk = document.createElement('div'); bk.className = 'black-key'; bk.id = `bk-${bIdx}`;
+                    bk.style.left = `${(i + 1) * (100 / 28) - 0.8}%`;
+                    kb.appendChild(bk); bIdx++;
+                }
+            }
+        }
+
+        function toggleFreePlay() {
+            freePlay = !freePlay;
+            document.getElementById('game-ui').classList.toggle('hidden', freePlay);
+            document.getElementById('freeplay-header').classList.toggle('hidden', !freePlay);
+            document.getElementById('freeStatus').innerText = freePlay ? "ON" : "OFF";
+            document.getElementById('freeDot').className = freePlay ? "dot on" : "dot";
+        }
+
+        function toggleCoach() {
+            coachMode = !coachMode;
+            document.getElementById('coachStatus').innerText = coachMode ? "ON" : "OFF";
+            document.getElementById('coachDot').className = coachMode ? "dot on" : "dot";
+        }
+
+        window.onload = () => { buildRefKeyboard(); initChart(); };
+    </script>
+</body>
+</html>

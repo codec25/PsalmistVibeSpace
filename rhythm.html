@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhythm Dojo | Psalmist Ninja Academy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05070a; --panel: #0b101a; --blue: #4facfe;
+            --gold: #ffcc00; --green: #00ff88; --pink: #e94560; --border: #1e2544;
+        }
+
+        body {
+            margin: 0; background: var(--bg); color: #fff;
+            font-family: 'Orbitron', sans-serif; display: flex;
+            flex-direction: column; align-items: center; min-height: 100vh;
+            padding: 10px; box-sizing: border-box;
+        }
+
+        /* Top HUD */
+        .hud {
+            width: 100%; max-width: 900px; display: flex; justify-content: space-between;
+            padding: 15px; font-size: 0.7rem; border-bottom: 1px solid var(--border);
+        }
+
+        /* Daily Challenge Box */
+        .challenge-box {
+            width: 100%; max-width: 800px; border: 1px dashed var(--green);
+            background: rgba(0, 255, 136, 0.05); border-radius: 15px;
+            padding: 20px; margin: 20px 0; text-align: center;
+        }
+
+        /* Metronome Bars */
+        .visualizer {
+            height: 50px; display: flex; justify-content: center; gap: 8px; margin-bottom: 20px;
+        }
+        .bar { width: 12px; background: var(--border); border-radius: 4px; transition: 0.1s; }
+        .bar.pulse { background: var(--green); box-shadow: 0 0 15px var(--green); }
+
+        /* Pattern Grid */
+        .pattern-grid {
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+            gap: 12px; width: 100%; max-width: 900px;
+        }
+
+        .pattern-card {
+            background: rgba(30, 37, 68, 0.3); border: 1px solid var(--border);
+            border-radius: 10px; padding: 15px; text-align: center;
+            cursor: pointer; transition: 0.3s;
+        }
+        .pattern-card:hover { border-color: var(--blue); background: rgba(79, 172, 254, 0.1); }
+        .pattern-card h4 { margin: 0; font-size: 0.6rem; color: var(--blue); letter-spacing: 1px; }
+        .pattern-card .notes { margin-top: 8px; font-size: 1.2rem; }
+
+        .btn-action {
+            background: var(--green); color: #000; border: none;
+            padding: 15px 30px; border-radius: 8px; font-family: 'Orbitron';
+            font-weight: 900; cursor: pointer; margin: 20px 0; text-transform: uppercase;
+        }
+
+        .correct { background: var(--green) !important; color: #000; }
+        .wrong { background: var(--pink) !important; color: #fff; }
+
+        @media (max-width: 600px) {
+            .pattern-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="hud">
+        <div style="color: var(--gold)">STREAK: <span id="streak">0</span></div>
+        <div id="userGreeting" style="color: var(--blue)">NINJA: LOADING...</div>
+        <div style="color: var(--green)">XP: <span id="displayXP">0</span></div>
+    </div>
+
+    <div class="challenge-box">
+        <div style="color: var(--green); font-weight: 900; margin-bottom: 5px;">⚡ DAILY RHYTHM CHALLENGE</div>
+        <div style="font-size: 0.8rem;">Identify "The Pulse" 3 times to earn 200 XP!</div>
+        <div style="font-size: 0.6rem; margin-top: 10px; color: #777;">Progress: <span id="prog">0</span>/3</div>
+    </div>
+
+    <div class="visualizer" id="metronome">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    </div>
+
+    <button class="btn-action" onclick="playSecretPattern()">🔊 HEAR PATTERN (3x)</button>
+
+    <div class="pattern-grid" id="grid">
+        </div>
+
+    <button onclick="location.href='hub.html'" style="margin: 40px; background:none; border:none; color:#444; font-family:'Orbitron'; font-size:0.7rem; cursor:pointer; text-decoration: underline;">// RETURN_TO_COMMAND_CENTER</button>
+
+    <script>
+        const patterns = [
+            { name: "The Pulse", notes: "♩ ♩", sequence: [1, 1] },
+            { name: "The Sprint", notes: "♫ ♫", sequence: [0.5, 0.5, 0.5, 0.5] },
+            { name: "The Skip", notes: "♩ ♫", sequence: [1, 0.5, 0.5] },
+            { name: "The Gallop", notes: "♫ ♩", sequence: [0.5, 0.5, 1] },
+            { name: "The Swing", notes: "♩. ♫", sequence: [1.5, 0.5] },
+            { name: "The Hook", notes: "♫ ♩.", sequence: [0.5, 1.5] },
+            { name: "The Waltz", notes: "♩ ♩ ♩", sequence: [1, 1, 1] },
+            { name: "The Anchor", notes: "♩. ♩.", sequence: [1.5, 1.5] },
+            { name: "The Square", notes: "♩ ♩ ♩ ♩", sequence: [1, 1, 1, 1] },
+            { name: "The Wave", notes: "♫ ♫ ♫ ♫", sequence: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5] },
+            { name: "The March", notes: "♫ ♫ ♩", sequence: [0.5, 0.5, 0.5, 0.5, 1] },
+            { name: "The Jazz", notes: "♩ ♫ ♫", sequence: [1, 0.5, 0.5, 0.5, 0.5] },
+            { name: "The Sync", notes: "♩ ♫ ♩ ♫", sequence: [1, 0.5, 0.5, 1, 0.5, 0.5] },
+            { name: "The Legend", notes: "♩. ♫ ♩. ♫", sequence: [1.5, 0.5, 1.5, 0.5] },
+            { name: "The Bounce", notes: "♫ ♩ ♩ ♫", sequence: [0.5, 0.5, 1, 1, 0.5, 0.5] },
+            { name: "The Finale", notes: "♩ ♫ ♫ ♩", sequence: [1, 0.5, 0.5, 0.5, 0.5, 1] }
+        ];
+
+        let audioCtx, currentPattern, activeUser, isPlaying = false;
+
+        window.onload = () => {
+            activeUser = localStorage.getItem('activeUser') || 'GUEST';
+            const db = JSON.parse(localStorage.getItem('psalmistDB')) || { users: {} };
+            document.getElementById('userGreeting').innerText = `NINJA: ${activeUser}`;
+            document.getElementById('displayXP').innerText = db.users[activeUser]?.xp || 0;
+            renderGrid();
+        };
+
+        function renderGrid() {
+            const container = document.getElementById('grid');
+            container.innerHTML = patterns.map((p, i) => `
+                <div class="pattern-card" onclick="guessPattern(${i}, this)">
+                    <h4>${p.name}</h4>
+                    <div class="notes">${p.notes}</div>
+                </div>
+            `).join('');
+        }
+
+        async function playSecretPattern() {
+            if(isPlaying) return;
+            isPlaying = true;
+            if(!audioCtx) audioCtx = new AudioContext();
+
+            currentPattern = patterns[Math.floor(Math.random() * patterns.length)];
+            const bpm = 120;
+            const beatDur = 60 / bpm;
+
+            for(let repeat = 0; repeat < 2; repeat++) {
+                for(let note of currentPattern.sequence) {
+                    playTone(audioCtx.currentTime);
+                    animateBars();
+                    await new Promise(r => setTimeout(r, note * beatDur * 1000));
+                }
+                await new Promise(r => setTimeout(r, 500));
+            }
+            isPlaying = false;
+        }
+
+        function playTone(time) {
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.frequency.setValueAtTime(440, time);
+            g.gain.setValueAtTime(0.2, time);
+            g.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.start(time); osc.stop(time + 0.1);
+        }
+
+        function animateBars() {
+            const bars = document.querySelectorAll('.bar');
+            bars.forEach(b => b.classList.add('pulse'));
+            setTimeout(() => bars.forEach(b => b.classList.remove('pulse')), 100);
+        }
+
+        function guessPattern(index, el) {
+            if(!currentPattern || isPlaying) return;
+            const cards = document.querySelectorAll('.pattern-card');
+            cards.forEach(c => c.style.pointerEvents = 'none');
+
+            if(patterns[index].name === currentPattern.name) {
+                el.classList.add('correct');
+                updateXP(50);
+            } else {
+                el.classList.add('wrong');
+                cards.forEach(c => {
+                    if(c.innerText.includes(currentPattern.name)) c.classList.add('correct');
+                });
+            }
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        }
+
+        function updateXP(amt) {
+            let db = JSON.parse(localStorage.getItem('psalmistDB'));
+            db.users[activeUser].xp += amt;
+            localStorage.setItem('psalmistDB', JSON.stringify(db));
+        }
+    </script>
+</body>
+</html>

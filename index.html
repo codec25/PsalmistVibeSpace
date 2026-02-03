@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Identity Auth | Psalmist Ninja Academy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #000000;
+            --panel-bg: #0b101a;
+            --border-blue: #4facfe;
+            --text-blue: #4facfe;
+            --btn-blue: #64b5f6;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .auth-container {
+            width: 90%;
+            max-width: 500px;
+            background: var(--panel-bg);
+            border: 2px solid var(--border-blue);
+            border-radius: 25px;
+            padding: 60px 40px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(79, 172, 254, 0.15);
+            position: relative;
+        }
+
+        h1 {
+            color: white;
+            font-size: 2.4rem;
+            letter-spacing: 5px;
+            margin-bottom: 5px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .sub-header {
+            font-size: 0.75rem;
+            color: #555;
+            letter-spacing: 3px;
+            margin-bottom: 45px;
+            text-transform: uppercase;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        input, select {
+            width: 100%;
+            background: #000;
+            border: 1px solid #1e2544;
+            border-radius: 10px;
+            padding: 20px;
+            color: white;
+            font-family: 'Orbitron';
+            font-size: 1rem;
+            box-sizing: border-box;
+            outline: none;
+            text-transform: uppercase;
+            transition: border 0.3s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--border-blue);
+        }
+
+        input::placeholder {
+            color: #444;
+        }
+
+        .btn-init {
+            width: 100%;
+            background: var(--btn-blue);
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Orbitron';
+            font-weight: 900;
+            font-size: 1.1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-init:active {
+            transform: scale(0.98);
+        }
+
+        .btn-guest {
+            width: 100%;
+            background: transparent;
+            color: #555;
+            border: 1px solid #1e2544;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Orbitron';
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-top: 15px;
+            text-transform: uppercase;
+            transition: 0.3s;
+        }
+
+        .btn-guest:hover {
+            color: #aaa;
+            border-color: #444;
+            background: rgba(255,255,255,0.02);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <h1>IDENTITY AUTH</h1>
+        <div class="sub-header">Psalmist Ninja Academy</div>
+
+        <div class="input-group">
+            <input type="text" id="username" placeholder="ENTER NAME" autocomplete="off">
+        </div>
+        
+        <div class="input-group">
+            <select id="role">
+                <option value="STUDENT NINJA">STUDENT NINJA</option>
+                <option value="TEACHER SENSEI">TEACHER SENSEI</option>
+            </select>
+        </div>
+
+        <button class="btn-init" onclick="startSession()">INITIALIZE SESSION</button>
+        <button class="btn-guest" onclick="guestSession()">CONTINUE AS GUEST</button>
+    </div>
+
+    <script>
+        // Check if a session already exists to greet the user
+        window.onload = () => {
+            const lastUser = localStorage.getItem('activeUser');
+            if (lastUser && lastUser !== 'GUEST_NINJA') {
+                document.getElementById('username').value = lastUser;
+            }
+        }
+
+        function startSession() {
+            const name = document.getElementById('username').value.trim().toUpperCase();
+            const role = document.getElementById('role').value;
+
+            if (!name) {
+                alert("IDENTIFICATION REQUIRED TO PROCEED.");
+                return;
+            }
+
+            // Database Management
+            let db = JSON.parse(localStorage.getItem('psalmistDB')) || { users: {} };
+            
+            // Create user if they don't exist, or update role
+            if (!db.users[name]) {
+                db.users[name] = { 
+                    xp: 0, 
+                    role: role, 
+                    created: new Date().toISOString() 
+                };
+            } else {
+                db.users[name].role = role;
+            }
+            
+            localStorage.setItem('psalmistDB', JSON.stringify(db));
+            localStorage.setItem('activeUser', name);
+
+            // Redirect to your renamed hub
+            window.location.href = 'hub.html';
+        }
+
+        function guestSession() {
+            localStorage.setItem('activeUser', 'GUEST_NINJA');
+            window.location.href = 'hub.html';
+        }
+
+        // Allow "Enter" key to trigger login
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') startSession();
+        });
+    </script>
+</body>
+</html>

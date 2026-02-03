@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pitch Dojo | Psalmist Ninja Academy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05070a; --panel: #0b101a; --blue: #4facfe;
+            --gold: #ffcc00; --green: #00ff88; --pink: #e94560; --border: #1e2544;
+        }
+
+        body {
+            margin: 0; background: var(--bg); color: #fff;
+            font-family: 'Orbitron', sans-serif; display: flex;
+            flex-direction: column; align-items: center; min-height: 100vh;
+        }
+
+        .hud {
+            width: 100%; max-width: 900px; display: flex; justify-content: space-between;
+            padding: 20px; box-sizing: border-box; font-size: 0.8rem;
+        }
+
+        .dojo-card {
+            width: 95%; max-width: 800px; background: var(--panel);
+            border: 1px solid var(--border); border-radius: 30px;
+            padding: 50px; text-align: center; margin-top: 20px;
+            box-shadow: 0 0 50px rgba(79, 172, 254, 0.1);
+        }
+
+        .pitch-display {
+            font-size: 6rem; font-weight: 900; color: var(--blue);
+            text-shadow: 0 0 20px rgba(79, 172, 254, 0.4); margin: 20px 0;
+        }
+
+        .btn-main {
+            width: 100%; padding: 25px; background: var(--blue); color: #000;
+            border: none; border-radius: 15px; font-family: 'Orbitron';
+            font-weight: 900; font-size: 1.2rem; cursor: pointer;
+            margin-bottom: 30px; transition: 0.3s;
+        }
+
+        .note-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;
+        }
+
+        .note-btn {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            padding: 20px; border-radius: 10px; color: #fff; font-family: 'Orbitron';
+            font-weight: 700; cursor: pointer; transition: 0.2s;
+        }
+
+        .note-btn:hover { border-color: var(--blue); background: rgba(79, 172, 254, 0.1); }
+        .note-btn.correct { background: var(--green) !important; color: #000; }
+        .note-btn.wrong { background: var(--pink) !important; color: #fff; }
+
+        .return-btn {
+            margin-top: 40px; background: none; border: none; color: #444;
+            cursor: pointer; font-family: 'Orbitron'; font-size: 0.7rem;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="hud">
+        <div style="color: var(--gold)">STREAK: <span id="streak">0</span></div>
+        <div id="userGreeting" style="color: var(--blue)">NINJA: LOADING...</div>
+        <div style="color: var(--green)">SESSION XP: <span id="sessionXp">0</span></div>
+    </div>
+
+    <div class="dojo-card">
+        <div style="font-size: 0.6rem; letter-spacing: 5px; color: #444;">ABSOLUTE PITCH TRAINING</div>
+        <div class="pitch-display" id="display">?</div>
+        
+        <button class="btn-main" onclick="playNewNote()">STRIKE TONE</button>
+
+        <div class="note-grid" id="noteGrid">
+            </div>
+
+        <button class="return-btn" onclick="location.href='hub.html'">// RETURN_TO_COMMAND_CENTER</button>
+    </div>
+
+    <script>
+        const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        let audioCtx, currentNote, streak = 0, sessionXp = 0;
+        let activeUser = localStorage.getItem('activeUser');
+
+        window.onload = () => {
+            if(!activeUser) window.location.href = 'index.html';
+            document.getElementById('userGreeting').innerText = `NINJA: ${activeUser}`;
+            renderButtons();
+        };
+
+        function renderButtons() {
+            const grid = document.getElementById('noteGrid');
+            grid.innerHTML = notes.map(n => `
+                <button class="note-btn" onclick="checkNote('${n}', this)">${n}</button>
+            `).join('');
+        }
+
+        function playNewNote() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Reset UI
+            document.getElementById('display').innerText = "?";
+            document.querySelectorAll('.note-btn').forEach(b => {
+                b.className = 'note-btn';
+                b.disabled = false;
+            });
+
+            currentNote = notes[Math.floor(Math.random() * notes.length)];
+            const octave = Math.floor(Math.random() * 2) + 3; // Octave 3 or 4
+            const freq = 440 * Math.pow(2, (notes.indexOf(currentNote) + (octave - 4) * 12) / 12);
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 2);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 2);
+        }
+
+        function checkNote(guess, btn) {
+            document.querySelectorAll('.note-btn').forEach(b => b.disabled = true);
+            
+            if (guess === currentNote) {
+                btn.classList.add('correct');
+                document.getElementById('display').innerText = "✓";
+                streak++;
+                addXP(25);
+            } else {
+                btn.classList.add('wrong');
+                document.getElementById('display').innerText = "X";
+                streak = 0;
+                // Highlight correct
+                document.querySelectorAll('.note-btn').forEach(b => {
+                    if(b.innerText === currentNote) b.classList.add('correct');
+                });
+            }
+            document.getElementById('streak').innerText = streak;
+        }
+
+        function addXP(amount) {
+            sessionXp += amount;
+            document.getElementById('sessionXp').innerText = sessionXp;
+            
+            let db = JSON.parse(localStorage.getItem('psalmistDB'));
+            if(db && db.users[activeUser]) {
+                db.users[activeUser].xp += amount;
+                localStorage.setItem('psalmistDB', JSON.stringify(db));
+            }
+        }
+    </script>
+</body>
+</html>

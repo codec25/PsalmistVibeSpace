@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Center | Psalmist Ninja Academy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #020408; --panel: #0b101a; --blue: #4facfe;
+            --gold: #ffcc00; --green: #00ff88; --pink: #e94560; --border: #1e2544;
+        }
+
+        body {
+            margin: 0; background: var(--bg); color: #fff;
+            font-family: 'Orbitron', sans-serif; min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        /* HEADER HUD */
+        .hud-bar {
+            width: 100%; padding: 15px 50px; background: rgba(11, 16, 26, 0.95);
+            border-bottom: 2px solid var(--border); display: flex;
+            justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100;
+            box-sizing: border-box; backdrop-filter: blur(10px);
+        }
+
+        .user-meta { display: flex; align-items: center; gap: 20px; }
+        .avatar-circle { 
+            width: 50px; height: 50px; border: 2px solid var(--blue); border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            background: rgba(79, 172, 254, 0.1); font-weight: 900; color: var(--blue);
+            box-shadow: 0 0 15px rgba(79, 172, 254, 0.3);
+        }
+        
+        .xp-pill { 
+            background: rgba(255, 204, 0, 0.1); border: 1px solid var(--gold); 
+            color: var(--gold); padding: 8px 20px; border-radius: 20px; 
+            font-size: 0.8rem; font-weight: 700; box-shadow: 0 0 10px rgba(255, 204, 0, 0.1);
+        }
+
+        /* LAYOUT GRID */
+        .main-grid {
+            width: 95%; max-width: 1250px; display: grid;
+            grid-template-columns: 2.5fr 1fr; gap: 30px; margin-top: 40px; padding-bottom: 50px;
+        }
+
+        .section-label { font-size: 0.65rem; color: #444; letter-spacing: 5px; margin-bottom: 20px; text-transform: uppercase; display: block; }
+
+        /* TRAINING MODULE CARDS */
+        .module-container { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        .module-card {
+            background: var(--panel); border: 1px solid var(--border); border-radius: 20px;
+            padding: 30px; display: flex; align-items: center; gap: 25px;
+            transition: 0.3s; cursor: pointer; position: relative; overflow: hidden;
+        }
+        .module-card:hover { border-color: var(--blue); transform: translateX(10px); background: rgba(79, 172, 254, 0.05); }
+        .module-card::after { content: '>'; position: absolute; right: 30px; color: var(--blue); font-weight: 900; opacity: 0; transition: 0.3s; }
+        .module-card:hover::after { opacity: 1; right: 20px; }
+        
+        .mod-icon { font-size: 2.5rem; color: var(--blue); opacity: 0.4; font-weight: 900; min-width: 60px; }
+        .mod-info h3 { margin: 0; font-size: 1.4rem; letter-spacing: 2px; color: #eee; }
+        .mod-info p { margin: 8px 0 0; font-size: 0.8rem; color: #666; max-width: 80%; }
+
+        .status-tag { position: absolute; top: 15px; right: 20px; font-size: 0.55rem; color: var(--green); border: 1px solid var(--green); padding: 3px 10px; border-radius: 4px; letter-spacing: 1px; }
+
+        /* SIDEBAR */
+        .sidebar { display: flex; flex-direction: column; gap: 30px; }
+        .side-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 20px; padding: 25px; }
+
+        .leaderboard-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.8rem; }
+        .rank { color: var(--gold); font-weight: 900; margin-right: 10px; }
+
+        /* NEWS FEED */
+        .news-item { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #161b2e; }
+        .news-date { font-size: 0.5rem; color: var(--blue); }
+        .news-text { font-size: 0.75rem; color: #888; margin-top: 5px; line-height: 1.4; }
+
+        .logout-btn { margin-top: 20px; background: none; border: 1px solid #222; color: #444; padding: 12px; border-radius: 8px; cursor: pointer; font-family: 'Orbitron'; font-size: 0.7rem; transition: 0.3s; width: 100%; letter-spacing: 1px; }
+        .logout-btn:hover { color: var(--pink); border-color: var(--pink); background: rgba(233, 69, 96, 0.05); }
+
+        @media (max-width: 1000px) { .main-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div class="hud-bar">
+        <div class="user-meta">
+            <div class="avatar-circle" id="userInitial">?</div>
+            <div>
+                <div id="displayRole" style="font-size: 0.55rem; color: #555; letter-spacing: 2px;">RANK: UNKNOWN</div>
+                <div id="displayName" style="font-size: 1.2rem; font-weight: 900; letter-spacing: 1px; color: #fff;">NINJA</div>
+            </div>
+        </div>
+        <div class="xp-pill">TOTAL ACADEMY XP: <span id="displayXP">0</span></div>
+    </div>
+
+    <div class="main-grid">
+        
+        <div class="training-area">
+            <span class="section-label">Operational Modules</span>
+            <div class="module-container">
+                
+                <div class="module-card" onclick="location.href='pitch.html'">
+                    <div class="status-tag">READY</div>
+                    <div class="mod-icon">01</div>
+                    <div class="mod-info">
+                        <h3>PITCH DOJO</h3>
+                        <p>Master absolute pitch recognition. Perfect for identifying core frequencies in real-time.</p>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="location.href='ear.html'">
+                    <div class="status-tag">READY</div>
+                    <div class="mod-icon">02</div>
+                    <div class="mod-info">
+                        <h3>FREQUENCY ANALYSIS</h3>
+                        <p>Advanced harmonic recognition. Use MIDI piano to identify complex chord structures.</p>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="location.href='rhythm.html'">
+                    <div class="status-tag" style="color: var(--gold); border-color: var(--gold);">UPDATED</div>
+                    <div class="mod-icon">03</div>
+                    <div class="mod-info">
+                        <h3>RHYTHM ENGINE</h3>
+                        <p>Synchronize your internal clock. Identify time signatures and tap patterns via MIDI.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="side-panel">
+                <span class="section-label" style="margin-bottom: 15px;">Academy Intel</span>
+                <div class="news-item">
+                    <div class="news-date">FEB 03, 2026</div>
+                    <div class="news-text">Rhythm Engine (Mod 03) is now fully integrated with MIDI support.</div>
+                </div>
+                <div class="news-item">
+                    <div class="news-date">FEB 01, 2026</div>
+                    <div class="news-text">Global Leaderboard system is live. Reach 10,000 XP for Sensei status.</div>
+                </div>
+            </div>
+
+            <div class="side-panel">
+                <span class="section-label" style="margin-bottom: 15px;">Top Ninjas</span>
+                <div id="leaderboardContent">
+                    </div>
+            </div>
+
+            <div class="side-panel" style="text-align: center;">
+                <span class="section-label">Academy Stats</span>
+                <div style="font-size: 2rem; font-weight: 900; color: var(--blue); margin: 10px 0;" id="totalUsers">0</div>
+                <div style="font-size: 0.6rem; color: #555; letter-spacing: 1px;">ACTIVE AGENTS</div>
+                <button class="logout-btn" onclick="logout()">TERMINATE SESSION</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        window.onload = () => {
+            const activeUser = localStorage.getItem('activeUser');
+            const db = JSON.parse(localStorage.getItem('psalmistDB'));
+
+            if (!activeUser || !db) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const userData = db.users[activeUser] || { xp: 0, role: 'STUDENT NINJA' };
+
+            // Update Header
+            document.getElementById('displayName').innerText = activeUser;
+            document.getElementById('userInitial').innerText = activeUser.charAt(0).toUpperCase();
+            document.getElementById('displayRole').innerText = `RANK: ${userData.role}`;
+            document.getElementById('displayXP').innerText = userData.xp.toLocaleString();
+
+            loadLeaderboard(db);
+        };
+
+        function loadLeaderboard(db) {
+            const container = document.getElementById('leaderboardContent');
+            const usersArray = Object.keys(db.users).map(name => ({
+                name: name,
+                xp: db.users[name].xp
+            }));
+
+            usersArray.sort((a, b) => b.xp - a.xp);
+            document.getElementById('totalUsers').innerText = usersArray.length;
+
+            container.innerHTML = usersArray.slice(0, 5).map((u, index) => `
+                <div class="leaderboard-row">
+                    <span><span class="rank">#${index + 1}</span> ${u.name}</span>
+                    <span style="color: var(--gold)">${u.xp}</span>
+                </div>
+            `).join('');
+        }
+
+        function logout() {
+            localStorage.removeItem('activeUser');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
