@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psalmist Dojo - Master Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root { --glow: #4f8cff; --accent: #ffd700; --bg: #02030a; --boss: #ff416c; }
+        body { margin:0; background: var(--bg); color:#fff; font-family:'Orbitron'; text-align:center; overflow-x: hidden; }
+        .container { max-width:900px; margin:auto; padding:20px; }
+        .box { background:rgba(255,255,255,0.05); padding:30px; border-radius:15px; border:1px solid var(--glow); margin-bottom:20px; backdrop-filter: blur(10px); }
+        
+        button { padding:15px; margin:10px; cursor:pointer; font-family:'Orbitron'; font-weight:900; border:none; border-radius:8px; color:#fff; width: 100%; max-width: 300px; transition: 0.3s; }
+        .btn-piano { background: linear-gradient(90deg, #4f8cff, #00d4ff); }
+        .btn-rhythm { background: linear-gradient(90deg, #9370db, #ff00ff); }
+        .btn-boss { background: linear-gradient(90deg, #7d2ae8, var(--boss)); }
+        
+        .progress-container { margin: 20px 0; text-align: left; }
+        .bar-bg { width: 100%; height: 14px; background: #111; border-radius: 7px; border: 1px solid #333; overflow: hidden; }
+        .bar-fill { height: 100%; background: linear-gradient(90deg, #ff00ff, #00d4ff); width: 0%; transition: 1s; }
+
+        /* Overlays */
+        .overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:100; overflow-y: auto; }
+        .hp-bar-label { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px; }
+        .boss-bar { background: var(--boss) !important; box-shadow: 0 0 15px var(--boss); }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.8rem; }
+        th { color: var(--accent); border-bottom: 1px solid var(--glow); padding: 10px; }
+        td { padding: 10px; border-bottom: 1px solid #111; }
+        select { padding: 10px; background: #000; color: #fff; border: 1px solid var(--glow); font-family: 'Orbitron'; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="progress-container">
+        <div class="hp-bar-label"><span color="var(--accent)">🥳 CLASS PARTY GOAL</span><span id="partyText">0 / 5000 XP</span></div>
+        <div class="bar-bg"><div id="partyFill" class="bar-fill"></div></div>
+    </div>
+
+    <div class="box">
+        <h2>🥷 NINJA PORTAL</h2>
+        <select id="userSelect"><option value="">-- Select Name --</option></select>
+        <button onclick="addUser()" style="width: auto; background: #222; font-size: 10px;">+ NEW NINJA</button>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; margin-top: 20px;">
+            <button class="btn-piano" onclick="nav('piano.html')">🎹 PIANO DOJO</button>
+            <button class="btn-rhythm" onclick="nav('rhythm.html')">🥁 RHYTHM DOJO</button>
+            <button class="btn-boss" onclick="startBoss()">👹 RHYTHM KRAKEN</button>
+        </div>
+    </div>
+
+    <div class="box" style="text-align: left; border-style: dashed;">
+        <h3 style="color: var(--glow);">👨‍🏫 TEACHER DIAGNOSTICS</h3>
+        <table id="teacherTable">
+            <thead><tr><th>Ninja</th><th>Weekly XP</th><th>Time</th><th>Struggles</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="bossOverlay" class="overlay">
+    <div style="padding: 20px;">
+        <h2 style="color:var(--boss)">👹 RHYTHM KRAKEN</h2>
+        <div class="progress-container" style="max-width: 800px; margin: auto;">
+            <div class="hp-bar-label"><span>KRAKEN HP</span><span id="bossHpText">1000/1000</span></div>
+            <div class="bar-bg"><div id="bossFill" class="bar-fill boss-bar" style="width: 100%;"></div></div>
+            <div class="hp-bar-label" style="margin-top:10px;"><span>NINJA TEAM XP</span><span id="teamXpText">0/1000</span></div>
+            <div class="bar-bg"><div id="teamFill" class="bar-fill" style="background: #00d4ff;"></div></div>
+        </div>
+        
+        <button onclick="playBossRhythm()" style="background:var(--accent); color:#000; margin: 20px;">🔊 HEAR ATTACK</button>
+        <button onclick="closeBoss()" style="background:#222; width: 100px;">EXIT</button>
+
+        <div style="display: flex; justify-content: center; gap: 40px; margin-top: 20px;">
+            <div><h3>P1</h3><div id="p1Options"></div></div>
+            <div><h3>P2</h3><div id="p2Options"></div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const PATS = [
+        {name:"The Pulse", sym:"♩ ♩", p:[1, 1]}, {name:"The Sprint", sym:"♫ ♫", p:[0.5, 0.5, 0.5, 0.5]},
+        {name:"The Skip", sym:"♩ ♫", p:[1, 0.5, 0.5]}, {name:"The Gallop", sym:"♫ ♩", p:[0.5, 0.5, 1]},
+        {name:"The Waltz", sym:"♩ ♩ ♩", p:[1, 1, 1]}, {name:"The Swing", sym:"♩. ♫", p:[1.5, 0.5]},
+        {name:"The Square", sym:"♩ ♩ ♩ ♩", p:[1, 1, 1, 1]}, {name:"The Wave", sym:"♫ ♫ ♫ ♫", p:[0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]}
+        // ... (Adding up to 16 rhythms in logic below)
+    ];
+
+    let db = JSON.parse(localStorage.getItem('DojoMaster')) || { globalXP: 0, students: {}, goal: 5000 };
+    let bossTarget = null; let p1Ans = null; let p2Ans = null; let bHP = 1000; let tXP = 0;
+
+    function addUser() { let n = prompt("Ninja Name:"); if(n) { db.students[n] = {xp:0, min:0, errs:[]}; save(); } }
+    function nav(page) { 
+        let u = document.getElementById('userSelect').value;
+        if(!u) return alert("Select a name!");
+        localStorage.setItem('activeNinja', u);
+        localStorage.setItem('startTime', Date.now());
+        window.location.href = page;
+    }
+
+    function save() { localStorage.setItem('DojoMaster', JSON.stringify(db)); render(); }
+
+    function render() {
+        const sel = document.getElementById('userSelect');
+        const tb = document.querySelector('#teacherTable tbody');
+        const cur = sel.value;
+        sel.innerHTML = '<option value="">-- Select Name --</option>';
+        tb.innerHTML = "";
+
+        Object.entries(db.students).forEach(([n, d]) => {
+            sel.innerHTML += `<option value="${n}">${n}</option>`;
+            tb.innerHTML += `<tr><td>${n}</td><td>${d.xp}</td><td>${d.min}m</td><td style="color:red;">${d.errs.slice(-2)}</td></tr>`;
+        });
+        sel.value = cur;
+        document.getElementById('partyFill').style.width = Math.min(100, (db.globalXP/db.goal)*100) + "%";
+        document.getElementById('partyText').innerText = `${db.globalXP} / ${db.goal} XP`;
+    }
+
+    // BOSS LOGIC
+    function startBoss() {
+        document.getElementById('bossOverlay').style.display = 'block';
+        bHP = 1000; tXP = 0; updateBossBars();
+        buildBossOptions();
+    }
+
+    function buildBossOptions() {
+        bossTarget = Math.floor(Math.random() * PATS.length);
+        const build = (id, p) => {
+            const div = document.getElementById(id); div.innerHTML = "";
+            PATS.slice(0, 4).forEach((r, i) => { // Using first 4 for boss speed
+                const btn = document.createElement('button'); btn.style.display="block";
+                btn.innerHTML = `${r.name}<br>${r.sym}`; btn.onclick = () => handleBossHit(p, i);
+                div.appendChild(btn);
+            });
+        };
+        build('p1Options', 1); build('p2Options', 2);
+    }
+
+    function handleBossHit(p, i) {
+        if(p === 1) p1Ans = i; else p2Ans = i;
+        if(p1Ans !== null && p2Ans !== null) {
+            if(p1Ans === bossTarget && p2Ans === bossTarget) { bHP -= 200; tXP += 150; alert("SYNC CRITICAL!"); }
+            else if(p1Ans === bossTarget || p2Ans === bossTarget) { bHP -= 50; tXP += 40; }
+            else { bHP += 10; alert("KRAKEN ATTACKS!"); }
+            p1Ans = p2Ans = null; updateBossBars(); buildBossOptions();
+            if(bHP <= 0) { confetti(); alert("VICTORY!"); closeBoss(); }
+        }
+    }
+
+    function updateBossBars() {
+        document.getElementById('bossFill').style.width = (bHP/1000*100) + "%";
+        document.getElementById('teamFill').style.width = (tXP/1000*100) + "%";
+        document.getElementById('bossHpText').innerText = `${bHP}/1000`;
+        document.getElementById('teamXpText').innerText = `${tXP}/1000`;
+    }
+
+    function playBossRhythm() {
+        let pattern = PATS[bossTarget].p;
+        let time = audioCtx.currentTime + 0.1;
+        pattern.forEach(d => {
+            const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            osc.frequency.value = 300; g.gain.setValueAtTime(0.2, time);
+            g.gain.exponentialRampToValueAtTime(0.0001, time + 0.1);
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.start(time); osc.stop(time + 0.1);
+            time += d * 0.4;
+        });
+    }
+
+    function closeBoss() { document.getElementById('bossOverlay').style.display = 'none'; db.globalXP += tXP; save(); }
+
+    window.onload = () => {
+        let u = localStorage.getItem('activeNinja');
+        let s = localStorage.getItem('startTime');
+        let xp = parseInt(localStorage.getItem('lastXP')) || 0;
+        let er = JSON.parse(localStorage.getItem('lastErr')) || [];
+        if(u && s && db.students[u]) {
+            db.students[u].xp += xp;
+            db.students[u].min += Math.floor((Date.now() - s)/60000);
+            db.students[u].errs.push(...er);
+            db.globalXP += xp;
+            localStorage.removeItem('startTime'); localStorage.removeItem('lastXP');
+            save();
+        }
+        render();
+    };
+</script>
+</body>
+</html>
