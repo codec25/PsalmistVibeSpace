@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>INSTRUCTOR_VAULT // Psalmist Vibe Academy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #010204; --panel: rgba(10, 14, 23, 0.9); --blue: #4facfe; 
+            --gold: #ffcc00; --border: #1e2544; --green: #00ff88; --red: #ff4b2b; 
+        }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 50%, #0a1324 0%, #010204 100%);
+            padding: 40px 20px;
+        }
+
+        .dashboard-header {
+            width: 100%; max-width: 1000px; display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 40px; border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+        }
+
+        .instructor-id { color: var(--blue); font-size: 0.8rem; letter-spacing: 3px; }
+        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 5px; }
+
+        .vault-grid {
+            display: grid; grid-template-columns: 1fr 350px; gap: 30px;
+            width: 100%; max-width: 1000px;
+        }
+
+        .vault-card {
+            background: var(--panel); border: 1px solid var(--border);
+            border-radius: 20px; padding: 30px; backdrop-filter: blur(10px);
+        }
+
+        .section-title {
+            font-size: 0.7rem; color: var(--gold); letter-spacing: 3px;
+            margin-bottom: 25px; text-transform: uppercase; border-left: 3px solid var(--gold);
+            padding-left: 15px;
+        }
+
+        /* Ninja Roster List */
+        .ninja-list { list-style: none; padding: 0; margin: 0; }
+        .ninja-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.3); padding: 15px 20px; border-radius: 12px;
+            margin-bottom: 10px; border: 1px solid transparent; transition: 0.3s;
+        }
+        .ninja-item:hover { border-color: var(--green); }
+        .ninja-stats { font-size: 0.65rem; color: var(--blue); }
+
+        input, textarea {
+            width: 100%; padding: 12px; background: #000; border: 1px solid var(--border);
+            color: #fff; border-radius: 8px; font-family: 'Orbitron'; margin-bottom: 10px;
+            font-size: 0.8rem;
+        }
+
+        .btn {
+            padding: 12px 20px; border: none; border-radius: 8px; font-family: 'Orbitron';
+            font-weight: 900; cursor: pointer; transition: 0.3s; font-size: 0.7rem;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-add { background: var(--green); color: #000; width: 100%; }
+        .btn-logout { background: transparent; border: 1px solid var(--red); color: var(--red); }
+        .btn-logout:hover { background: var(--red); color: #fff; }
+
+        @media (max-width: 850px) { .vault-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <header class="dashboard-header">
+        <div>
+            <div class="instructor-id">INSTRUCTOR_SESSION_ACTIVE</div>
+            <h1 id="welcome-text">SENSEI_DASHBOARD</h1>
+        </div>
+        <button class="btn btn-logout" onclick="logout()">LOG_OUT_VAULT</button>
+    </header>
+
+    <div class="vault-grid">
+        <div class="vault-card">
+            <div class="section-title">Verified Ninja Roster & Stats</div>
+            <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+                <input type="text" id="new-ninja-name" placeholder="ENTER NEW NINJA NAME" style="margin-bottom:0;">
+                <button class="btn btn-add" style="width: auto;" onclick="addNinja()">ADD_NINJA</button>
+            </div>
+            <ul class="ninja-list" id="roster-list"></ul>
+        </div>
+
+        <div class="vault-card">
+            <div class="section-title">Sensei Broadcast</div>
+            <p style="font-size: 0.6rem; color: #666; margin-bottom: 10px;">MESSAGE WILL APPEAR IN ALL NINJA HUDS</p>
+            <textarea id="broadcast-msg" placeholder="ENTER MESSAGE..." style="height: 80px; resize: none;"></textarea>
+            <button class="btn btn-add" onclick="saveBroadcast()" style="background: var(--gold);">SEND BROADCAST</button>
+            
+            <div style="margin-top: 30px;">
+                <div class="section-title">Vault Security</div>
+                <input type="password" id="new-pass" placeholder="NEW ACCESS_KEY">
+                <button class="btn btn-add" onclick="updatePassword()" style="background: var(--blue);">UPDATE_KEY</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const currentTeacher = sessionStorage.getItem('currentTeacher');
+        if (!currentTeacher) window.location.href = 'index.html';
+
+        window.onload = () => {
+            document.getElementById('welcome-text').innerText = currentTeacher.toUpperCase() + "_VAULT";
+            document.getElementById('broadcast-msg').value = localStorage.getItem('academy_announcement') || "";
+            loadRoster();
+        };
+
+        function loadRoster() {
+            const db = JSON.parse(localStorage.getItem('psalmist_teachers'));
+            const roster = db[currentTeacher].students || [];
+            const listElement = document.getElementById('roster-list');
+            listElement.innerHTML = '';
+
+            roster.forEach((ninja, index) => {
+                // Fetch stats from local storage (if existing)
+                const xp = localStorage.getItem('totalXP') || "0"; 
+                const lvl = localStorage.getItem('currentLevel') || "1";
+
+                listElement.innerHTML += `
+                    <li class="ninja-item">
+                        <div>
+                            <div style="font-weight:700;">${ninja}</div>
+                            <div class="ninja-stats">LVL: ${lvl} // XP: ${xp}</div>
+                        </div>
+                        <button class="btn" style="background:transparent; color:var(--red); border:1px solid var(--red); padding:5px 10px;" onclick="removeNinja(${index})">REMOVE</button>
+                    </li>
+                `;
+            });
+        }
+
+        function addNinja() {
+            const name = document.getElementById('new-ninja-name').value.trim();
+            if (!name) return;
+            const db = JSON.parse(localStorage.getItem('psalmist_teachers'));
+            db[currentTeacher].students.push(name);
+            localStorage.setItem('psalmist_teachers', JSON.stringify(db));
+            document.getElementById('new-ninja-name').value = '';
+            loadRoster();
+        }
+
+        function removeNinja(index) {
+            if (confirm("Remove Ninja?")) {
+                const db = JSON.parse(localStorage.getItem('psalmist_teachers'));
+                db[currentTeacher].students.splice(index, 1);
+                localStorage.setItem('psalmist_teachers', JSON.stringify(db));
+                loadRoster();
+            }
+        }
+
+        function saveBroadcast() {
+            const msg = document.getElementById('broadcast-msg').value;
+            localStorage.setItem('academy_announcement', msg);
+            alert("Broadcast Transmitted.");
+        }
+
+        function updatePassword() {
+            const newPass = document.getElementById('new-pass').value.trim();
+            if (newPass.length < 4) return alert("Key too weak.");
+            const db = JSON.parse(localStorage.getItem('psalmist_teachers'));
+            db[currentTeacher].password = newPass;
+            localStorage.setItem('psalmist_teachers', JSON.stringify(db));
+            alert("Security Key Updated.");
+        }
+
+        function logout() {
+            sessionStorage.removeItem('currentTeacher');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
