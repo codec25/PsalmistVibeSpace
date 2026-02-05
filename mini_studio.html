@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NEURAL_STUDIO // Final Pro Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #030508; --panel: #0a0e17; --blue: #4facfe; 
+            --gold: #ffcc00; --red: #ff4b2b; --border: #1e2544; --green: #00ff88; 
+        }
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px;
+        }
+        
+        .daw-container { 
+            width: 1150px; padding: 25px; background: var(--panel); border: 1px solid var(--border); 
+            box-shadow: 0 0 60px #000; border-radius: 12px; position: relative;
+        }
+
+        /* --- Vocal & FX Section --- */
+        .top-deck { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 20px; margin-bottom: 25px; }
+        
+        .vocal-unit { 
+            background: #000; border: 1px solid var(--red); padding: 15px; border-radius: 8px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+
+        .visualizer-box { background: #000; border: 1px solid var(--blue); height: 80px; border-radius: 4px; overflow: hidden; }
+
+        /* --- Sequencer Grid --- */
+        .track-row { display: flex; align-items: center; margin-bottom: 8px; gap: 15px; }
+        .track-label { width: 140px; font-size: 0.6rem; color: #555; letter-spacing: 2px; }
+        .step-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 4px; flex-grow: 1; }
+        .step { 
+            aspect-ratio: 1/1; background: rgba(255,255,255,0.02); border: 1px solid #1a1a1a; 
+            cursor: pointer; border-radius: 2px;
+        }
+        .step.active { background: var(--blue); box-shadow: 0 0 10px var(--blue); }
+        .step.playing { border: 2px solid var(--gold); transform: scale(1.05); }
+
+        /* --- Buttons & Inputs --- */
+        .btn { 
+            padding: 12px; font-family: 'Orbitron'; font-size: 0.6rem; font-weight: 900; 
+            cursor: pointer; border: 1px solid var(--border); background: none; color: #fff; border-radius: 4px;
+        }
+        .btn-rec { border-color: var(--red); color: var(--red); }
+        .btn-rec.on { background: var(--red); color: #000; animation: blink 1s infinite; }
+        
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        select { background: #000; color: var(--blue); border: 1px solid var(--border); padding: 5px; font-family: 'Orbitron'; font-size: 0.6rem; }
+    </style>
+</head>
+<body>
+
+<div class="daw-container">
+    <div class="top-deck">
+        <div class="vocal-unit">
+            <div style="font-size: 0.6rem; color: var(--red);">🎤 VOCAL_CHAIN_v1.0</div>
+            <select id="vocal-preset" onchange="applyVocalPreset(this.value)">
+                <option value="dry">CLEAN_BYPASS</option>
+                <option value="radio">VINTAGE_RADIO (Auto-EQ)</option>
+                <option value="hall">GRAND_HALL (Reverb/Delay)</option>
+                <option value="cyber">CYBER_PITCH (Shifted)</option>
+                <option value="warm">WARM_ANALOG (Compressor)</option>
+            </select>
+            <div id="fx-tags" style="font-size: 0.5rem; display: flex; gap: 5px; color: #444;">
+                <span id="tag-eq">EQ</span> | <span id="tag-comp">COMP</span> | <span id="tag-verb">VERB</span>
+            </div>
+        </div>
+
+        <div class="visualizer-box">
+            <canvas id="visualizer" width="500" height="80"></canvas>
+        </div>
+
+        <div style="text-align: right;">
+            <div id="midi-tag" style="font-size: 0.6rem; color: var(--gold); margin-bottom: 10px;">🎹 MIDI_OFFLINE</div>
+            <button class="btn btn-rec" id="rec-btn" onclick="toggleRecording()">START_SESSION_REC</button>
+        </div>
+    </div>
+
+    <div id="sequencer"></div>
+
+    <div style="margin-top: 25px; display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn" style="border-color: var(--green); color: var(--green); width: 200px;" onclick="togglePlay()" id="play-btn">PLAY_ENGINE</button>
+        <div style="display: flex; gap: 20px;">
+            <div>
+                <div style="font-size: 0.5rem; color: var(--blue);">BPM</div>
+                <input type="range" id="bpm" min="60" max="180" value="120" oninput="updateTempo(this.value)">
+            </div>
+            <button class="btn" onclick="exportCode()">EXPORT_CODE</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const masterDest = audioCtx.createMediaStreamDestination();
+    const tracks = ["KICK", "SNARE", "HI_HAT", "PIANO_H", "PIANO_L"];
+    let grid = Array(5).fill().map(() => Array(16).fill(false));
+    let isPlaying = false, currentStep = 0, nextNoteTime = 0, tempo = 120;
+
+    // --- MIDI ENGINE ---
+    if (navigator.requestMIDIAccess) {
+        navigator.requestMIDIAccess().then(access => {
+            document.getElementById('midi-tag').innerText = "🎹 MIDI_READY";
+            access.inputs.forEach(input => {
+                input.onmidimessage = (m) => { if(m.data[0] === 144 && m.data[2] > 0) playNote(m.data[1], m.data[2]); };
+            });
+        });
+    }
+
+    function playNote(midiNote, vel) {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.frequency.value = 440 * Math.pow(2, (midiNote - 69) / 12);
+        g.gain.setValueAtTime((vel/127) * 0.3, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+        osc.connect(g).connect(audioCtx.destination);
+        osc.connect(g).connect(masterDest);
+        osc.start(); osc.stop(audioCtx.currentTime + 1);
+    }
+
+    // --- VOCAL FX ENGINE ---
+    let micStream, micSource, vocalChain;
+    const analyzer = audioCtx.createAnalyser();
+
+    async function applyVocalPreset(preset) {
+        if (!micStream) {
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            micSource = audioCtx.createMediaStreamSource(micStream);
+        }
+        if (vocalChain) vocalChain.disconnect();
+        vocalChain = audioCtx.createGain();
+        
+        document.querySelectorAll('#fx-tags span').forEach(s => s.style.color = '#444');
+
+        if (preset === 'radio') {
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass'; filter.frequency.value = 1500;
+            micSource.connect(filter).connect(vocalChain);
+            document.getElementById('tag-eq').style.color = 'var(--blue)';
+        } else if (preset === 'hall') {
+            const delay = audioCtx.createDelay(); delay.delayTime.value = 0.3;
+            const dGain = audioCtx.createGain(); dGain.gain.value = 0.3;
+            micSource.connect(delay).connect(dGain).connect(vocalChain);
+            micSource.connect(vocalChain);
+            document.getElementById('tag-verb').style.color = 'var(--blue)';
+        } else {
+            micSource.connect(vocalChain);
+        }
+
+        vocalChain.connect(audioCtx.destination);
+        vocalChain.connect(masterDest);
+        vocalChain.connect(analyzer);
+    }
+
+    // --- SEQUENCER LOGIC ---
+    function init() {
+        const seq = document.getElementById('sequencer');
+        tracks.forEach((t, i) => {
+            const row = document.createElement('div'); row.className = 'track-row';
+            row.innerHTML = `<div class="track-label">${t}</div>`;
+            const sGrid = document.createElement('div'); sGrid.className = 'step-grid';
+            for(let s=0; s<16; s++) {
+                const btn = document.createElement('div'); btn.className = 'step';
+                btn.onclick = () => { grid[i][s] = !grid[i][s]; btn.classList.toggle('active'); };
+                sGrid.appendChild(btn);
+            }
+            row.appendChild(sGrid); seq.appendChild(row);
+        });
+        drawVisualizer();
+    }
+
+    function togglePlay() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        isPlaying = !isPlaying;
+        document.getElementById('play-btn').innerText = isPlaying ? "STOP_ENGINE" : "PLAY_ENGINE";
+        if (isPlaying) { currentStep = 0; nextNoteTime = audioCtx.currentTime; scheduler(); }
+    }
+
+    function scheduler() {
+        while (nextNoteTime < audioCtx.currentTime + 0.1) {
+            for(let i=0; i<5; i++) { if(grid[i][currentStep]) triggerSynth(i, nextNoteTime); }
+            visualStep(currentStep);
+            nextNoteTime += (60 / tempo / 4);
+            currentStep = (currentStep + 1) % 16;
+        }
+        if (isPlaying) setTimeout(scheduler, 25);
+    }
+
+    function triggerSynth(idx, time) {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = idx < 3 ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(idx === 0 ? 60 : (idx === 1 ? 200 : 800), time);
+        if(idx >= 3) osc.frequency.setValueAtTime(idx === 3 ? 440 : 220, time);
+        g.gain.setValueAtTime(0.2, time); g.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+        osc.connect(g).connect(audioCtx.destination);
+        osc.connect(g).connect(masterDest);
+        osc.start(time); osc.stop(time + 0.1);
+    }
+
+    function visualStep(s) {
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('playing'));
+        document.querySelectorAll(`.track-row`).forEach(r => r.querySelector(`.step:nth-child(${s+1})`).classList.add('playing'));
+    }
+
+    // --- VISUALIZER ---
+    function drawVisualizer() {
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        const data = new Uint8Array(analyzer.frequencyBinCount);
+        function render() {
+            requestAnimationFrame(render);
+            analyzer.getByteTimeDomainData(data);
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,500,80);
+            ctx.strokeStyle = 'var(--blue)'; ctx.beginPath();
+            for(let i=0; i<500; i++) {
+                let v = data[i] / 128.0; let y = v * 40;
+                i === 0 ? ctx.moveTo(i, y) : ctx.lineTo(i, y);
+            }
+            ctx.stroke();
+        }
+        render();
+    }
+
+    // --- RECORDING ---
+    let rec, chunks = [];
+    function toggleRecording() {
+        const btn = document.getElementById('rec-btn');
+        if (rec?.state === 'recording') {
+            rec.stop(); btn.innerText = "START_SESSION_REC"; btn.classList.remove('on');
+        } else {
+            chunks = []; rec = new MediaRecorder(masterDest.stream);
+            rec.ondataavailable = e => chunks.push(e.data);
+            rec.onstop = () => {
+                const b = new Blob(chunks, {type: 'audio/webm'});
+                const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'psalmist_export.webm'; a.click();
+            };
+            rec.start(); btn.innerText = "RECORDING..."; btn.classList.add('on');
+        }
+    }
+
+    function exportCode() { prompt("BEAT_CODE:", btoa(JSON.stringify(grid))); }
+    function updateTempo(v) { tempo = v; document.getElementById('bpm-val').innerText = v; }
+
+    init();
+</script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PITCH_RECOGNITION // Neural Training</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #020408; --panel: rgba(10, 15, 25, 0.9); --blue: #4facfe; 
+            --gold: #ffcc00; --green: #00ff88; --border: #1e2544; --red: #ff4b2b;
+        }
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #020408 100%);
+        }
+
+        .hud-top {
+            display: flex; justify-content: space-between; align-items: center; padding: 15px 40px;
+            font-size: 0.65rem; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.3);
+        }
+
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+
+        /* --- Toggles & Config --- */
+        .controls-row { display: flex; gap: 20px; margin-bottom: 25px; }
+        .config-box { background: rgba(255,255,255,0.05); padding: 10px 15px; border: 1px solid var(--border); display: flex; align-items: center; gap: 10px; border-radius: 4px; }
+        .config-box label { font-size: 0.55rem; color: var(--blue); letter-spacing: 1px; }
+        
+        .toggle-btn { 
+            background: #111; border: 1px solid var(--border); color: #555; 
+            padding: 8px 15px; font-family: 'Orbitron'; font-size: 0.6rem; cursor: pointer; 
+        }
+        .toggle-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.05); }
+
+        /* --- View Containers --- */
+        .view-container { width: 100%; display: flex; justify-content: center; min-height: 160px; }
+        .hidden { display: none !important; }
+
+        /* Screen View */
+        .viz-window {
+            width: 400px; height: 100px; background: rgba(0,0,0,0.6); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center; border-radius: 8px;
+        }
+        .pitch-orb { width: 40px; height: 40px; border-radius: 50%; background: var(--blue); opacity: 0.1; transition: 0.2s; }
+        .pitch-orb.active { opacity: 1; box-shadow: 0 0 30px var(--blue); background: #fff; transform: scale(1.2); }
+
+        /* Piano View */
+        .piano-view { display: flex; gap: 2px; background: #000; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+        .key { width: 30px; height: 100px; background: #ddd; border-radius: 0 0 4px 4px; position: relative; }
+        .key.black { background: #222; width: 20px; height: 65px; margin-left: -10px; margin-right: -10px; z-index: 2; border: 1px solid #000; }
+        .key.active { background: var(--blue) !important; box-shadow: 0 0 15px var(--blue); }
+
+        /* --- Choices --- */
+        .choices-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 15px; width: 550px; margin-top: 30px; }
+        .choice-btn { 
+            background: rgba(10, 17, 26, 0.8); border: 1px solid var(--border); color: #fff; padding: 20px;
+            font-family: 'Orbitron'; font-size: 0.8rem; cursor: pointer; transition: 0.2s; font-weight: 700;
+        }
+        .choice-btn:hover { border-color: var(--blue); }
+
+        .action-btns { margin-top: 30px; display: flex; gap: 15px; }
+        .btn-main { background: var(--blue); color: #000; border: none; padding: 15px 35px; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 4px; }
+        .btn-sub { background: #1a1a1a; color: var(--gold); border: 1px solid var(--gold); padding: 15px 25px; font-family: 'Orbitron'; cursor: pointer; border-radius: 4px; font-size: 0.7rem; }
+    </style>
+</head>
+<body>
+
+    <div class="hud-top">
+        <div>PROTOCOL_01: PITCH_RECOGNITION</div>
+        <div id="global-xp">XP: 00000</div>
+        <a href="pitch_hub.html" style="color: var(--blue); text-decoration: none;">[ EXIT_TO_HUB ]</a>
+    </div>
+
+    <div class="main-stage">
+        
+        <div class="controls-row">
+            <div class="config-box">
+                <label>INTERFACE:</label>
+                <button class="toggle-btn active" id="view-screen" onclick="setView('screen')">SCREEN</button>
+                <button class="toggle-btn" id="view-piano" onclick="setView('piano')">PIANO</button>
+            </div>
+
+            <div class="config-box">
+                <label>COACH_MODE:</label>
+                <button class="toggle-btn" id="coach-toggle" onclick="toggleCoach()">OFF</button>
+            </div>
+
+            <div class="config-box">
+                <label>CHOICES:</label>
+                <select id="choiceCount" onchange="setupButtons()" style="background:#000; color:#fff; border:1px solid var(--border); font-family:Orbitron; font-size:0.6rem;">
+                    <option value="2">2</option>
+                    <option value="4" selected>4</option>
+                    <option value="6">6</option>
+                    <option value="12">12</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="view-container">
+            <div class="viz-window" id="screen-display">
+                <div class="pitch-orb" id="orb"></div>
+            </div>
+            <div class="piano-view hidden" id="piano-display"></div>
+        </div>
+
+        <div class="choices-grid" id="choices-container"></div>
+
+        <div class="action-btns">
+            <button class="btn-main" onclick="generateNewSignal()">NEW_SIGNAL</button>
+            <button class="btn-sub" onclick="playSignal()">REPEAT_SIGNAL</button>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        let currentMidi, coachMode = false, currentView = 'screen';
+
+        function setView(view) {
+            currentView = view;
+            document.getElementById('view-screen').classList.toggle('active', view === 'screen');
+            document.getElementById('view-piano').classList.toggle('active', view === 'piano');
+            document.getElementById('screen-display').classList.toggle('hidden', view !== 'screen');
+            document.getElementById('piano-display').classList.toggle('hidden', view !== 'piano');
+            clearVisuals();
+        }
+
+        function toggleCoach() {
+            coachMode = !coachMode;
+            const btn = document.getElementById('coach-toggle');
+            btn.innerText = coachMode ? "ON" : "OFF";
+            btn.classList.toggle('active', coachMode);
+            if(!coachMode) clearVisuals();
+        }
+
+        function initPiano() {
+            const bed = document.getElementById('piano-display');
+            for(let i=0; i<13; i++) {
+                const k = document.createElement('div');
+                k.className = [1,3,6,8,10].includes(i%12) ? 'key black' : 'key';
+                k.id = `key-${i+60}`;
+                bed.appendChild(k);
+            }
+            refreshXP();
+            generateNewSignal();
+        }
+
+        function generateNewSignal() {
+            currentMidi = 60 + Math.floor(Math.random() * 12);
+            playSignal();
+            setupButtons();
+        }
+
+        function playSignal() {
+            const freq = 440 * Math.pow(2, (currentMidi - 69) / 12);
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.connect(g); g.connect(audioCtx.destination);
+            g.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+            osc.frequency.value = freq;
+            osc.start(); osc.stop(audioCtx.currentTime + 1.2);
+            
+            if(coachMode) triggerVisuals();
+        }
+
+        function triggerVisuals() {
+            clearVisuals();
+            if(currentView === 'screen') {
+                document.getElementById('orb').classList.add('active');
+            } else {
+                const key = document.getElementById(`key-${currentMidi}`);
+                if(key) key.classList.add('active');
+            }
+            setTimeout(clearVisuals, 800);
+        }
+
+        function clearVisuals() {
+            document.getElementById('orb').classList.remove('active');
+            document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+        }
+
+        function setupButtons() {
+            const container = document.getElementById('choices-container');
+            container.innerHTML = '';
+            const count = parseInt(document.getElementById('choiceCount').value);
+            
+            let choices = [currentMidi];
+            while(choices.length < count) {
+                let r = 60 + Math.floor(Math.random() * 12);
+                if(!choices.includes(r)) choices.push(r);
+            }
+            
+            choices.sort((a,b) => a - b).forEach(midi => {
+                const b = document.createElement('button');
+                b.className = 'choice-btn';
+                b.innerText = NOTE_NAMES[midi % 12];
+                b.onclick = () => checkAnswer(midi, b);
+                container.appendChild(b);
+            });
+        }
+
+        function checkAnswer(midi, btn) {
+            if(midi === currentMidi) {
+                btn.style.backgroundColor = "var(--green)";
+                btn.style.color = "#000";
+                addXP(50);
+                setTimeout(generateNewSignal, 700);
+            } else {
+                btn.style.backgroundColor = "var(--red)";
+            }
+        }
+
+        function addXP(amt) {
+            let total = parseInt(localStorage.getItem('totalXP') || 0) + amt;
+            localStorage.setItem('totalXP', total);
+            refreshXP();
+        }
+
+        function refreshXP() {
+            document.getElementById('global-xp').innerText = `XP: ${localStorage.getItem('totalXP') || '00000'}`;
+        }
+
+        window.onload = initPiano;
+    </script>
+</body>
+</html>

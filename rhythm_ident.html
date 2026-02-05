@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RHYTHM_IDENT // Neural LMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="lms_core.js"></script>
+    <style>
+        :root { 
+            --bg: #05070a; --gold: #ffcc00; --blue: #4facfe; 
+            --border: #1e2544; --green: #00ff88; --red: #ff4b2b; 
+        }
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden;
+        }
+        
+        .container { 
+            width: 1100px; background: rgba(10, 15, 25, 0.98); border: 1px solid var(--border); 
+            padding: 30px; position: relative; display: grid; grid-template-columns: 1fr 380px; gap: 20px; 
+            box-shadow: 0 0 50px #000; 
+        }
+        
+        .main-panel { border-right: 1px solid #111; padding-right: 20px; }
+        .side-panel { background: rgba(0,0,0,0.4); padding: 25px; border: 1px solid #222; border-radius: 4px; display: flex; flex-direction: column; }
+
+        /* HUD */
+        .top-hud { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-hub { background: none; border: 1px solid #444; color: #888; padding: 8px 15px; cursor: pointer; text-decoration: none; font-size: 0.6rem; border-radius: 2px; }
+        .xp-display { color: var(--gold); font-size: 1.1rem; font-weight: 900; letter-spacing: 2px; }
+        .level-tag { color: var(--blue); font-size: 0.7rem; border: 1px solid var(--blue); padding: 2px 8px; border-radius: 10px; margin-left: 10px; }
+
+        /* Visualization Area */
+        .display-area { 
+            height: 250px; background: #000; margin-bottom: 20px; border: 1px solid #111; 
+            position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+        }
+        #rhythm-visual { font-size: 6rem; color: var(--blue); text-shadow: 0 0 25px var(--blue); transition: 0.1s; }
+        #pedagogy-tip { font-size: 0.7rem; color: #666; margin-top: 15px; height: 1.2em; text-transform: uppercase; letter-spacing: 1px; text-align: center; max-width: 80%; }
+
+        /* Controls */
+        .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .control-group { background: #111; padding: 15px; border: 1px solid #222; border-radius: 4px; }
+        .label-mini { font-size: 0.6rem; color: #666; display: block; margin-bottom: 10px; letter-spacing: 2px; font-weight: 900; }
+        
+        input[type=range] { width: 100%; accent-color: var(--blue); cursor: pointer; }
+
+        .switch-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+        .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #222; transition: .4s; border-radius: 20px; }
+        input:checked + .slider { background-color: var(--blue); }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        .pool-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+        .pool-btn { 
+            flex: 1; background: #111; border: 1px solid #333; color: #666; padding: 8px; 
+            font-family: 'Orbitron'; font-size: 0.7rem; cursor: pointer; transition: 0.3s;
+        }
+        .pool-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(79, 172, 254, 0.1); }
+
+        .btn-gen { background: var(--blue); color: #000; border: none; padding: 20px; font-weight: 900; font-family: 'Orbitron'; cursor: pointer; width: 100%; letter-spacing: 2px; transition: 0.2s; }
+        .btn-gen:hover { background: #fff; box-shadow: 0 0 20px var(--blue); }
+        .btn-stop { background: #1a0505; color: var(--red); border: 1px solid var(--red); cursor: pointer; font-family: 'Orbitron'; font-size: 0.7rem; width: 100%; padding: 8px; margin-top: 10px;}
+
+        /* Matrix */
+        #choice-container { flex-grow: 1; }
+        .choice-btn { 
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: #fff; 
+            padding: 18px; font-size: 0.7rem; text-align: left; width: 100%; margin-bottom: 8px; 
+            cursor: pointer; font-family: 'Orbitron'; transition: 0.2s;
+        }
+        .choice-btn:hover { border-color: var(--blue); background: rgba(79, 172, 254, 0.1); }
+        .choice-btn.correct { background: rgba(0, 255, 136, 0.2) !important; border-color: var(--green) !important; color: var(--green); }
+        .choice-btn.incorrect { background: rgba(255, 75, 43, 0.2) !important; border-color: var(--red) !important; color: var(--red); animation: shake 0.3s; }
+        
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+    </style>
+</head>
+<body>
+
+<div class="container" id="game-container">
+    <div class="main-panel">
+        <div class="top-hud">
+            <div>
+                <a href="rhythm_hub.html" class="btn-hub">← HUB</a>
+                <span class="level-tag">PHASE <span id="lvl-val">1</span></span>
+            </div>
+            <div class="xp-display">XP: <span id="xp-val">00000</span></div>
+        </div>
+
+        <div class="display-area">
+            <div id="rhythm-visual">--</div>
+            <div id="pedagogy-tip">SYSTEM INITIALIZED // SELECT GENERATE</div>
+        </div>
+
+        <div class="control-row">
+            <div class="control-group">
+                <span class="label-mini">TEMPO: <span id="bpm-val" style="color:var(--blue)">80</span> BPM</span>
+                <input type="range" id="tempo-slider" min="40" max="180" value="80">
+                <div class="switch-row" style="margin-top:15px;">
+                    <span class="label-mini" style="margin:0">METRONOME</span>
+                    <label class="switch"><input type="checkbox" id="metro-toggle" onchange="toggleMetronome()"><span class="slider"></span></label>
+                </div>
+            </div>
+            <div class="control-group">
+                <div class="switch-row">
+                    <span class="label-mini" style="margin:0">HARD_MODE</span>
+                    <label class="switch"><input type="checkbox" id="hard-toggle" onchange="toggleHardMode()"><span class="slider"></span></label>
+                </div>
+                <button class="btn-stop" onclick="stopAll()">STOP_ALL_SIGNALS</button>
+            </div>
+        </div>
+        <button class="btn-gen" onclick="generateChallenge()">GENERATE_NEW_CHALLENGE</button>
+    </div>
+
+    <div class="side-panel">
+        <span class="label-mini">MATRIX_COMPLEXITY (OPTIONS):</span>
+        <div class="pool-selector">
+            <button class="pool-btn" onclick="setPoolSize(2)">2</button>
+            <button class="pool-btn active" onclick="setPoolSize(4)">4</button>
+            <button class="pool-btn" onclick="setPoolSize(6)">6</button>
+        </div>
+        <span class="label-mini">SELECTION_MATRIX:</span>
+        <div id="choice-container"></div>
+    </div>
+</div>
+
+<script>
+    let audioCtx, currentPattern, isPlaying = false, loopCount = 0;
+    let bpm = 80, poolSize = 4, isHardMode = false;
+    let timeoutRefs = [], metroInterval;
+
+    // The LMS Rhythm Library - Categorized by Level Requirement
+    const library = [
+        { name: 'QUARTER NOTE', times: [0], sym: '♩', lvl: 1, tip: "Standard pulse. One sound per beat." },
+        { name: 'PAIR OF 8THS', times: [0, 0.5], sym: '♫', lvl: 1, tip: "Divided beat. Two equal sounds per pulse." },
+        { name: '4 SIXTEENTHS', times: [0, 0.25, 0.5, 0.75], sym: '♬', lvl: 2, tip: "High density. Four rapid sounds per beat." },
+        { name: '8TH TRIPLET', times: [0, 0.33, 0.66], sym: '3', lvl: 3, tip: "Rolling pulse. Three equal sounds per beat." },
+        { name: 'DOTTED 8TH + 16TH', times: [0, 0.75], sym: '♩.', lvl: 4, tip: "Galloping rhythm. A long sound followed by a short one." },
+        { name: '8TH-4TH-8TH', times: [0, 0.5, 1.5], sym: 'Syn', lvl: 5, tip: "Syncopation. The pulse shifts to the 'weak' beats." }
+    ];
+
+    function updateLMSUI() {
+        document.getElementById('xp-val').innerText = LMS.profile.xp.toString().padStart(5, '0');
+        document.getElementById('lvl-val').innerText = LMS.profile.level;
+    }
+    updateLMSUI();
+
+    function initAudio() { if (!audioCtx || audioCtx.state === 'closed') audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+
+    function setPoolSize(n) { 
+        poolSize = n; 
+        document.querySelectorAll('.pool-btn').forEach(b => b.classList.toggle('active', parseInt(b.innerText) === n));
+        generateChallenge(); 
+    }
+
+    function toggleHardMode() { 
+        isHardMode = document.getElementById('hard-toggle').checked; 
+        document.getElementById('game-container').classList.toggle('hard-mode-active', isHardMode);
+    }
+
+    function toggleMetronome() { 
+        if (document.getElementById('metro-toggle').checked) { initAudio(); startMetronome(); } 
+        else { clearInterval(metroInterval); } 
+    }
+
+    function startMetronome() {
+        clearInterval(metroInterval);
+        let nextTick = audioCtx.currentTime;
+        metroInterval = setInterval(() => {
+            const beatLen = 60 / bpm;
+            while (nextTick < audioCtx.currentTime + 0.1) {
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.frequency.setValueAtTime(1200, nextTick); // High click
+                g.gain.setValueAtTime(0.04, nextTick);
+                g.gain.exponentialRampToValueAtTime(0.001, nextTick + 0.05);
+                osc.connect(g); g.connect(audioCtx.destination);
+                osc.start(nextTick); osc.stop(nextTick + 0.05);
+                nextTick += beatLen;
+            }
+        }, 25);
+    }
+
+    function stopAll() {
+        isPlaying = false;
+        clearInterval(metroInterval);
+        document.getElementById('metro-toggle').checked = false;
+        timeoutRefs.forEach(clearTimeout);
+        if (audioCtx) { audioCtx.close().then(() => audioCtx = null); }
+    }
+
+    function generateChallenge() {
+        isPlaying = false;
+        timeoutRefs.forEach(clearTimeout);
+        initAudio();
+        
+        // LMS Filter: Only show rhythms the user has unlocked
+        const available = library.filter(r => LMS.isUnlocked(r.lvl));
+        let shuffled = [...available].sort(() => 0.5 - Math.random());
+        let choices = shuffled.slice(0, Math.min(poolSize, shuffled.length));
+        currentPattern = choices[Math.floor(Math.random() * choices.length)];
+        
+        const container = document.getElementById('choice-container');
+        container.innerHTML = '';
+        choices.forEach(p => {
+            let btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.innerText = p.name;
+            btn.onclick = () => check(p.name, btn);
+            container.appendChild(btn);
+        });
+
+        isPlaying = true; loopCount = 0;
+        document.getElementById('pedagogy-tip').innerText = "IDENTIFYING SIGNAL...";
+        playLoop();
+    }
+
+    function playLoop() {
+        if (!isPlaying || loopCount >= 4) { isPlaying = false; return; }
+        
+        document.getElementById('rhythm-visual').innerText = isHardMode ? "REDACTED" : currentPattern.sym;
+        const beatLen = 60 / bpm;
+        const startTime = audioCtx.currentTime + 0.1;
+
+        currentPattern.times.forEach(t => {
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.type = (t === 0) ? 'triangle' : 'sine';
+            osc.frequency.setValueAtTime(t === 0 ? 880 : 440, startTime + (t * beatLen));
+            g.gain.setValueAtTime(0, startTime + (t * beatLen));
+            g.gain.linearRampToValueAtTime(0.2, startTime + (t * beatLen) + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.001, startTime + (t * beatLen) + 0.2);
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.start(startTime + (t * beatLen)); osc.stop(startTime + (t * beatLen) + 0.2);
+
+            timeoutRefs.push(setTimeout(() => {
+                const v = document.getElementById('rhythm-visual');
+                if(v && isPlaying) { 
+                    v.style.transform = 'scale(1.2)'; 
+                    v.style.color = '#fff';
+                    setTimeout(() => { v.style.transform = 'scale(1)'; v.style.color = ''; }, 100); 
+                }
+            }, (t * beatLen + 0.1) * 1000));
+        });
+
+        loopCount++;
+        timeoutRefs.push(setTimeout(playLoop, (beatLen * 2) * 1000));
+    }
+
+    function check(name, btn) {
+        if(name === currentPattern.name) {
+            btn.classList.add('correct');
+            // LMS AWARD: Recognition skill
+            LMS.award('recognition', isHardMode ? 150 : 50);
+            updateLMSUI();
+            isPlaying = false;
+            setTimeout(generateChallenge, 1000);
+        } else {
+            btn.classList.add('incorrect');
+            // LMS PEDAGOGY: Show the hint
+            document.getElementById('pedagogy-tip').innerText = "HINT: " + currentPattern.tip;
+            setTimeout(() => btn.classList.remove('incorrect'), 500);
+        }
+    }
+
+    document.getElementById('tempo-slider').oninput = (e) => {
+        bpm = e.target.value; 
+        document.getElementById('bpm-val').innerText = bpm;
+        if (document.getElementById('metro-toggle').checked) startMetronome();
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TEMPO_STRIKE // Rhythm Protocol R1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #020408; --green: #00ff88; --border: #1e2544; }
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
+        }
+        .hud { position: absolute; top: 20px; width: 90%; display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--green); letter-spacing: 2px; }
+        .strike-zone {
+            width: 300px; height: 300px; border: 2px solid var(--border); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; position: relative;
+            cursor: pointer; transition: 0.1s;
+        }
+        .strike-zone:active { border-color: var(--green); transform: scale(0.98); box-shadow: 0 0 30px rgba(0,255,136,0.2); }
+        .pulse-ring {
+            position: absolute; border: 1px solid var(--green); border-radius: 50%;
+            width: 100%; height: 100%; opacity: 0; pointer-events: none;
+        }
+        .accuracy-readout { margin-top: 40px; text-align: center; }
+        #feedback { font-size: 2rem; font-weight: 900; color: var(--green); height: 50px; }
+        .btn-start { background: transparent; border: 1px solid var(--green); color: var(--green); padding: 15px 40px; cursor: pointer; font-family: 'Orbitron'; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="hud">
+        <div>PROTOCOL_R1: <span style="color:#fff">TEMPO_STRIKE</span></div>
+        <div>TARGET_BPM: <span id="bpm-val" style="color:#fff">100</span></div>
+    </div>
+
+    <button class="btn-start" onclick="startTrial()">INITIATE_TRIAL</button>
+
+    <div class="strike-zone" id="pad" onmousedown="handleStrike()">
+        <div class="pulse-ring" id="ring"></div>
+        <div style="font-size: 0.6rem; color: #555;">STRIKE_HERE</div>
+    </div>
+
+    <div class="accuracy-readout">
+        <div id="feedback">READY?</div>
+        <div style="font-size: 0.6rem; color: #8892b0; margin-top: 10px;">AVERAGE_OFFSET: <span id="offset">0</span>ms</div>
+    </div>
+
+    <script>
+        let bpm = 100;
+        let beatInterval = (60 / bpm) * 1000;
+        let startTime;
+        let strikes = [];
+        let isRunning = false;
+
+        function startTrial() {
+            isRunning = true;
+            strikes = [];
+            bpm = 80 + Math.floor(Math.random() * 60);
+            beatInterval = (60 / bpm) * 1000;
+            document.getElementById('bpm-val').innerText = bpm;
+            document.getElementById('feedback').innerText = "SYNCING...";
+            
+            // Audio Cue for first 4 beats
+            let count = 0;
+            const audioCtx = new AudioContext();
+            const timer = setInterval(() => {
+                const osc = audioCtx.createOscillator();
+                osc.connect(audioCtx.destination);
+                osc.frequency.value = 880;
+                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+                
+                count++;
+                if (count === 4) {
+                    clearInterval(timer);
+                    startTime = Date.now();
+                    document.getElementById('feedback').innerText = "STRIKE!";
+                }
+            }, beatInterval);
+        }
+
+        function handleStrike() {
+            if (!isRunning) return;
+            const now = Date.now();
+            const elapsed = now - startTime;
+            const target = Math.round(elapsed / beatInterval) * beatInterval;
+            const diff = Math.abs(elapsed - target);
+            
+            // Visual Feedback
+            const ring = document.getElementById('ring');
+            ring.style.opacity = "1";
+            ring.style.transform = "scale(1.5)";
+            setTimeout(() => { 
+                ring.style.opacity = "0"; 
+                ring.style.transform = "scale(1)";
+            }, 200);
+
+            // Scoring
+            let rating = "PERFECT";
+            if (diff > 30) rating = "GREAT";
+            if (diff > 70) rating = "GOOD";
+            if (diff > 120) rating = "OFF_BEAT";
+            
+            document.getElementById('feedback').innerText = rating;
+            document.getElementById('offset').innerText = Math.round(diff);
+        }
+    </script>
+</body>
+</html>

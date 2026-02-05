@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grand Station Pro | Psalmist Ninja</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #030508; --panel: #0a0e17; --blue: #4facfe; 
+            --gold: #ffcc00; --green: #00ff88; --border: #1e2544; --red: #ff4b2b;
+            --key-white: linear-gradient(to bottom, #eee 0%, #fff 100%);
+            --key-black: linear-gradient(to bottom, #111 0%, #333 100%);
+        }
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            overflow: hidden; display: flex; flex-direction: column; height: 100vh;
+        }
+
+        /* --- Header & HUD --- */
+        .piano-header { 
+            padding: 10px 30px; background: rgba(10, 14, 23, 0.98);
+            border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+        }
+
+        /* --- Grand Staff Display --- */
+        .staff-display {
+            width: 480px; height: 150px; background: #fff; border: 2px solid var(--blue);
+            position: relative; border-radius: 4px; box-shadow: 0 0 15px rgba(79, 172, 254, 0.4);
+        }
+        canvas { width: 100%; height: 100%; }
+
+        .engine-controls { display: flex; gap: 12px; align-items: center; }
+        .control-group { display: flex; flex-direction: column; gap: 2px; }
+        .control-group label { font-size: 0.4rem; color: var(--blue); letter-spacing: 1px; }
+
+        select, button, .btn-exit {
+            background: #000; color: var(--gold); border: 1px solid var(--border);
+            padding: 5px 8px; font-family: 'Orbitron'; font-size: 0.5rem; border-radius: 4px; cursor: pointer;
+            text-decoration: none; text-align: center;
+        }
+        .btn-rec.active { background: var(--red); color: #000; box-shadow: 0 0 10px var(--red); }
+        .btn-exit { color: var(--red); border-color: var(--red); font-weight: 900; }
+
+        /* --- Piano Layout --- */
+        .viewport-piano {
+            flex-grow: 1; overflow-x: auto; overflow-y: hidden;
+            background: rgba(0,0,0,0.6); display: flex; align-items: flex-end;
+            padding-bottom: 20px; scroll-behavior: smooth;
+        }
+        .piano-keys { display: flex; position: relative; height: 340px; padding: 0 100px; }
+
+        .key {
+            width: 52px; height: 320px; background: var(--key-white);
+            border: 1px solid #ccc; border-radius: 0 0 5px 5px;
+            position: relative; cursor: pointer; flex-shrink: 0; z-index: 1;
+        }
+        .key.black {
+            width: 34px; height: 200px; background: var(--key-black);
+            margin-left: -17px; margin-right: -17px; z-index: 2;
+            border: 1px solid #000; border-radius: 0 0 3px 3px;
+        }
+        .key.active { background: var(--blue) !important; box-shadow: 0 0 20px var(--blue); transform: translateY(3px); }
+        .key.learn-hint { background: var(--green) !important; box-shadow: 0 0 30px var(--green); }
+    </style>
+</head>
+<body>
+
+    <div class="piano-header">
+        <div class="engine-controls">
+            <a href="hub.html" class="btn-exit">RETURN_TO_HUB</a>
+            <div class="control-group">
+                <label>SONG_LIBRARY</label>
+                <select id="songSelect">
+                    <option value="">- LOAD PIECE -</option>
+                    <option value="fur_elise">Für Elise</option>
+                    <option value="river_flows">River Flows in You</option>
+                    <option value="moonlight">Moonlight Sonata</option>
+                    <option value="canon_d">Canon in D</option>
+                    <option value="claire_lune">Clair de Lune</option>
+                    <option value="nocturne">Nocturne No.2</option>
+                    <option value="gymnopedie">Gymnopédie No.1</option>
+                    <option value="turkish">Turkish March</option>
+                    <option value="interstellar">Interstellar</option>
+                    <option value="swan">Swan Lake</option>
+                </select>
+            </div>
+            <button onclick="runTutor()" id="tutorBtn">LEARN_MODE</button>
+        </div>
+
+        <div class="staff-display">
+            <canvas id="staffCanvas"></canvas>
+        </div>
+
+        <div class="engine-controls">
+            <button class="btn-rec" id="recBtn" onclick="toggleRecord()">REC_SIGNAL</button>
+            <div class="control-group">
+                <label>SYNTH_TONE</label>
+                <select id="toneSelect">
+                    <option value="sine">PURE_GRAND</option>
+                    <option value="triangle">MELLOW_PAD</option>
+                    <option value="sawtooth">NEURAL_SYNTH</option>
+                    <option value="square">BIT_CRUSHER</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="viewport-piano" id="scroller">
+        <div class="piano-keys" id="keyboard"></div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const activeVoices = new Map();
+        let isRecording = false;
+        let midiLog = [];
+
+        const REPERTOIRE = {
+            fur_elise: [76,75,76,75,76,71,74,72,69,60,64,69,71],
+            river_flows: [81,80,81,80,81,76,79,77,74,76,77],
+            moonlight: [49,52,56,49,52,56,49,52,56,48,52,56],
+            canon_d: [74,73,71,69,67,66,64,62],
+            interstellar: [64,67,64,67,64,67,62,67,62,67],
+            claire_lune: [73,75,76,80,78,73,75,76,80],
+            nocturne: [70,82,80,82,78,77,75,73,71],
+            gymnopedie: [66,69,73,66,69,73,67,71,74],
+            turkish: [71,69,68,69,71,73,74,76,77,76,74,73],
+            swan: [62,67,69,70,72,70,69,67,62]
+        };
+
+        function init88() {
+            const kb = document.getElementById('keyboard');
+            for (let i = 21; i <= 108; i++) {
+                const isBlack = [1,3,6,8,10].includes(i % 12);
+                const k = document.createElement('div');
+                k.className = `key ${isBlack ? 'black' : 'white'}`;
+                k.dataset.midi = i;
+                k.onmousedown = (e) => { e.preventDefault(); noteOn(i); };
+                k.onmouseup = () => noteOff(i);
+                k.onmouseleave = () => noteOff(i);
+                kb.appendChild(k);
+            }
+            document.getElementById('scroller').scrollLeft = 1600;
+            drawStaff([]);
+        }
+
+        function noteOn(midi) {
+            if (activeVoices.has(midi)) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = document.getElementById('toneSelect').value;
+            osc.frequency.setValueAtTime(440 * Math.pow(2, (midi - 69) / 12), audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start();
+            activeVoices.set(midi, {osc, gain});
+            document.querySelector(`[data-midi="${midi}"]`)?.classList.add('active');
+            
+            if(isRecording) midiLog.push({n: midi, t: audioCtx.currentTime});
+            drawStaff(Array.from(activeVoices.keys()));
+        }
+
+        function noteOff(midi) {
+            const v = activeVoices.get(midi);
+            if(v) {
+                v.gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                setTimeout(() => { v.osc.stop(); activeVoices.delete(midi); drawStaff(Array.from(activeVoices.keys())); }, 300);
+            }
+            document.querySelector(`[data-midi="${midi}"]`)?.classList.remove('active');
+        }
+
+        // --- Grand Staff & Ledger Logic ---
+        const canvas = document.getElementById('staffCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawStaff(activeMidis) {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.strokeStyle = "#222"; ctx.lineWidth = 1;
+            
+            // Draw Main Staves
+            for(let i=0; i<5; i++) {
+                ctx.beginPath(); ctx.moveTo(50, 35 + i*8); ctx.lineTo(430, 35 + i*8); ctx.stroke(); // Treble
+                ctx.beginPath(); ctx.moveTo(50, 85 + i*8); ctx.lineTo(430, 85 + i*8); ctx.stroke(); // Bass
+            }
+            ctx.fillStyle = "#000"; ctx.font = "24px Arial"; ctx.fillText("𝄞", 55, 62); ctx.fillText("𝄢", 55, 112);
+
+            // Draw Active Notes & Ledger Lines
+            activeMidis.forEach(midi => {
+                ctx.fillStyle = "red";
+                let y;
+                if (midi >= 60) { // Treble
+                    y = 67 - (midi - 60) * 4; 
+                    // Treble Ledger Lines
+                    if (midi <= 60) drawLedger(150, 67); // Middle C
+                    if (midi >= 81) for(let l=81; l<=midi; l+=2) drawLedger(150, 67 - (l-60)*4);
+                } else { // Bass
+                    y = 117 - (midi - 40) * 4;
+                    // Bass Ledger Lines
+                    if (midi >= 60) drawLedger(150, 85 - 8); // Middle C (Bass side)
+                    if (midi <= 41) for(let l=41; l>=midi; l-=2) drawLedger(150, 117 - (l-40)*4);
+                }
+                ctx.beginPath(); ctx.ellipse(150, y, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
+            });
+        }
+
+        function drawLedger(x, y) {
+            ctx.strokeStyle = "#000"; ctx.beginPath();
+            ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y); ctx.stroke();
+        }
+
+        function toggleRecord() {
+            isRecording = !isRecording;
+            const btn = document.getElementById('recBtn');
+            btn.classList.toggle('active');
+            btn.innerText = isRecording ? "STOP_SYNC" : "REC_SIGNAL";
+        }
+
+        async function runTutor() {
+            const s = document.getElementById('songSelect').value;
+            if(!s) return;
+            const notes = REPERTOIRE[s];
+            for(let m of notes) {
+                const el = document.querySelector(`[data-midi="${m}"]`);
+                el.classList.add('learn-hint');
+                noteOn(m);
+                await new Promise(r => setTimeout(r, 600));
+                noteOff(m);
+                el.classList.remove('learn-hint');
+                await new Promise(r => setTimeout(r, 200));
+            }
+        }
+
+        window.onload = init88;
+    </script>
+</body>
+</html>

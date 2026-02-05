@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PITCH_HUB // Neural Frequency Training</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #020408; --panel: rgba(10, 15, 25, 0.95); --blue: #4facfe; 
+            --gold: #ffcc00; --green: #00ff88; --border: #1e2544; --red: #ff4b2b;
+        }
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #020408 100%);
+        }
+
+        /* --- Global Header --- */
+        .hub-header {
+            width: 100%; max-width: 1100px; padding: 30px; display: flex; 
+            justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--border);
+        }
+        .hub-title h1 { margin: 0; font-size: 2rem; letter-spacing: 8px; color: var(--blue); }
+        .hub-title p { margin: 5px 0 0 0; font-size: 0.6rem; color: #555; letter-spacing: 3px; }
+
+        .xp-hud { text-align: right; }
+        .xp-label { font-size: 0.6rem; color: var(--gold); letter-spacing: 2px; }
+        .xp-value { font-size: 1.5rem; font-weight: 900; color: #fff; }
+
+        /* --- Level Grid --- */
+        .module-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px;
+            width: 90%; max-width: 1000px; margin-top: 40px;
+        }
+
+        .level-card {
+            background: var(--panel); border: 1px solid var(--border); padding: 30px;
+            text-decoration: none; color: inherit; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 15px;
+        }
+
+        .level-card:hover { border-color: var(--blue); transform: scale(1.02); box-shadow: 0 0 30px rgba(79, 172, 254, 0.2); }
+        
+        .level-num { font-size: 0.7rem; color: var(--blue); font-weight: 900; opacity: 0.7; }
+        .level-name { font-size: 1.2rem; font-weight: 900; letter-spacing: 2px; }
+        .level-desc { font-size: 0.7rem; color: #777; line-height: 1.6; }
+
+        /* --- Locked State --- */
+        .locked { filter: grayscale(1) opacity(0.5); cursor: not-allowed; }
+        .locked::after {
+            content: "LEVEL_LOCKED"; position: absolute; top: 15px; right: 15px;
+            font-size: 0.5rem; background: var(--red); color: #fff; padding: 4px 8px; border-radius: 2px;
+        }
+
+        /* --- Progress Bar --- */
+        .progress-mini { width: 100%; height: 4px; background: #000; margin-top: 10px; }
+        .progress-fill { height: 100%; background: var(--blue); box-shadow: 0 0 10px var(--blue); }
+
+        /* --- Aiden Coach --- */
+        .coach-footer {
+            width: 100%; max-width: 1000px; margin-top: auto; padding: 40px 0;
+            display: flex; gap: 20px; align-items: center; border-top: 1px solid #111;
+        }
+        .coach-avatar { 
+            width: 50px; height: 50px; border: 1px solid var(--green); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: var(--green); font-weight: 900;
+        }
+        .coach-msg { font-size: 0.75rem; color: #888; }
+        
+        .nav-btn {
+            background: none; border: 1px solid #444; color: #888; padding: 10px 20px;
+            font-family: 'Orbitron'; font-size: 0.6rem; cursor: pointer; text-decoration: none; margin-bottom: 20px;
+        }
+        .nav-btn:hover { border-color: var(--blue); color: var(--blue); }
+    </style>
+</head>
+<body>
+
+    <header class="hub-header">
+        <div class="hub-title">
+            <h1>PITCH_IDENT</h1>
+            <p>FREQUENCY RECOGNITION INTERFACE</p>
+        </div>
+        <div class="xp-hud">
+            <div class="xp-label">CURRENT_RESONANCE</div>
+            <div class="xp-value" id="total-xp">01685 XP</div>
+        </div>
+    </header>
+
+    <div class="module-grid">
+        <a href="pitch_recognition.html" class="level-card">
+            <div class="level-num">PROTOCOL_01</div>
+            <div class="level-name">PITCH_IDENT</div>
+            <div class="level-desc">Isolate and identify individual chromatic frequencies. Master the 12-tone neural map.</div>
+            <div class="progress-mini"><div class="progress-fill" style="width: 100%;"></div></div>
+        </a>
+
+        <a href="interval_relations.html" class="level-card" id="card-intervals">
+            <div class="level-num">PROTOCOL_02</div>
+            <div class="level-name">INTERVAL_RELATIONS</div>
+            <div class="level-desc">Calculate the harmonic distance between two concurrent signals. Perfect 5ths, Octaves, and 3rds.</div>
+            <div class="progress-mini"><div class="progress-fill" style="width: 45%;"></div></div>
+        </a>
+
+        <a href="modal_logic.html" class="level-card" id="card-modal">
+            <div class="level-num">PROTOCOL_03</div>
+            <div class="level-name">MODAL_LOGIC</div>
+            <div class="level-desc">Advanced scale identification. Distinguish between Ionian, Dorian, and Mixolydian signatures.</div>
+            <div class="progress-mini"><div class="progress-fill" style="width: 10%;"></div></div>
+        </a>
+
+        <a href="battle_engine.html" class="level-card locked" id="card-battle">
+            <div class="level-num">PROTOCOL_04</div>
+            <div class="level-name">BATTLE_ENGINE</div>
+            <div class="level-desc">Combat-ready ear training. Defeat rival signals by identifying frequency shifts in real-time.</div>
+            <div class="progress-mini"><div class="progress-fill" style="width: 0%;"></div></div>
+        </a>
+    </div>
+
+    <div class="coach-footer">
+        <div class="coach-avatar">A</div>
+        <div class="coach-msg">
+            <b style="color:var(--green)">INSTRUCTOR_AIDEN:</b> "Pitch mastery is the foundation of all harmonic synergy. Your neural map is currently 62% stable. Focus on Interval Relations to unlock the Battle Engine."
+        </div>
+    </div>
+
+    <a href="hub.html" class="nav-btn">← RETURN_TO_COMMAND_CENTER</a>
+
+    <script>
+        function updateHub() {
+            const xp = parseInt(localStorage.getItem('totalXP') || 0);
+            document.getElementById('total-xp').innerText = xp.toLocaleString() + " XP";
+
+            // Logic to unlock levels based on XP (e.g., Battle Engine requires 2000 XP)
+            if (xp >= 2000) {
+                const battleCard = document.getElementById('card-battle');
+                battleCard.classList.remove('locked');
+            }
+        }
+        window.onload = updateHub;
+    </script>
+</body>
+</html>

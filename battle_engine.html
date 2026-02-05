@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle Engine | Psalmist Ninja Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #030508; --panel: #0a0e17; --blue: #4facfe; 
+            --red: #ff4b2b; --border: #1e2544; --green: #00ff88; --gold: #ffcc00; --pink: #e94560;
+        }
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 0 0 40px 0;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #030508 100%);
+        }
+
+        /* --- Navigation Header --- */
+        .nav-header {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            justify-content: flex-end;
+            padding: 20px 0;
+            margin-bottom: 20px;
+        }
+
+        .btn-return {
+            background: none;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 10px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+
+        .btn-return:hover {
+            background: rgba(255, 204, 0, 0.1);
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .battle-arena { 
+            width: 90%; max-width: 900px; background: var(--panel); border: 1px solid var(--border); 
+            border-radius: 30px; padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+        }
+
+        .stats-row { display: flex; justify-content: space-between; margin-bottom: 40px; }
+        .stat-group { width: 42%; }
+        .bar-bg { height: 6px; background: #111; border-radius: 3px; overflow: hidden; position: relative; }
+        .bar-fill { height: 100%; width: 0%; transition: 0.6s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+
+        .signal-zone { text-align: center; margin: 40px 0; }
+        .big-q { 
+            font-size: 8rem; font-weight: 900; color: var(--blue); 
+            text-shadow: 0 0 50px rgba(79, 172, 254, 0.5); margin: 0; 
+        }
+        
+        .action-row { display: flex; flex-direction: column; gap: 15px; align-items: center; }
+
+        .strike-btn { 
+            width: 100%; max-width: 400px; background: var(--blue); color: #000; border: none; 
+            padding: 20px; border-radius: 12px; font-family: 'Orbitron'; font-weight: 900; 
+            cursor: pointer; letter-spacing: 5px; transition: 0.3s;
+        }
+        .strike-btn:hover:not(:disabled) { box-shadow: 0 0 30px var(--blue); transform: scale(1.02); }
+
+        .repeat-btn {
+            background: none; border: 1px solid var(--gold); color: var(--gold);
+            padding: 8px 20px; border-radius: 6px; cursor: pointer; font-family: 'Orbitron';
+            font-size: 0.6rem; letter-spacing: 2px; transition: 0.3s;
+        }
+        .repeat-btn:hover { background: rgba(255, 204, 0, 0.1); }
+        .repeat-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .input-grid { 
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; 
+            margin-top: 40px; 
+        }
+        .note-btn { 
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border); 
+            color: #fff; padding: 20px; border-radius: 10px; cursor: pointer; 
+            font-family: 'Orbitron'; font-size: 0.8rem; transition: 0.2s;
+        }
+        .note-btn.flash-green { background: var(--green) !important; color: #000 !important; }
+        .note-btn.flash-red { background: var(--pink) !important; color: #000 !important; }
+
+        .footer-nav { margin-top: 40px; }
+        .footer-nav a { color: var(--red); text-decoration: none; border: 1px solid var(--red); padding: 10px 20px; border-radius: 5px; font-size: 0.7rem; letter-spacing: 2px; transition: 0.3s; }
+        .footer-nav a:hover { background: rgba(255, 75, 43, 0.1); box-shadow: 0 0 15px rgba(255, 75, 43, 0.2); }
+    </style>
+</head>
+<body>
+
+    <nav class="nav-header">
+        <a href="pitch_hub.html" class="btn-return">Return to Hub</a>
+    </nav>
+
+    <div id="missionHeader" style="color:var(--gold); margin-bottom: 20px; letter-spacing: 2px; font-size: 0.8rem;">
+        MISSION: NEURAL_BATTLE_ENGAGED
+    </div>
+
+    <div class="battle-arena">
+        <div class="stats-row">
+            <div class="stat-group">
+                <div style="font-size: 0.6rem; margin-bottom: 5px; letter-spacing: 2px;">YOU (XP: <span id="currentXP">0</span>)</div>
+                <div class="bar-bg"><div id="pBar" class="bar-fill" style="background: var(--blue);"></div></div>
+            </div>
+            <div class="stat-group" style="text-align: right;">
+                <div style="font-size: 0.6rem; margin-bottom: 5px; color: var(--red); letter-spacing: 2px;">RIVAL_AI</div>
+                <div class="bar-bg"><div id="rBar" class="bar-fill" style="background: var(--red);"></div></div>
+            </div>
+        </div>
+
+        <div class="signal-zone">
+            <h1 class="big-q" id="displayChar">?</h1>
+            <div class="action-row">
+                <button id="strikeBtn" class="strike-btn" onclick="playNewSignal()">STRIKE SIGNAL</button>
+                <button id="repeatBtn" class="repeat-btn" onclick="repeatSignal()" disabled>NEURAL_REPLAY (-5 XP)</button>
+            </div>
+        </div>
+
+        <div class="input-grid" id="noteGrid"></div>
+    </div>
+
+    <div class="footer-nav">
+        <a href="pitch_hub.html">ABORT_MISSION</a>
+    </div>
+
+    <script>
+        let audioCtx, currentTarget, playerProgress = 0, rivalProgress = 0, isPlaying = false;
+        let waitingForAnswer = false;
+
+        const notes = [
+            { n: "C", f: 261.63 }, { n: "C#", f: 277.18 }, { n: "D", f: 293.66 }, { n: "D#", f: 311.13 },
+            { n: "E", f: 329.63 }, { n: "F", f: 349.23 }, { n: "F#", f: 369.99 }, { n: "G", f: 391.99 },
+            { n: "G#", f: 415.30 }, { n: "A", f: 440.00 }, { n: "A#", f: 466.16 }, { n: "B", f: 493.88 }
+        ];
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const missionType = urlParams.get('mission');
+
+        function updateXPDisplay() {
+            let xp = parseInt(localStorage.getItem('totalXP')) || 0;
+            document.getElementById('currentXP').innerText = xp;
+        }
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playTone(freq, time) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, time);
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(0.4, time + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.8);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(time); osc.stop(time + 0.8);
+        }
+
+        async function playNewSignal() {
+            initAudio();
+            if (isPlaying) return;
+            isPlaying = true;
+            waitingForAnswer = false;
+            currentTarget = notes[Math.floor(Math.random() * notes.length)];
+            document.getElementById('strikeBtn').disabled = true;
+            document.getElementById('repeatBtn').disabled = true;
+
+            if (missionType === 'perfect5th') {
+                playTone(notes[0].f, audioCtx.currentTime);
+                await new Promise(r => setTimeout(r, 800));
+                currentTarget = notes[7]; 
+            }
+            playTone(currentTarget.f, audioCtx.currentTime);
+            
+            setTimeout(() => {
+                isPlaying = false;
+                waitingForAnswer = true;
+                document.getElementById('strikeBtn').disabled = false;
+                document.getElementById('repeatBtn').disabled = false;
+            }, 800);
+        }
+
+        async function repeatSignal() {
+            let xp = parseInt(localStorage.getItem('totalXP')) || 0;
+            if (xp < 5) { alert("INSUFFICIENT XP FOR NEURAL REPLAY"); return; }
+            initAudio();
+            if (isPlaying || !currentTarget) return;
+            isPlaying = true;
+            localStorage.setItem('totalXP', xp - 5);
+            updateXPDisplay();
+            playTone(currentTarget.f, audioCtx.currentTime);
+            setTimeout(() => { isPlaying = false; }, 800);
+        }
+
+        function submitAnswer(noteObj, btnEl) {
+            if (isPlaying || !waitingForAnswer) return; 
+            initAudio();
+            playTone(noteObj.f, audioCtx.currentTime);
+            if (noteObj.n === currentTarget.n) {
+                playerProgress += 20;
+                btnEl.classList.add('flash-green');
+                waitingForAnswer = false;
+                updateBars();
+                if (playerProgress >= 100) endGame(true);
+                else setTimeout(() => { btnEl.classList.remove('flash-green'); }, 400);
+            } else {
+                rivalProgress += 25;
+                btnEl.classList.add('flash-red');
+                updateBars();
+                if (rivalProgress >= 100) endGame(false);
+                else setTimeout(() => btnEl.classList.remove('flash-red'), 400);
+            }
+        }
+
+        function updateBars() {
+            document.getElementById('pBar').style.width = playerProgress + "%";
+            document.getElementById('rBar').style.width = rivalProgress + "%";
+        }
+
+        function endGame(win) {
+            if (win) {
+                const reward = (missionType === 'perfect5th') ? 500 : 150;
+                let total = parseInt(localStorage.getItem('totalXP')) || 0;
+                localStorage.setItem('totalXP', total + reward);
+                alert(`VICTORY! +${reward} XP`);
+            } else {
+                alert("CRITICAL FAILURE.");
+            }
+            window.location.href = 'pitch_hub.html';
+        }
+
+        const grid = document.getElementById('noteGrid');
+        notes.forEach(note => {
+            const btn = document.createElement('button');
+            btn.className = 'note-btn';
+            btn.innerText = note.n;
+            btn.onclick = () => submitAnswer(note, btn);
+            grid.appendChild(btn);
+        });
+
+        updateXPDisplay();
+    </script>
+</body>
+</html>

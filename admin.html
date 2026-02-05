@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Protocol | Music Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05070a; --panel: #0b101a; --red: #ff4444;
+            --blue: #4facfe; --border: #1e2544; --gold: #ffcc00;
+        }
+        body {
+            margin: 0; background: var(--bg); color: #fff;
+            font-family: 'Orbitron', sans-serif; display: flex;
+            flex-direction: column; align-items: center; padding: 40px;
+        }
+        .admin-card {
+            background: var(--panel); border: 1px solid var(--border);
+            padding: 30px; border-radius: 20px; width: 100%; max-width: 500px;
+            box-shadow: 0 0 30px rgba(255, 68, 68, 0.1);
+        }
+        h1 { color: var(--red); font-size: 1.2rem; letter-spacing: 4px; margin-bottom: 30px; text-align: center; }
+        
+        .danger-zone {
+            border: 1px solid var(--red); padding: 20px; border-radius: 10px;
+            margin-top: 20px; background: rgba(255, 68, 68, 0.05);
+        }
+        .btn-reset {
+            background: var(--red); color: #fff; border: none; width: 100%;
+            padding: 15px; font-family: 'Orbitron'; font-weight: 900;
+            border-radius: 8px; cursor: pointer; margin-top: 10px;
+        }
+        .btn-reset:hover { background: #cc0000; box-shadow: 0 0 20px rgba(255, 0, 0, 0.4); }
+        
+        .user-list { margin-top: 20px; max-height: 200px; overflow-y: auto; }
+        .user-item { 
+            display: flex; justify-content: space-between; padding: 10px;
+            border-bottom: 1px solid var(--border); font-size: 0.8rem;
+        }
+        .nav-link { margin-top: 30px; color: #444; text-decoration: none; font-size: 0.7rem; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-card">
+        <h1>ADMIN PROTOCOL</h1>
+        
+        <div id="userStats">
+            <div style="font-size: 0.7rem; color: var(--blue);">ACTIVE DATABASE USERS</div>
+            <div class="user-list" id="list"></div>
+        </div>
+
+        <div class="danger-zone">
+            <div style="color: var(--red); font-weight: 900; font-size: 0.8rem;">DANGER ZONE</div>
+            <p style="font-size: 0.6rem; color: #888;">RESETTING WILL PERMANENTLY ERASE ALL XP, RANKS, AND USERS FROM THE LEADERBOARD.</p>
+            <button class="btn-reset" onclick="factoryReset()">FACTORY RESET STATS</button>
+        </div>
+    </div>
+
+    <a href="index.html" class="nav-link">RETURN TO HUB</a>
+
+    <script>
+        function loadUsers() {
+            const db = JSON.parse(localStorage.getItem('psalmistDB')) || { users: {} };
+            const list = document.getElementById('list');
+            const users = Object.keys(db.users);
+
+            if (users.length === 0) {
+                list.innerHTML = '<div style="color:#333; padding:10px;">NO DATA FOUND</div>';
+                return;
+            }
+
+            list.innerHTML = users.map(u => `
+                <div class="user-item">
+                    <span>${u.toUpperCase()}</span>
+                    <span style="color:var(--gold)">${db.users[u].xp} XP</span>
+                </div>
+            `).join('');
+        }
+
+        function factoryReset() {
+            const confirm1 = confirm("Are you sure you want to delete the entire database?");
+            if (confirm1) {
+                const confirm2 = prompt("Type 'ERASE' to confirm final deletion:");
+                if (confirm2 === "ERASE") {
+                    localStorage.removeItem('psalmistDB');
+                    localStorage.removeItem('activeUser');
+                    localStorage.removeItem('lastSavedRank');
+                    alert("DATABASE PURGED. REDIRECTING...");
+                    window.location.href = 'index.html';
+                }
+            }
+        }
+
+        window.onload = loadUsers;
+    </script>
+</body>
+</html>

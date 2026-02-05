@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LMS // ANALYTICS_DASHBOARD</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="lms_core.js"></script>
+    <style>
+        :root { 
+            --bg: #05070a; --gold: #ffcc00; --blue: #4facfe; 
+            --border: #1e2544; --green: #00ff88; --red: #ff4b2b; 
+        }
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;
+        }
+        .container { 
+            width: 900px; background: rgba(10, 15, 25, 0.98); border: 1px solid var(--border); 
+            padding: 40px; box-shadow: 0 0 50px #000;
+        }
+        header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 1px solid #111; padding-bottom: 20px; }
+        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 4px; color: var(--blue); }
+        .btn-back { background: none; border: 1px solid #444; color: #888; padding: 8px 15px; cursor: pointer; text-decoration: none; font-size: 0.6rem; border-radius: 2px; }
+
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 300px; gap: 40px; }
+        
+        /* Chart Styling */
+        .chart-box { background: #000; padding: 20px; border: 1px solid #111; position: relative; }
+        
+        /* Stats Panel */
+        .stats-panel { display: flex; flex-direction: column; gap: 20px; }
+        .stat-card { background: #0a111a; border: 1px solid #1e2544; padding: 20px; border-radius: 4px; }
+        .stat-label { font-size: 0.6rem; color: #666; letter-spacing: 2px; margin-bottom: 5px; }
+        .stat-value { font-size: 2rem; font-weight: 900; color: var(--gold); }
+        .level-badge { color: var(--blue); font-size: 1.2rem; }
+
+        .rank-box { margin-top: auto; padding: 15px; border-top: 1px solid #222; font-size: 0.7rem; color: var(--green); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div>
+            <h1>STUDENT_PROGRESS_REPORT</h1>
+            <div style="font-size: 0.6rem; color: #444; margin-top: 5px;">SYSTEM STATUS: ACTIVE // DATA_SYNC: OK</div>
+        </div>
+        <a href="rhythm_hub.html" class="btn-back">RETURN_TO_HUB</a>
+    </header>
+
+    <div class="dashboard-grid">
+        <div class="chart-box">
+            <canvas id="skillChart"></canvas>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stat-card">
+                <div class="stat-label">CURRENT_PHASE</div>
+                <div class="stat-value level-badge">LEVEL <span id="display-lvl">1</span></div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-label">TOTAL_EXPERIENCE</div>
+                <div class="stat-value" id="display-xp">00000</div>
+            </div>
+
+            <div class="rank-box">
+                <div class="stat-label" style="color: #444;">CLASS_RANK</div>
+                <div id="display-rank">NEURAL_INITIATE</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize Dashboard Data
+    function initDashboard() {
+        const p = LMS.profile;
+        document.getElementById('display-lvl').innerText = p.level;
+        document.getElementById('display-xp').innerText = p.xp.toString().padStart(5, '0');
+        
+        // Dynamic Ranking Titles
+        const ranks = ["INITIATE", "PULSE_READER", "BEAT_SYNCER", "RHYTHM_ARCHITECT", "TEMPORAL_MASTER"];
+        const rankIdx = Math.min(Math.floor(p.level / 2), ranks.length - 1);
+        document.getElementById('display-rank').innerText = ranks[rankIdx];
+
+        renderChart(p.skills);
+    }
+
+    function renderChart(skills) {
+        const ctx = document.getElementById('skillChart').getContext('2d');
+        
+        // Define Chart Data
+        const data = {
+            labels: ['RECOGNITION', 'TIMING', 'READING', 'CREATION'],
+            datasets: [{
+                label: 'SKILL_LEVEL',
+                data: [skills.recognition, skills.timing, skills.reading, skills.creation],
+                fill: true,
+                backgroundColor: 'rgba(79, 172, 254, 0.2)',
+                borderColor: '#4facfe',
+                pointBackgroundColor: '#00ff88',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#4facfe'
+            }]
+        };
+
+        // Chart Configuration
+        const config = {
+            type: 'radar',
+            data: data,
+            options: {
+                responsive: true,
+                scales: {
+                    r: {
+                        angleLines: { color: '#1e2544' },
+                        grid: { color: '#1e2544' },
+                        pointLabels: { color: '#888', font: { family: 'Orbitron', size: 10 } },
+                        ticks: { display: false, stepSize: 500 },
+                        suggestedMin: 0
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        };
+
+        new Chart(ctx, config);
+    }
+
+    // Run on Load
+    window.onload = initDashboard;
+</script>
+
+</body>
+</html>

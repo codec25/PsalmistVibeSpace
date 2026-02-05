@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROTOCOL_02: INTERVAL_RELATIONS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #020408; --panel: rgba(10, 15, 25, 0.9); --blue: #4facfe; 
+            --gold: #ffcc00; --green: #00ff88; --border: #1e2544; --red: #ff4b2b;
+        }
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #020408 100%);
+        }
+
+        .hud-top {
+            display: flex; justify-content: space-between; align-items: center; padding: 15px 40px;
+            font-size: 0.65rem; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.3);
+        }
+
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+
+        /* --- Toggles & Config --- */
+        .controls-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 25px; }
+        .config-box { background: rgba(255,255,255,0.05); padding: 8px 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 10px; border-radius: 4px; }
+        .config-box label { font-size: 0.5rem; color: var(--blue); letter-spacing: 1px; }
+        
+        .toggle-btn { 
+            background: #111; border: 1px solid var(--border); color: #555; 
+            padding: 6px 12px; font-family: 'Orbitron'; font-size: 0.55rem; cursor: pointer; 
+        }
+        .toggle-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.05); }
+
+        /* --- View Containers --- */
+        .view-container { width: 100%; display: flex; justify-content: center; min-height: 160px; }
+        .hidden { display: none !important; }
+
+        .viz-window {
+            width: 500px; height: 120px; background: rgba(0,0,0,0.6); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center; border-radius: 8px; gap: 40px;
+        }
+        .radar-node { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--blue); opacity: 0.1; transition: 0.2s; }
+        .radar-node.active { opacity: 1; box-shadow: 0 0 25px var(--blue); background: #fff; }
+
+        .piano-view { display: flex; gap: 2px; background: #000; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+        .key { width: 28px; height: 90px; background: #ddd; border-radius: 0 0 4px 4px; position: relative; }
+        .key.black { background: #222; width: 18px; height: 60px; margin-left: -9px; margin-right: -9px; z-index: 2; border: 1px solid #000; }
+        .key.active { background: var(--blue) !important; box-shadow: 0 0 15px var(--blue); }
+
+        /* --- Choices --- */
+        .choices-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; width: 600px; margin-top: 20px; }
+        .choice-btn { 
+            background: rgba(10, 17, 26, 0.8); border: 1px solid var(--border); color: #fff; padding: 15px;
+            font-family: 'Orbitron'; font-size: 0.65rem; cursor: pointer; transition: 0.2s;
+        }
+        .choice-btn.correct { background: var(--green) !important; color: #000; }
+        .choice-btn.wrong { background: var(--red) !important; }
+
+        .action-btns { margin-top: 30px; display: flex; gap: 15px; }
+        .btn-main { background: var(--blue); color: #000; border: none; padding: 15px 35px; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 4px; }
+        .btn-sub { background: #1a1a1a; color: var(--gold); border: 1px solid var(--gold); padding: 15px 25px; font-family: 'Orbitron'; cursor: pointer; border-radius: 4px; font-size: 0.7rem; }
+    </style>
+</head>
+<body>
+
+    <div class="hud-top">
+        <div>PROTOCOL_02: INTERVAL_RELATIONS</div>
+        <div id="global-xp">XP: 00000</div>
+        <a href="pitch_hub.html" style="color: var(--blue); text-decoration: none;">[ EXIT ]</a>
+    </div>
+
+    <div class="main-stage">
+        
+        <div class="controls-row">
+            <div class="config-box">
+                <label>VIEW:</label>
+                <button class="toggle-btn active" id="view-screen" onclick="setView('screen')">RADAR</button>
+                <button class="toggle-btn" id="view-piano" onclick="setView('piano')">PIANO</button>
+            </div>
+
+            <div class="config-box">
+                <label>TEMPO (MS):</label>
+                <input type="range" id="tempoSlider" min="200" max="1500" value="700" step="100" style="accent-color: var(--blue);">
+                <span id="tempoVal" style="font-size: 0.6rem; width: 30px;">700</span>
+            </div>
+
+            <div class="config-box">
+                <label>CHOICES:</label>
+                <select id="choiceCount" onchange="setupButtons()" style="background:#000; color:#fff; border:none; font-family:Orbitron; font-size:0.6rem;">
+                    <option value="2">2</option>
+                    <option value="4" selected>4</option>
+                    <option value="6">6</option>
+                    <option value="12">ALL</option>
+                </select>
+            </div>
+
+            <div class="config-box">
+                <label>COACH:</label>
+                <button class="toggle-btn" id="coach-toggle" onclick="toggleCoach()">OFF</button>
+            </div>
+        </div>
+
+        <div class="view-container">
+            <div class="viz-window" id="screen-display">
+                <div class="radar-node" id="node-1"></div>
+                <div class="radar-node" id="node-2"></div>
+            </div>
+            <div class="piano-view hidden" id="piano-display"></div>
+        </div>
+
+        <div class="choices-grid" id="choices-container"></div>
+
+        <div class="action-btns">
+            <button class="btn-main" onclick="generateInterval()">NEW_PULSE</button>
+            <button class="btn-sub" onclick="playInterval()">REPEAT</button>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const INTERVALS = [
+            {n: "Minor 2nd", s: 1}, {n: "Major 2nd", s: 2}, {n: "Minor 3rd", s: 3},
+            {n: "Major 3rd", s: 4}, {n: "Perfect 4th", s: 5}, {n: "Tritone", s: 6},
+            {n: "Perfect 5th", s: 7}, {n: "Minor 6th", s: 8}, {n: "Major 6th", s: 9},
+            {n: "Minor 7th", s: 10}, {n: "Major 7th", s: 11}, {n: "Octave", s: 12}
+        ];
+
+        let baseMidi, targetMidi, currentInterval, coachMode = false, currentView = 'screen';
+
+        document.getElementById('tempoSlider').oninput = function() {
+            document.getElementById('tempoVal').innerText = this.value;
+        };
+
+        function setView(view) {
+            currentView = view;
+            document.getElementById('view-screen').classList.toggle('active', view === 'screen');
+            document.getElementById('view-piano').classList.toggle('active', view === 'piano');
+            document.getElementById('screen-display').classList.toggle('hidden', view !== 'screen');
+            document.getElementById('piano-display').classList.toggle('hidden', view !== 'piano');
+        }
+
+        function toggleCoach() {
+            coachMode = !coachMode;
+            document.getElementById('coach-toggle').innerText = coachMode ? "ON" : "OFF";
+            document.getElementById('coach-toggle').classList.toggle('active', coachMode);
+        }
+
+        function initPiano() {
+            const bed = document.getElementById('piano-display');
+            for(let i=0; i<25; i++) {
+                const k = document.createElement('div');
+                k.className = [1,3,6,8,10].includes(i%12) ? 'key black' : 'key';
+                k.id = `key-${i+48}`;
+                bed.appendChild(k);
+            }
+            refreshXP();
+            generateInterval();
+        }
+
+        function generateInterval() {
+            baseMidi = 55 + Math.floor(Math.random() * 10);
+            const randomInterval = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
+            currentInterval = randomInterval.n;
+            targetMidi = baseMidi + randomInterval.s;
+            
+            playInterval();
+            setupButtons();
+        }
+
+        function playInterval() {
+            const tempo = parseInt(document.getElementById('tempoSlider').value);
+            playTone(baseMidi, 0);
+            if(coachMode) triggerVisual(baseMidi, 'node-1', 0);
+            
+            setTimeout(() => {
+                playTone(targetMidi, 0);
+                if(coachMode) triggerVisual(targetMidi, 'node-2', 0);
+            }, tempo);
+        }
+
+        function playTone(midi, start) {
+            const freq = 440 * Math.pow(2, (midi - 69) / 12);
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.connect(g); g.connect(audioCtx.destination);
+            g.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+            osc.frequency.value = freq;
+            osc.start(); osc.stop(audioCtx.currentTime + 1);
+        }
+
+        function triggerVisual(midi, nodeId, delay) {
+            if(currentView === 'screen') {
+                const node = document.getElementById(nodeId);
+                node.classList.add('active');
+                setTimeout(() => node.classList.remove('active'), 500);
+            } else {
+                const key = document.getElementById(`key-${midi}`);
+                if(key) {
+                    key.classList.add('active');
+                    setTimeout(() => key.classList.remove('active'), 500);
+                }
+            }
+        }
+
+        function setupButtons() {
+            const container = document.getElementById('choices-container');
+            container.innerHTML = '';
+            const count = parseInt(document.getElementById('choiceCount').value);
+            
+            let options = [INTERVALS.find(i => i.n === currentInterval)];
+            while(options.length < count) {
+                let r = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
+                if(!options.includes(r)) options.push(r);
+            }
+            
+            options.sort((a,b) => a.s - b.s).forEach(opt => {
+                const b = document.createElement('button');
+                b.className = 'choice-btn';
+                b.innerText = opt.n;
+                b.onclick = () => {
+                    if(opt.n === currentInterval) {
+                        b.classList.add('correct');
+                        addXP(75);
+                        setTimeout(generateInterval, 800);
+                    } else { b.classList.add('wrong'); }
+                };
+                container.appendChild(b);
+            });
+        }
+
+        function addXP(amt) {
+            let total = parseInt(localStorage.getItem('totalXP') || 0) + amt;
+            localStorage.setItem('totalXP', total);
+            refreshXP();
+        }
+
+        function refreshXP() {
+            document.getElementById('global-xp').innerText = `XP: ${localStorage.getItem('totalXP') || '00000'}`;
+        }
+
+        window.onload = initPiano;
+    </script>
+</body>
+</html>

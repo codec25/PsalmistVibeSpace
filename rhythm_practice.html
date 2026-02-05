@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RHYTHM_PRACTICE // Rudimental Training</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #030508; --panel: #0a111a; --blue: #4facfe; 
+            --gold: #ffcc00; --green: #00ff88; --border: #1e2544; --red: #ff4b2b;
+        }
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #030508 100%);
+        }
+
+        .hud-top {
+            display: flex; justify-content: space-between; align-items: center; padding: 15px 40px;
+            font-size: 0.65rem; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.3);
+        }
+
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+        .controls-row { display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; justify-content: center; }
+        .config-box { background: rgba(255,255,255,0.05); padding: 8px 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 10px; border-radius: 4px; }
+        .config-box label { font-size: 0.5rem; color: var(--blue); letter-spacing: 1px; }
+
+        .lane-container { display: flex; gap: 20px; height: 420px; perspective: 500px; }
+        .lane { 
+            width: 85px; height: 100%; background: rgba(255,255,255,0.02); 
+            border: 1px solid var(--border); position: relative; overflow: hidden;
+            border-radius: 4px;
+        }
+        .hit-zone {
+            position: absolute; bottom: 20px; width: 100%; height: 60px;
+            border-top: 2px solid var(--blue); background: rgba(79, 172, 254, 0.1);
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 900; color: var(--blue);
+        }
+        .hit-zone.active { background: var(--blue); color: #000; box-shadow: 0 0 30px var(--blue); }
+
+        .note {
+            position: absolute; width: 100%; height: 22px; background: var(--gold);
+            box-shadow: 0 0 15px var(--gold); border-radius: 2px;
+        }
+
+        .status-msg { margin-top: 20px; color: var(--gold); font-size: 0.8rem; height: 20px; font-weight: 700; }
+        
+        select, input[type="range"] { background: #000; color: #fff; border: 1px solid var(--border); font-family: Orbitron; font-size: 0.6rem; }
+    </style>
+</head>
+<body>
+
+    <div class="hud-top">
+        <div>PROTOCOL_04: RUDIMENTAL_PRACTICE</div>
+        <div id="xp-display">XP: 00000</div>
+        <div>[SPACE] PLAY/PAUSE</div>
+        <a href="rhythm_hub.html" style="color:var(--blue); text-decoration:none;">[ EXIT ]</a>
+    </div>
+
+    <div class="main-stage">
+        <div class="controls-row">
+            <div class="config-box">
+                <label>FINGERS:</label>
+                <select id="fingerCount" onchange="initLanes()">
+                    <option value="2">2 (D, J)</option>
+                    <option value="4" selected>4 (S, D, J, K)</option>
+                </select>
+            </div>
+
+            <div class="config-box">
+                <label>RUDIMENT:</label>
+                <select id="patternType" onchange="resetPattern()">
+                    <option value="random">RANDOM_FLUX</option>
+                    <option value="paradiddle">PARADIDDLE (LRLL RLRR)</option>
+                    <option value="double_paradiddle">DBL_PARADIDDLE (LRLRLL RLRLRR)</option>
+                    <option value="double_stroke">DBL_STROKE_ROLL (LL RR)</option>
+                    <option value="flam">FLAMS (lR rL)</option>
+                </select>
+            </div>
+
+            <div class="config-box">
+                <label>BPM:</label>
+                <input type="range" id="bpmSlider" min="40" max="220" value="100" oninput="updateBPM()">
+                <span id="bpmVal" style="font-size:0.6rem; width:30px;">100</span>
+            </div>
+
+            <div class="config-box">
+                <label>STATUS:</label>
+                <span id="play-state" style="font-size: 0.6rem; color: var(--gold);">PAUSED</span>
+            </div>
+        </div>
+
+        <div class="lane-container" id="lane-wrapper"></div>
+
+        <div class="status-msg" id="msg">SELECT PROTOCOL AND PRESS SPACE</div>
+    </div>
+
+    <script>
+        let isPlaying = false;
+        let gameLoop;
+        let notes = [];
+        let patternStep = 0;
+
+        const PATTERNS = {
+            paradiddle: ['L', 'R', 'L', 'L', 'R', 'L', 'R', 'R'],
+            double_paradiddle: ['L', 'R', 'L', 'R', 'L', 'L', 'R', 'L', 'R', 'L', 'R', 'R'],
+            double_stroke: ['L', 'L', 'R', 'R'],
+            flam: ['lR', 'rL'] 
+        };
+        
+        function initLanes() {
+            stopGame();
+            const wrapper = document.getElementById('lane-wrapper');
+            wrapper.innerHTML = '';
+            const count = parseInt(document.getElementById('fingerCount').value);
+            const layout = count === 2 ? ['D', 'J'] : ['S', 'D', 'J', 'K'];
+            layout.forEach(key => {
+                const lane = document.createElement('div');
+                lane.className = 'lane'; lane.id = `lane-${key.toLowerCase()}`;
+                lane.innerHTML = `<div class="hit-zone" id="zone-${key.toLowerCase()}">${key}</div>`;
+                wrapper.appendChild(lane);
+            });
+            refreshXP();
+        }
+
+        function updateBPM() { document.getElementById('bpmVal').innerText = document.getElementById('bpmSlider').value; }
+        function resetPattern() { patternStep = 0; }
+
+        function toggleGame() { isPlaying ? stopGame() : startGame(); }
+
+        function startGame() {
+            isPlaying = true;
+            document.getElementById('play-state').innerText = "RUNNING";
+            document.getElementById('play-state').style.color = "var(--green)";
+            gameLoop = setInterval(updatePhysics, 20);
+            spawnNotes();
+        }
+
+        function stopGame() {
+            isPlaying = false;
+            clearInterval(gameLoop);
+            document.getElementById('play-state').innerText = "PAUSED";
+            document.getElementById('play-state').style.color = "var(--gold)";
+            notes.forEach(n => n.el.remove());
+            notes = [];
+        }
+
+        function createNote(hand) {
+            const count = parseInt(document.getElementById('fingerCount').value);
+            let targetKey;
+            if (count === 2) {
+                targetKey = (hand.toUpperCase() === 'L') ? 'd' : 'j';
+            } else {
+                const pool = (hand.toUpperCase() === 'L') ? ['s', 'd'] : ['j', 'k'];
+                targetKey = pool[Math.floor(Math.random() * pool.length)];
+            }
+            const laneEl = document.getElementById(`lane-${targetKey}`);
+            if (laneEl) {
+                const noteEl = document.createElement('div');
+                noteEl.className = 'note';
+                noteEl.style.top = '0px';
+                if (hand === hand.toLowerCase()) noteEl.style.opacity = "0.5"; 
+                laneEl.appendChild(noteEl);
+                notes.push({ el: noteEl, top: 0, key: targetKey });
+            }
+        }
+
+        function spawnNotes() {
+            if (!isPlaying) return;
+            const pType = document.getElementById('patternType').value;
+            const bpm = parseInt(document.getElementById('bpmSlider').value);
+            let nextSpawnDelay = (60000 / bpm) / 2;
+
+            if (pType === 'random') {
+                const keys = parseInt(document.getElementById('fingerCount').value) === 2 ? ['d','j'] : ['s','d','j','k'];
+                createNote(keys[Math.floor(Math.random()*keys.length)].toUpperCase());
+            } else {
+                const seq = PATTERNS[pType];
+                const command = seq[patternStep];
+                
+                if (command.length > 1) { // Flam 
+                    createNote(command[0]); 
+                    setTimeout(() => createNote(command[1]), 100);
+                } else {
+                    createNote(command);
+                }
+                patternStep = (patternStep + 1) % seq.length;
+            }
+            setTimeout(spawnNotes, nextSpawnDelay);
+        }
+
+        function updatePhysics() {
+            const speed = parseInt(document.getElementById('bpmSlider').value) / 18;
+            notes.forEach((note, index) => {
+                note.top += speed;
+                note.el.style.top = note.top + 'px';
+                if (note.top > 420) {
+                    note.el.remove();
+                    notes.splice(index, 1);
+                }
+            });
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === "Space") { e.preventDefault(); toggleGame(); }
+            if (!isPlaying) return;
+            const key = e.key.toLowerCase();
+            const zone = document.getElementById(`zone-${key}`);
+            if (zone) {
+                zone.classList.add('active');
+                setTimeout(() => zone.classList.remove('active'), 100);
+                const hitIndex = notes.findIndex(n => n.key === key && n.top > 330 && n.top < 390);
+                if (hitIndex !== -1) {
+                    addXP(10);
+                    notes[hitIndex].el.remove();
+                    notes.splice(hitIndex, 1);
+                }
+            }
+        });
+
+        function addXP(amt) {
+            let total = parseInt(localStorage.getItem('totalXP') || 0) + amt;
+            localStorage.setItem('totalXP', total);
+            document.getElementById('xp-display').innerText = `XP: ${total}`;
+        }
+
+        function refreshXP() {
+            document.getElementById('xp-display').innerText = `XP: ${localStorage.getItem('totalXP') || '00000'}`;
+        }
+
+        window.onload = initLanes;
+    </script>
+</body>
+</html>

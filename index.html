@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSALMIST_NINJA // Terminal_Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #030508; 
+            --panel: #0a0e17; 
+            --blue: #4facfe; 
+            --gold: #ffcc00; 
+            --border: #1e2544; 
+            --text-dim: #555;
+        }
+
+        body { 
+            margin: 0; 
+            background: var(--bg); 
+            color: #fff; 
+            font-family: 'Orbitron', sans-serif; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #030508 100%);
+            overflow: hidden;
+        }
+        
+        /* Glassmorphism Panel */
+        .login-card {
+            width: 380px; 
+            padding: 50px; 
+            background: var(--panel); 
+            border: 1px solid var(--border);
+            text-align: center; 
+            box-shadow: 0 0 50px rgba(0,0,0,0.8); 
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .logo { 
+            font-size: 1.4rem; 
+            letter-spacing: 6px; 
+            color: var(--blue); 
+            margin-bottom: 10px; 
+            font-weight: 900; 
+            text-shadow: 0 0 15px rgba(79, 172, 254, 0.5);
+        }
+
+        .version-tag {
+            font-size: 0.55rem; 
+            color: var(--text-dim); 
+            margin-bottom: 35px; 
+            letter-spacing: 3px;
+        }
+        
+        input {
+            width: 100%; 
+            background: #000; 
+            border: 1px solid var(--border); 
+            color: var(--blue);
+            padding: 15px; 
+            margin-bottom: 25px; 
+            font-family: 'Orbitron'; 
+            box-sizing: border-box;
+            outline: none; 
+            transition: 0.3s;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        input:focus { 
+            border-color: var(--blue); 
+            box-shadow: 0 0 15px rgba(79, 172, 254, 0.2); 
+        }
+
+        .btn-login {
+            width: 100%; 
+            padding: 18px; 
+            background: var(--blue); 
+            border: none; 
+            color: #000;
+            font-family: 'Orbitron'; 
+            font-weight: 900; 
+            cursor: pointer; 
+            letter-spacing: 3px;
+            transition: 0.2s;
+            clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+        }
+
+        .btn-login:hover {
+            background: var(--gold);
+            transform: scale(1.02);
+        }
+
+        .footer-links { 
+            margin-top: 35px; 
+            border-top: 1px solid #1a1a1a; 
+            padding-top: 20px; 
+        }
+        
+        .teacher-link { 
+            font-size: 0.5rem; 
+            color: #222; 
+            text-decoration: none; 
+            letter-spacing: 2px;
+            transition: 0.5s; 
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .teacher-link:hover { 
+            color: var(--red); 
+            text-shadow: 0 0 5px var(--red);
+        }
+
+        /* Ambient scanline effect */
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(79, 172, 254, 0.1);
+            position: absolute;
+            top: 0;
+            left: 0;
+            animation: scanning 4s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes scanning {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <div class="scanline"></div>
+    <div class="logo">PSALMIST_NINJA</div>
+    <div class="version-tag">NEURAL_CONSERVATORY_v4.0</div>
+    
+    <input type="text" id="username" placeholder="OPERATOR_ID" autocomplete="off">
+    <button class="btn-login" onclick="login()">INITIALIZE_SESSION</button>
+
+    <div class="footer-links">
+        <a href="teacher_portal.html" class="teacher-link">SYS_BUILD_Vibe3550_ADMIN</a>
+    </div>
+</div>
+
+<script>
+    function login() {
+        const user = document.getElementById('username').value;
+        if (user.trim() === "") {
+            alert("IDENTIFICATION_REQUIRED_FOR_HUB_ACCESS");
+            return;
+        }
+        
+        // Save to local storage for use in Studio and Hub
+        localStorage.setItem('ninjaUser', user.toUpperCase());
+        
+        // Initializing user progress if new
+        if (!localStorage.getItem('totalXP')) {
+            localStorage.setItem('totalXP', '0');
+            localStorage.setItem('currentLevel', '1');
+        }
+
+        window.location.href = 'hub.html';
+    }
+
+    // Allow Enter key to submit
+    document.getElementById('username').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            login();
+        }
+    });
+</script>
+
+</body>
+</html>
