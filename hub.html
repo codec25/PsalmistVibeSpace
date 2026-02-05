@@ -40,12 +40,35 @@
         .user-info h2 { margin: 0; font-size: 1rem; letter-spacing: 2px; color: var(--gold); }
         .user-info span { font-size: 0.6rem; color: var(--blue); text-transform: uppercase; }
 
+        .header-actions { display: flex; align-items: center; gap: 15px; }
+
         .stat-pill {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border);
             padding: 10px 20px; border-radius: 30px;
             font-size: 0.7rem; color: #fff;
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        }
+
+        /* --- Log Out Button --- */
+        .btn-logout {
+            background: rgba(255, 75, 43, 0.1);
+            border: 1px solid var(--red);
+            color: var(--red);
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-family: 'Orbitron';
+            font-size: 0.6rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: 0.3s;
+            letter-spacing: 1.5px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .btn-logout:hover {
+            background: var(--red);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(255, 75, 43, 0.4);
         }
 
         /* --- Main Grid --- */
@@ -63,11 +86,8 @@
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .card:hover { 
-            transform: translateY(-5px); border-color: var(--blue);
-            background: rgba(79, 172, 254, 0.05);
-        }
-        .card:active { transform: scale(0.95); }
+        .card:hover { transform: translateY(-5px); border-color: var(--blue); }
+        .card:active { transform: scale(0.98); }
 
         .card-icon {
             width: 60px; height: 60px; border-radius: 16px;
@@ -80,32 +100,18 @@
         .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 5px; color: #fff; letter-spacing: 1px; }
         .card-desc { font-size: 0.75rem; color: #888; line-height: 1.4; }
 
-        /* --- Featured Piano Lab --- */
-        .card.piano-lab { 
-            grid-column: 1 / -1; 
-            background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(15, 20, 30, 0.7) 100%);
-            border-color: var(--blue);
-        }
+        .card.piano-lab { grid-column: 1 / -1; background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(15, 20, 30, 0.7) 100%); border-color: var(--blue); }
         .card.piano-lab .card-icon { color: var(--blue); }
-
-        /* --- Secondary Cards --- */
         .card.ear-training .card-icon { color: var(--gold); }
         .card.beat-academy .card-icon { color: var(--green); }
         .card.secret-classroom .card-icon { color: var(--purple); }
 
-        /* --- Responsive Tweaks --- */
         @media (max-width: 850px) {
             .content-stack { grid-template-columns: 1fr; }
             header { flex-direction: column; gap: 15px; text-align: center; }
         }
 
         footer { margin-top: 50px; text-align: center; padding-bottom: 40px; }
-        .btn-portal {
-            display: inline-block; text-decoration: none; color: var(--gold); border: 1px solid var(--gold);
-            padding: 12px 25px; border-radius: 50px; font-size: 0.7rem; letter-spacing: 2px;
-            background: rgba(255, 204, 0, 0.05); transition: 0.3s;
-        }
-        .btn-portal:hover { background: var(--gold); color: #000; }
     </style>
 </head>
 <body>
@@ -115,7 +121,12 @@
             <h2 id="display-name">MUSIC NINJA</h2>
             <span id="display-rank">LEVEL 01 ACADEMY</span>
         </div>
-        <div class="stat-pill">SYSTEM_STATUS: <span id="display-xp" style="color:var(--green)">ACTIVE</span></div>
+        <div class="header-actions">
+            <div class="stat-pill">SYSTEM: <span id="display-xp" style="color:var(--green)">ACTIVE</span></div>
+            <button class="btn-logout" onclick="logout()">
+                EXIT_HUB ⏻
+            </button>
+        </div>
     </header>
 
     <div class="content-stack">
@@ -154,19 +165,12 @@
     </div>
 
     <footer>
-        <a href="https://www.psalmistvibesstudio.com/" target="_blank" class="btn-portal">
-            VISIT THE STUDIO WEBSITE
-        </a>
         <p style="font-size: 0.5rem; color: #333; margin-top: 30px; letter-spacing: 2px;">
             SYSTEM_VER: 3.4.1 // PSALMIST NINJA STUDIOS
         </p>
     </footer>
 
     <script>
-        /**
-         * HUB SYNC LOGIC
-         * Restores user identity from local storage
-         */
         window.onload = () => {
             const user = localStorage.getItem('ninjaUser') || "MUSIC NINJA";
             const level = localStorage.getItem('currentLevel') || "1";
@@ -174,6 +178,12 @@
             document.getElementById('display-name').innerText = user.toUpperCase();
             document.getElementById('display-rank').innerText = "LEVEL " + level.toString().padStart(2, '0') + " ACADEMY";
         };
+
+        function logout() {
+            if (confirm("DISCONNECT FROM HUB?\nYour current session will be closed.")) {
+                window.location.href = 'index.html';
+            }
+        }
     </script>
 </body>
 </html>
