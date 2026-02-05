@@ -14,6 +14,7 @@
             --border: rgba(79, 172, 254, 0.2); 
             --red: #ff4b2b;
             --purple: #a18cd1;
+            --green: #00ff88;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -87,7 +88,7 @@
         }
         .card.piano-lab .card-icon { color: var(--blue); }
 
-        /* --- Color Coding for Kids --- */
+        /* --- Secondary Cards --- */
         .card.ear-training .card-icon { color: var(--gold); }
         .card.beat-academy .card-icon { color: var(--green); }
         .card.secret-classroom .card-icon { color: var(--purple); }
@@ -114,40 +115,40 @@
             <h2 id="display-name">MUSIC NINJA</h2>
             <span id="display-rank">LEVEL 01 ACADEMY</span>
         </div>
-        <div class="stat-pill">MY SCORE: <span id="display-xp" style="color:var(--gold)">00000</span></div>
+        <div class="stat-pill">SYSTEM_STATUS: <span id="display-xp" style="color:var(--green)">ACTIVE</span></div>
     </header>
 
     <div class="content-stack">
         <a href="grand_station.html" class="card piano-lab">
             <div class="card-icon">🎹</div>
             <div class="card-content">
-                <div class="card-title">THE PIANO LAB</div>
-                <div class="card-desc">Play the giant piano, record your songs, and explore cool sounds!</div>
+                <div class="card-title">PSALMIST PIANO LAB</div>
+                <div class="card-desc">Enter the Grand Station to master the keys and unlock Beast Mode.</div>
             </div>
-            <div style="color: var(--blue); font-size: 1.2rem;">❯</div>
+            <div style="color: var(--blue); font-size: 1.2rem;">→</div>
         </a>
 
         <a href="pitch_hub.html" class="card ear-training">
-            <div class="card-icon">🎯</div>
+            <div class="card-icon">👂</div>
             <div class="card-content">
                 <div class="card-title">EAR TRAINING</div>
-                <div class="card-desc">Can you guess the note? Train your ears to hear like a master.</div>
+                <div class="card-desc">Identify notes and chords to sharpen your musical senses.</div>
             </div>
         </a>
 
-        <a href="rhythm_hub.html" class="card beat-academy">
+        <a href="mini_studio.html" class="card beat-academy">
             <div class="card-icon">🥁</div>
             <div class="card-content">
-                <div class="card-title">BEAT ACADEMY</div>
-                <div class="card-desc">Become a drum master! Learn the secrets of rhythm and timing.</div>
+                <div class="card-title">MINI STUDIO</div>
+                <div class="card-desc">Unleash the creative beast with the 16-step neural sequencer.</div>
             </div>
         </a>
 
         <a href="theory.html" class="card secret-classroom">
-            <div class="card-icon">📖</div>
+            <div class="card-icon">📓</div>
             <div class="card-content">
                 <div class="card-title">SECRET CLASSROOM</div>
-                <div class="card-desc">Unlock new levels and learn the magic rules of music theory.</div>
+                <div class="card-desc">Unlock the magic laws of music theory and Ninja techniques.</div>
             </div>
         </a>
     </div>
@@ -164,15 +165,13 @@
     <script>
         /**
          * HUB SYNC LOGIC
-         * Keeps your XP and Level tracking working perfectly.
+         * Restores user identity from local storage
          */
         window.onload = () => {
-            const xp = localStorage.getItem('totalXP') || "0";
-            const level = localStorage.getItem('currentLevel') || "1";
             const user = localStorage.getItem('ninjaUser') || "MUSIC NINJA";
+            const level = localStorage.getItem('currentLevel') || "1";
 
             document.getElementById('display-name').innerText = user.toUpperCase();
-            document.getElementById('display-xp').innerText = xp.toString().padStart(5, '0');
             document.getElementById('display-rank').innerText = "LEVEL " + level.toString().padStart(2, '0') + " ACADEMY";
         };
     </script>
