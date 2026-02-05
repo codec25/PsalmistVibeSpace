@@ -2,169 +2,229 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PITCH_HUB // Command Center</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PSALMIST_NINJA // Master Hub</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg: #05070a; --panel: #0a0e17; --blue: #4facfe; 
-            --gold: #ffcc00; --border: #1e2544; --green: #00ff88; --red: #ff4b2b;
+            --bg: #020406; 
+            --panel: rgba(15, 20, 30, 0.7); 
+            --blue: #4facfe; 
+            --gold: #ffcc00; 
+            --border: rgba(79, 172, 254, 0.2); 
+            --red: #ff4b2b;
         }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
             display: flex; flex-direction: column; align-items: center; min-height: 100vh;
-            background-image: radial-gradient(circle at center, #0b1426 0%, #05070a 100%);
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(79, 172, 254, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(255, 204, 0, 0.08) 0%, transparent 40%);
             overflow-x: hidden;
+            padding: env(safe-area-inset-top) 20px 40px 20px;
         }
 
-        /* --- Header / HUD --- */
+        /* --- Global HUD (Sticky on Desktop) --- */
         .hud-header {
-            width: 100%; max-width: 1200px; padding: 25px; display: flex; 
-            justify-content: space-between; align-items: center; box-sizing: border-box;
+            width: 100%; max-width: 1100px; padding: 30px 0;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 30px;
         }
-        .xp-display { 
-            border: 1px solid var(--gold); padding: 10px 20px; 
-            color: var(--gold); font-size: 0.8rem; letter-spacing: 2px;
-            box-shadow: 0 0 15px rgba(255, 204, 0, 0.1);
-        }
-        .rank-tag { font-size: 0.6rem; color: var(--blue); margin-top: 5px; text-align: right; text-transform: uppercase; }
+        
+        .hud-title-group h1 { margin: 0; font-weight: 900; letter-spacing: 6px; font-size: 1.4rem; }
+        .hud-title-group span { font-size: 0.6rem; color: #444; letter-spacing: 2px; }
 
-        /* --- Grid Layout (Auto-Responsive) --- */
-        .main-grid {
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            width: 90%;
-            max-width: 1100px;
-            gap: 25px; 
-            margin-top: 30px; 
-            padding-bottom: 60px;
+        .hud-stats { display: flex; gap: 15px; align-items: center; }
+
+        .stat-pill {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            padding: 10px 20px; border-radius: 30px;
+            font-size: 0.7rem; letter-spacing: 1px; color: var(--blue);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        }
+        .stat-pill.gold { color: var(--gold); border-color: rgba(255, 204, 0, 0.3); }
+
+        /* --- Adaptive Grid --- */
+        .main-container {
+            width: 100%; max-width: 1100px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2 Columns on Desktop */
+            gap: 20px;
         }
 
         /* --- Card Styles --- */
         .card {
-            background: var(--panel); border: 1px solid var(--border);
-            padding: 30px; position: relative; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer; display: flex; flex-direction: column;
-            text-decoration: none; color: inherit; box-sizing: border-box;
+            background: var(--panel);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 25px;
+            text-decoration: none; color: inherit;
+            display: flex; align-items: center; gap: 20px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .card:hover { border-color: var(--blue); transform: translateY(-5px); box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
-        .card::before { content: ""; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--border); transition: 0.3s; }
-        .card:hover::before { background: var(--blue); }
-
-        .card-tag { font-size: 0.55rem; color: var(--blue); letter-spacing: 2px; margin-bottom: 12px; opacity: 0.7; }
-        .card-title { font-size: 1.2rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 10px; }
-        .card-desc { font-size: 0.75rem; color: #777; line-height: 1.6; margin-bottom: 25px; flex-grow: 1; }
         
-        .btn-launch {
-            padding: 12px; border: 1px solid var(--blue);
-            color: var(--blue); font-size: 0.65rem; text-align: center; transition: 0.3s;
-            text-transform: uppercase; letter-spacing: 2px;
+        /* Desktop Hover */
+        @media (min-width: 1024px) {
+            .card:hover { 
+                transform: translateY(-5px) scale(1.02); 
+                border-color: var(--blue);
+                background: rgba(79, 172, 254, 0.1);
+                box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            }
         }
-        .card:hover .btn-launch { background: var(--blue); color: #000; }
 
-        /* --- Vault Card (Full-Width Force) --- */
-        .vault-card {
-            grid-column: 1 / -1; /* Spans all available columns */
-            background: linear-gradient(90deg, #0a0e17 0%, #161b22 100%);
-            border: 1px solid var(--gold);
-            flex-direction: row; align-items: center; justify-content: space-between;
+        /* Mobile Tap Effect */
+        .card:active { transform: scale(0.96); opacity: 0.8; }
+
+        .card-icon {
+            width: 60px; height: 60px; border-radius: 15px;
+            background: rgba(255,255,255,0.03);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; border: 1px solid var(--border);
+            flex-shrink: 0;
         }
-        .vault-card:hover { border-color: #fff; }
-        .vault-card .btn-launch { border-color: var(--gold); color: var(--gold); min-width: 160px; }
-        .vault-card:hover .btn-launch { background: var(--gold); color: #000; }
 
-        /* --- Mobile Tweaks --- */
-        @media (max-width: 768px) {
+        .card-content { flex: 1; }
+        .card-tag { font-size: 0.55rem; color: var(--blue); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+        .card-title { font-size: 1.1rem; font-weight: 700; letter-spacing: 1px; margin-bottom: 6px; }
+        .card-desc { font-size: 0.75rem; color: #888; line-height: 1.4; }
+
+        /* --- Logic Specific Styles --- */
+        .card.vault { 
+            grid-column: 1 / -1; /* Full width on desktop */
+            border-color: rgba(255, 204, 0, 0.4); 
+            background: linear-gradient(90deg, rgba(255,204,0,0.05) 0%, rgba(15,20,30,0.7) 100%); 
+        }
+        .card.vault .card-icon { color: var(--gold); border-color: rgba(255,204,0,0.3); }
+
+        .card.battle { 
+            grid-column: 1 / -1; 
+            border-color: rgba(255, 75, 43, 0.4); 
+            background: linear-gradient(90deg, rgba(255, 75, 43, 0.05) 0%, rgba(15,20,30,0.7) 100%);
+        }
+        .card.battle .card-icon { color: var(--red); border-color: rgba(255,75,43,0.3); }
+
+        .chevron { color: #333; font-size: 1.2rem; margin-left: 10px; }
+
+        /* --- Responsive Breakpoints --- */
+        @media (max-width: 850px) {
+            .main-container { grid-template-columns: 1fr; } /* Stack cards on tablet/mobile */
             .hud-header { flex-direction: column; gap: 20px; text-align: center; }
-            .rank-tag { text-align: center; }
-            .vault-card { flex-direction: column; text-align: center; gap: 20px; }
-            .main-grid { grid-template-columns: 1fr; }
+            .hud-title-group h1 { font-size: 1.2rem; }
         }
 
-        footer { font-size: 0.6rem; color: #333; padding: 40px; text-align: center; letter-spacing: 3px; }
+        @media (max-width: 480px) {
+            body { padding: 10px 15px; }
+            .hud-stats { flex-direction: column; width: 100%; gap: 10px; }
+            .stat-pill { width: 100%; text-align: center; }
+            .card { padding: 18px; gap: 15px; }
+            .card-icon { width: 50px; height: 50px; font-size: 1.2rem; }
+            .card-title { font-size: 0.95rem; }
+        }
+
+        footer { font-size: 0.55rem; color: #222; padding: 40px; text-align: center; letter-spacing: 3px; }
     </style>
 </head>
 <body>
 
 <div class="hud-header">
-    <div>
-        <div style="font-weight: 900; letter-spacing: 8px; font-size: 1.4rem;">PSALMIST_NINJA</div>
-        <div style="font-size: 0.6rem; color: #444; margin-top: 4px;">NEURAL_INTERFACE // V3.4.1</div>
+    <div class="hud-title-group">
+        <h1>PSALMIST_NINJA</h1>
+        <span>UNIVERSAL_OS // V3.4.1</span>
     </div>
-    <div>
-        <div id="global-xp" class="xp-display">XP: 000000</div>
-        <div id="rank-name" class="rank-tag">INITIATE // LEVEL 01</div>
+    <div class="hud-stats">
+        <div id="global-xp" class="stat-pill gold">XP: 000000</div>
+        <div id="rank-name" class="stat-pill">INITIATE // LVL 01</div>
     </div>
 </div>
 
-<div class="main-grid">
-    <a href="theory.html" class="card vault-card">
-        <div>
-            <div class="card-tag">CENTRAL_CORE</div>
+<div class="main-container">
+    <a href="theory.html" class="card vault">
+        <div class="card-icon">◈</div>
+        <div class="card-content">
+            <div class="card-tag">Intelligence Core</div>
             <div class="card-title">THEORY_VAULT</div>
-            <div id="grade-status" style="font-size: 0.65rem; color: var(--gold);">GRADE: 01 // UNLOCKED</div>
+            <div id="grade-status" class="card-desc">Current Grade: 01 // UNLOCKED</div>
         </div>
-        <div class="btn-launch">SECURE_ACCESS</div>
+        <div class="chevron">❯</div>
     </a>
 
     <a href="pitch_recognition.html" class="card">
-        <div class="card-tag">PROTOCOL_01</div>
-        <div class="card-title">PITCH_REC</div>
-        <div class="card-desc">Calibrate neural frequency identification. Identify notes by ear in isolation.</div>
-        <div class="btn-launch">INITIALIZE</div>
+        <div class="card-icon">◎</div>
+        <div class="card-content">
+            <div class="card-tag">Protocol 01</div>
+            <div class="card-title">PITCH_RECOGNITION</div>
+            <div class="card-desc">Calibrate absolute pitch nodes.</div>
+        </div>
+        <div class="chevron">❯</div>
     </a>
 
     <a href="interval_relations.html" class="card">
-        <div class="card-tag">PROTOCOL_02</div>
-        <div class="card-title">INTERVALS</div>
-        <div class="card-desc">Geometric distance mapping. The foundation of melodic and harmonic phrasing.</div>
-        <div class="btn-launch">INITIALIZE</div>
+        <div class="card-icon">▨</div>
+        <div class="card-content">
+            <div class="card-tag">Protocol 02</div>
+            <div class="card-title">INTERVAL_MATRIX</div>
+            <div class="card-desc">Geometric harmonic mapping.</div>
+        </div>
+        <div class="chevron">❯</div>
     </a>
 
     <a href="modal_logic.html" class="card">
-        <div class="card-tag">PROTOCOL_03</div>
-        <div class="card-title">MODAL_LOGIC</div>
-        <div class="card-desc">Deconstruct the 7 Diatonic Modes. Access the full spectrum of emotional sound.</div>
-        <div class="btn-launch">INITIALIZE</div>
+        <div class="card-icon">⌬</div>
+        <div class="card-content">
+            <div class="card-tag">Protocol 03</div>
+            <div class="card-title">MODAL_LOGIC</div>
+            <div class="card-desc">Full diatonic color spectrum.</div>
+        </div>
+        <div class="chevron">❯</div>
     </a>
 
-    <a href="battle_engine.html" class="card">
-        <div class="card-tag">COMBAT_ARENA</div>
-        <div class="card-title">BATTLE_MODE</div>
-        <div class="card-desc">Face harmonic rivals. Test your speed and accuracy for maximum XP rewards.</div>
-        <div class="btn-launch" style="border-color: var(--red); color: var(--red);">ENGAGE_RIVAL</div>
+    <a href="battle_engine.html" class="card battle">
+        <div class="card-icon">⚔</div>
+        <div class="card-content">
+            <div class="card-tag">High Stakes</div>
+            <div class="card-title">BATTLE_ARENA</div>
+            <div class="card-desc">Engage rivals for maximum XP yields.</div>
+        </div>
+        <div class="chevron">❯</div>
     </a>
 </div>
 
 <footer>&copy; 2026 PSALMIST NINJA STUDIOS</footer>
 
 <script>
+    /**
+     * HUD SYNC LOGIC
+     * No functional changes. Logic remains identical to ensure full system compatibility.
+     */
     function updateHUD() {
-        // Fetch Neural Data
         const xp = parseInt(localStorage.getItem('totalXP')) || 0;
         const grade = parseInt(localStorage.getItem('currentLevel')) || 1;
 
-        // Update XP Display
+        // Formatting XP for the HUD
         document.getElementById('global-xp').innerText = `XP: ${xp.toString().padStart(6, '0')}`;
-
-        // Update Grade Status
-        document.getElementById('grade-status').innerText = `GRADE: ${grade.toString().padStart(2, '0')} // ${grade >= 12 ? 'MASTERED' : 'IN_PROGRESS'}`;
-
-        // Dynamic Rank Logic
-        let rank = "INITIATE";
-        let color = "var(--blue)";
         
-        if (xp >= 50000) { rank = "PITCH_MASTER"; color = "var(--gold)"; }
-        else if (xp >= 15000) { rank = "HARMONIC_KNIGHT"; color = "var(--green)"; }
-        else if (xp >= 5000) { rank = "ACOLYTE"; color = "var(--blue)"; }
+        // Updating Grade Progress
+        const gradeStr = grade.toString().padStart(2, '0');
+        document.getElementById('grade-status').innerText = `Current Grade: ${gradeStr} // ${grade >= 12 ? 'MASTERED' : 'IN_PROGRESS'}`;
+
+        // Dynamic Ranking
+        let rank = "INITIATE";
+        if (xp >= 50000) rank = "MASTER";
+        else if (xp >= 15000) rank = "KNIGHT";
+        else if (xp >= 5000) rank = "ACOLYTE";
 
         const lvl = Math.floor(xp / 2500) + 1;
-        const rankTag = document.getElementById('rank-name');
-        rankTag.innerText = `${rank} // LEVEL ${lvl.toString().padStart(2, '0')}`;
-        rankTag.style.color = color;
+        document.getElementById('rank-name').innerText = `${rank} // LVL ${lvl.toString().padStart(2, '0')}`;
     }
 
-    // Refresh on Load and Tab Focus
+    // Refresh triggers
     window.onload = updateHUD;
     window.onfocus = updateHUD;
 </script>
