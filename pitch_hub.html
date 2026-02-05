@@ -27,7 +27,7 @@
             padding: env(safe-area-inset-top) 20px 40px 20px;
         }
 
-        /* --- Global HUD (Sticky on Desktop) --- */
+        /* --- Global HUD --- */
         .hud-header {
             width: 100%; max-width: 1100px; padding: 30px 0;
             display: flex; justify-content: space-between; align-items: center;
@@ -35,6 +35,26 @@
             margin-bottom: 30px;
         }
         
+        /* New Back Button Container */
+        .hud-left { display: flex; align-items: center; gap: 20px; }
+        
+        .btn-back {
+            text-decoration: none;
+            color: var(--blue);
+            background: rgba(79, 172, 254, 0.05);
+            border: 1px solid var(--border);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 900;
+            transition: 0.3s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .btn-back:hover { 
+            background: var(--blue); color: #000; 
+            box-shadow: 0 0 15px var(--blue);
+        }
+
         .hud-title-group h1 { margin: 0; font-weight: 900; letter-spacing: 6px; font-size: 1.4rem; }
         .hud-title-group span { font-size: 0.6rem; color: #444; letter-spacing: 2px; }
 
@@ -53,7 +73,7 @@
         .main-container {
             width: 100%; max-width: 1100px;
             display: grid;
-            grid-template-columns: repeat(2, 1fr); /* 2 Columns on Desktop */
+            grid-template-columns: repeat(2, 1fr);
             gap: 20px;
         }
 
@@ -69,7 +89,6 @@
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         
-        /* Desktop Hover */
         @media (min-width: 1024px) {
             .card:hover { 
                 transform: translateY(-5px) scale(1.02); 
@@ -79,7 +98,6 @@
             }
         }
 
-        /* Mobile Tap Effect */
         .card:active { transform: scale(0.96); opacity: 0.8; }
 
         .card-icon {
@@ -95,9 +113,8 @@
         .card-title { font-size: 1.1rem; font-weight: 700; letter-spacing: 1px; margin-bottom: 6px; }
         .card-desc { font-size: 0.75rem; color: #888; line-height: 1.4; }
 
-        /* --- Logic Specific Styles --- */
         .card.vault { 
-            grid-column: 1 / -1; /* Full width on desktop */
+            grid-column: 1 / -1; 
             border-color: rgba(255, 204, 0, 0.4); 
             background: linear-gradient(90deg, rgba(255,204,0,0.05) 0%, rgba(15,20,30,0.7) 100%); 
         }
@@ -112,20 +129,10 @@
 
         .chevron { color: #333; font-size: 1.2rem; margin-left: 10px; }
 
-        /* --- Responsive Breakpoints --- */
         @media (max-width: 850px) {
-            .main-container { grid-template-columns: 1fr; } /* Stack cards on tablet/mobile */
+            .main-container { grid-template-columns: 1fr; }
             .hud-header { flex-direction: column; gap: 20px; text-align: center; }
-            .hud-title-group h1 { font-size: 1.2rem; }
-        }
-
-        @media (max-width: 480px) {
-            body { padding: 10px 15px; }
-            .hud-stats { flex-direction: column; width: 100%; gap: 10px; }
-            .stat-pill { width: 100%; text-align: center; }
-            .card { padding: 18px; gap: 15px; }
-            .card-icon { width: 50px; height: 50px; font-size: 1.2rem; }
-            .card-title { font-size: 0.95rem; }
+            .hud-left { flex-direction: column; width: 100%; }
         }
 
         footer { font-size: 0.55rem; color: #222; padding: 40px; text-align: center; letter-spacing: 3px; }
@@ -134,9 +141,12 @@
 <body>
 
 <div class="hud-header">
-    <div class="hud-title-group">
-        <h1>PSALMIST_NINJA</h1>
-        <span>UNIVERSAL_OS // V3.4.1</span>
+    <div class="hud-left">
+        <a href="hub.html" class="btn-back"><span>⇽</span> HUB</a>
+        <div class="hud-title-group">
+            <h1>PSALMIST_NINJA</h1>
+            <span>UNIVERSAL_OS // V3.4.1</span>
+        </div>
     </div>
     <div class="hud-stats">
         <div id="global-xp" class="stat-pill gold">XP: 000000</div>
@@ -199,22 +209,15 @@
 <footer>&copy; 2026 PSALMIST NINJA STUDIOS</footer>
 
 <script>
-    /**
-     * HUD SYNC LOGIC
-     * No functional changes. Logic remains identical to ensure full system compatibility.
-     */
     function updateHUD() {
         const xp = parseInt(localStorage.getItem('totalXP')) || 0;
         const grade = parseInt(localStorage.getItem('currentLevel')) || 1;
 
-        // Formatting XP for the HUD
         document.getElementById('global-xp').innerText = `XP: ${xp.toString().padStart(6, '0')}`;
         
-        // Updating Grade Progress
         const gradeStr = grade.toString().padStart(2, '0');
         document.getElementById('grade-status').innerText = `Current Grade: ${gradeStr} // ${grade >= 12 ? 'MASTERED' : 'IN_PROGRESS'}`;
 
-        // Dynamic Ranking
         let rank = "INITIATE";
         if (xp >= 50000) rank = "MASTER";
         else if (xp >= 15000) rank = "KNIGHT";
@@ -224,7 +227,6 @@
         document.getElementById('rank-name').innerText = `${rank} // LVL ${lvl.toString().padStart(2, '0')}`;
     }
 
-    // Refresh triggers
     window.onload = updateHUD;
     window.onfocus = updateHUD;
 </script>
