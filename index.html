@@ -28,21 +28,23 @@
             overflow: hidden;
         }
         
-        /* Glassmorphism Panel */
+        /* Responsive Login Card */
         .login-card {
-            width: 380px; 
-            padding: 50px; 
+            width: 90%; 
+            max-width: 380px; 
+            padding: 40px 30px; 
             background: var(--panel); 
             border: 1px solid var(--border);
             text-align: center; 
             box-shadow: 0 0 50px rgba(0,0,0,0.8); 
             border-radius: 8px;
             position: relative;
+            box-sizing: border-box;
         }
 
         .logo { 
             font-size: 1.4rem; 
-            letter-spacing: 6px; 
+            letter-spacing: 5px; 
             color: var(--blue); 
             margin-bottom: 10px; 
             font-weight: 900; 
@@ -68,7 +70,7 @@
             outline: none; 
             transition: 0.3s;
             text-align: center;
-            letter-spacing: 1px;
+            font-size: 1rem; /* Prevents iOS zoom on focus */
         }
 
         input:focus { 
@@ -88,6 +90,7 @@
             letter-spacing: 3px;
             transition: 0.2s;
             clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+            -webkit-tap-highlight-color: transparent;
         }
 
         .btn-login:hover {
@@ -103,7 +106,7 @@
         
         .teacher-link { 
             font-size: 0.5rem; 
-            color: #222; 
+            color: #1a1a1a; /* Very dark to remain discrete */
             text-decoration: none; 
             letter-spacing: 2px;
             transition: 0.5s; 
@@ -112,8 +115,8 @@
         }
 
         .teacher-link:hover { 
-            color: var(--red); 
-            text-shadow: 0 0 5px var(--red);
+            color: var(--gold); 
+            text-shadow: 0 0 5px var(--gold);
         }
 
         /* Ambient scanline effect */
@@ -126,11 +129,18 @@
             left: 0;
             animation: scanning 4s linear infinite;
             pointer-events: none;
+            border-radius: 8px;
         }
 
         @keyframes scanning {
             0% { top: 0; }
             100% { top: 100%; }
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-height: 500px) {
+            .login-card { padding: 20px; }
+            .version-tag { margin-bottom: 15px; }
         }
     </style>
 </head>
@@ -141,7 +151,7 @@
     <div class="logo">PSALMIST_NINJA</div>
     <div class="version-tag">NEURAL_CONSERVATORY_v4.0</div>
     
-    <input type="text" id="username" placeholder="OPERATOR_ID" autocomplete="off">
+    <input type="text" id="username" placeholder="OPERATOR_ID" autocomplete="off" spellcheck="false">
     <button class="btn-login" onclick="login()">INITIALIZE_SESSION</button>
 
     <div class="footer-links">
@@ -157,19 +167,19 @@
             return;
         }
         
-        // Save to local storage for use in Studio and Hub
+        // Save to local storage
         localStorage.setItem('ninjaUser', user.toUpperCase());
         
-        // Initializing user progress if new
-        if (!localStorage.getItem('totalXP')) {
-            localStorage.setItem('totalXP', '0');
+        // Initialize XP/Level if this is a fresh device/session
+        if (!localStorage.getItem('currentLevel')) {
             localStorage.setItem('currentLevel', '1');
+            localStorage.setItem('totalXP', '0');
         }
 
         window.location.href = 'hub.html';
     }
 
-    // Allow Enter key to submit
+    // Support for the 'Enter' key
     document.getElementById('username').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             login();
