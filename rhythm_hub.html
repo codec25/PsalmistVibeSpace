@@ -10,68 +10,83 @@
             --bg: #030508; --panel: #0a0e17; --blue: #4facfe; 
             --gold: #ffcc00; --green: #00ff88; --border: #1e2544; --red: #ff4b2b;
         }
+        
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
-            overflow: hidden; height: 100vh; display: flex; flex-direction: column;
+            min-height: 100vh; display: flex; flex-direction: column;
             background-image: radial-gradient(circle at center, #0b1426 0%, #030508 100%);
+            /* Removed overflow:hidden to allow scrolling on mobile */
         }
 
         /* --- Global Header --- */
         header {
-            padding: 20px 40px; border-bottom: 1px solid var(--border);
+            padding: 15px 20px; border-bottom: 1px solid var(--border);
             display: flex; justify-content: space-between; align-items: center;
-            background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            position: sticky; top: 0; z-index: 100;
         }
-        .logo { font-weight: 900; letter-spacing: 4px; font-size: 1.2rem; color: var(--blue); }
+        
+        .logo { font-weight: 900; letter-spacing: 2px; font-size: 1rem; color: var(--blue); }
         .logo span { color: #fff; }
 
-        .nav-links { display: flex; gap: 20px; }
         .btn-main { 
             text-decoration: none; color: var(--gold); border: 1px solid var(--gold);
-            padding: 8px 15px; font-size: 0.7rem; border-radius: 4px; transition: 0.3s;
+            padding: 6px 12px; font-size: 0.6rem; border-radius: 4px; transition: 0.3s;
+            text-transform: uppercase;
         }
-        .btn-main:hover { background: var(--gold); color: #000; }
 
         /* --- Hub Content --- */
         .hub-container {
             flex-grow: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; padding: 40px;
+            align-items: center; padding: 30px 20px;
         }
-        .hub-title { text-align: center; margin-bottom: 50px; }
-        .hub-title h1 { font-size: 2.5rem; margin: 0; letter-spacing: 10px; color: #fff; }
-        .hub-title p { color: var(--blue); font-size: 0.8rem; letter-spacing: 2px; opacity: 0.8; }
+        
+        .hub-title { text-align: center; margin-bottom: 30px; width: 100%; }
+        .hub-title h1 { 
+            font-size: clamp(1.5rem, 8vw, 2.5rem); 
+            margin: 0; letter-spacing: 5px; color: #fff; 
+        }
+        .hub-title p { color: var(--blue); font-size: 0.7rem; letter-spacing: 1px; opacity: 0.8; margin-top: 5px; }
 
+        /* --- Responsive Grid --- */
         .module-grid {
-            display: grid; grid-template-columns: repeat(2, 400px); gap: 25px;
+            display: grid; 
+            grid-template-columns: 1fr; /* Stacked by default for mobile */
+            gap: 20px;
+            width: 100%;
+            max-width: 900px; /* Limits width on large screens */
+        }
+
+        /* Tablet/Desktop layout */
+        @media (min-width: 768px) {
+            .module-grid { grid-template-columns: repeat(2, 1fr); }
+            .hub-container { justify-content: center; }
         }
 
         .module-card {
             background: var(--panel); border: 1px solid var(--border);
-            padding: 25px; border-radius: 8px; position: relative;
-            text-decoration: none; color: inherit; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            overflow: hidden; display: flex; flex-direction: column; gap: 10px;
+            padding: 20px; border-radius: 8px; position: relative;
+            text-decoration: none; color: inherit; transition: all 0.3s ease;
+            display: flex; flex-direction: column; gap: 8px;
+            -webkit-tap-highlight-color: transparent;
         }
-        .module-card::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--blue), transparent);
-            transform: translateX(-100%); transition: 0.5s;
-        }
-        .module-card:hover { transform: translateY(-10px); border-color: var(--blue); box-shadow: 0 10px 30px rgba(79, 172, 254, 0.2); }
-        .module-card:hover::before { transform: translateX(100%); }
 
-        .card-tag { font-size: 0.5rem; color: var(--blue); letter-spacing: 2px; font-weight: 700; }
-        .card-name { font-size: 1.2rem; font-weight: 700; color: #fff; }
-        .card-desc { font-size: 0.7rem; color: #8892b0; line-height: 1.6; }
+        .module-card:hover { transform: translateY(-5px); border-color: var(--blue); box-shadow: 0 10px 20px rgba(79, 172, 254, 0.15); }
+
+        .card-tag { font-size: 0.5rem; color: var(--blue); letter-spacing: 1px; font-weight: 700; }
+        .card-name { font-size: 1rem; font-weight: 700; color: #fff; }
+        .card-desc { font-size: 0.65rem; color: #8892b0; line-height: 1.5; }
         
-        /* Unique Accent Colors */
-        .card-architect { border-left: 4px solid var(--green); }
-        .card-ident { border-left: 4px solid var(--blue); }
-        .card-practice { border-left: 4px solid var(--gold); }
-        .card-strike { border-left: 4px solid var(--red); }
+        /* Accents */
+        .card-architect { border-left: 3px solid var(--green); }
+        .card-ident { border-left: 3px solid var(--blue); }
+        .card-practice { border-left: 3px solid var(--gold); }
+        .card-strike { border-left: 3px solid var(--red); }
 
         .xp-footer {
-            padding: 20px; border-top: 1px solid var(--border);
-            text-align: center; font-size: 0.8rem; color: #555; letter-spacing: 2px;
+            padding: 15px; border-top: 1px solid var(--border);
+            text-align: center; font-size: 0.65rem; color: #555; letter-spacing: 1px;
+            background: rgba(0,0,0,0.4);
         }
         #total-xp { color: var(--gold); font-weight: 900; }
     </style>
@@ -80,9 +95,7 @@
 
     <header>
         <div class="logo">PSALMIST <span>NINJA</span></div>
-        <div class="nav-links">
-            <a href="hub.html" class="btn-main">BACK_TO_CORE</a>
-        </div>
+        <a href="hub.html" class="btn-main">BACK_TO_CORE</a>
     </header>
 
     <div class="hub-container">
@@ -94,36 +107,35 @@
         <div class="module-grid">
             <a href="mini_studio.html" class="module-card card-architect">
                 <div class="card-tag">PHASE_05 // COMPOSITION</div>
-                <div class="card-name">NEURAL BEAT ARCHITECT</div>
-                <div class="card-desc">Construct complex temporal patterns using our 16-step neural sequencer and custom sample injection.</div>
+                <div class="card-name">BEAT ARCHITECT</div>
+                <div class="card-desc">Construct complex temporal patterns with our neural sequencer.</div>
             </a>
 
             <a href="rhythm_ident.html" class="module-card card-ident">
-                <div class="card-tag">SIGNAL_ANALYSIS // AUDITORY</div>
+                <div class="card-tag">SIGNAL_ANALYSIS</div>
                 <div class="card-name">RHYTHM_IDENT</div>
-                <div class="card-desc">Calibrate your internal clock by identifying complex rhythmic signals and syncopated pulses.</div>
+                <div class="card-desc">Identify complex rhythmic signals and syncopated pulses.</div>
             </a>
 
             <a href="rhythm_practice.html" class="module-card card-practice">
                 <div class="card-tag">PROTOCOL_04 // PHYSICAL</div>
-                <div class="card-name">RUDIMENTAL_PRACTICE</div>
-                <div class="card-desc">Master the foundations of percussion with paradiddles, double strokes, and flam drills.</div>
+                <div class="card-name">PRACTICE_DRILLS</div>
+                <div class="card-desc">Master rudimental percussion foundations and finger drills.</div>
             </a>
 
             <a href="rhythm_strike.html" class="module-card card-strike">
                 <div class="card-tag">PROTOCOL_R1 // ACCURACY</div>
                 <div class="card-name">TEMPO_STRIKE</div>
-                <div class="card-desc">Test your absolute precision against a shifting BPM clock. Millisecond accuracy required.</div>
+                <div class="card-desc">Test absolute precision against a shifting BPM clock.</div>
             </a>
         </div>
     </div>
 
     <div class="xp-footer">
-        NEURAL_SYNC_LEVEL: <span id="total-xp">00000</span> XP // SESSION_ACTIVE
+        NEURAL_SYNC: <span id="total-xp">00000</span> XP // SESSION_ACTIVE
     </div>
 
     <script>
-        // Sync XP from local storage across modules
         window.onload = () => {
             const xp = localStorage.getItem('totalXP') || "01685";
             document.getElementById('total-xp').innerText = xp.toString().padStart(5, '0');
