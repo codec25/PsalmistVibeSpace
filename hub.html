@@ -3,192 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PSALMIST_NINJA // Master_Hub</title>
+    <title>PSALMIST_NINJA // Hero Hub</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg: #030508; --panel: #0a0e17; --blue: #4facfe; 
-            --gold: #ffcc00; --border: #1e2544; --text-dim: #8892b0; --red: #ff4b2b;
+            --bg: #020406; 
+            --panel: rgba(15, 20, 30, 0.7); 
+            --blue: #4facfe; 
+            --gold: #ffcc00; 
+            --border: rgba(79, 172, 254, 0.2); 
+            --red: #ff4b2b;
+            --purple: #a18cd1;
         }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
-            padding: 0; display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh; background-image: radial-gradient(circle at center, #0b1426 0%, #030508 100%);
-            box-sizing: border-box; overflow-x: hidden;
-            touch-action: manipulation;
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(79, 172, 254, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(255, 204, 0, 0.08) 0%, transparent 40%);
+            overflow-x: hidden;
+            padding: env(safe-area-inset-top) 20px 40px 20px;
         }
-        
-        /* --- Universal Header & Dropdown --- */
+
+        /* --- Header HUD --- */
         header {
-            width: 100%; padding: 15px 20px; box-sizing: border-box;
-            background: rgba(0,0,0,0.85); backdrop-filter: blur(15px);
-            border-bottom: 1px solid var(--border);
+            width: 100%; max-width: 1100px; padding: 25px 0;
             display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 1000;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 30px;
         }
 
-        .logo { font-size: 0.85rem; font-weight: 900; letter-spacing: 3px; color: var(--blue); }
-        .logo span { color: #fff; }
+        .user-info h2 { margin: 0; font-size: 1rem; letter-spacing: 2px; color: var(--gold); }
+        .user-info span { font-size: 0.6rem; color: var(--blue); text-transform: uppercase; }
 
-        .nav-menu { position: relative; }
-        .menu-trigger {
-            background: rgba(79, 172, 254, 0.1); border: 1px solid var(--blue); color: var(--blue);
-            padding: 10px 18px; font-family: 'Orbitron'; font-size: 0.65rem;
-            cursor: pointer; border-radius: 4px; text-transform: uppercase; font-weight: 700;
-            transition: 0.3s;
+        .stat-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            padding: 10px 20px; border-radius: 30px;
+            font-size: 0.7rem; color: #fff;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
         }
-        .menu-trigger:active { background: var(--blue); color: #000; }
 
-        .dropdown-content {
-            display: none; position: absolute; right: 0; top: 50px;
-            background: var(--panel); border: 1px solid var(--border);
-            min-width: 220px; box-shadow: 0 15px 40px rgba(0,0,0,0.8);
-            border-radius: 4px; overflow: hidden;
+        /* --- Main Grid --- */
+        .content-stack {
+            width: 100%; max-width: 1100px;
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
         }
-        .dropdown-content.show { display: block; animation: slideDown 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
-        .dropdown-item {
-            display: block; padding: 16px 20px; color: #fff; text-decoration: none;
-            font-size: 0.7rem; border-bottom: 1px solid #111; transition: 0.3s;
-            letter-spacing: 1px;
+        .card {
+            background: var(--panel);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--border); border-radius: 20px;
+            padding: 25px; text-decoration: none; color: inherit;
+            display: flex; align-items: center; gap: 20px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .dropdown-item:hover { background: rgba(79, 172, 254, 0.15); color: var(--blue); }
-        .dropdown-item.critical { color: var(--red); border-left: 3px solid var(--red); }
-        .dropdown-item.disabled { opacity: 0.4; pointer-events: none; }
 
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-15px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- Main Content --- */
-        .content-wrap { width: 100%; max-width: 1000px; padding: 25px; box-sizing: border-box; }
-
-        .user-hud { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 35px; }
-        .user-identity { font-size: 0.75rem; letter-spacing: 1px; }
-        .user-stat { color: var(--gold); font-size: 0.65rem; letter-spacing: 1px; text-align: right; line-height: 1.6; }
-
-        /* --- Hero Banner --- */
-        .active-pathway { 
-            background: linear-gradient(135deg, rgba(79, 172, 254, 0.15) 0%, rgba(10, 14, 23, 0.4) 100%); 
-            border: 1px solid var(--border); border-left: 5px solid var(--blue); 
-            padding: 25px; margin-bottom: 30px; border-radius: 4px;
-            display: flex; flex-direction: column; gap: 20px;
+        .card:hover { 
+            transform: translateY(-5px); border-color: var(--blue);
+            background: rgba(79, 172, 254, 0.05);
         }
-        @media (min-width: 768px) { .active-pathway { flex-direction: row; justify-content: space-between; align-items: center; } }
-        
-        .pathway-info h2 { font-size: 1.2rem; margin: 5px 0 0 0; letter-spacing: 3px; font-weight: 900; }
-        .pathway-info span { font-size: 0.55rem; color: var(--blue); letter-spacing: 2px; text-transform: uppercase; }
+        .card:active { transform: scale(0.95); }
 
-        /* --- Training Grid --- */
-        .grid-container { display: grid; grid-template-columns: 1fr; gap: 20px; width: 100%; }
-        @media (min-width: 650px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
-
-        .tile { 
-            background: var(--panel); border: 1px solid var(--border); 
-            padding: 28px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; 
-            display: flex; flex-direction: column; justify-content: space-between;
-            min-height: 160px; text-decoration: none; color: inherit;
-            -webkit-tap-highlight-color: transparent; border-radius: 4px;
+        .card-icon {
+            width: 60px; height: 60px; border-radius: 16px;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; flex-shrink: 0;
         }
-        .tile:hover { border-color: var(--blue); box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateY(-5px); }
-        .tile h3 { font-size: 1.1rem; letter-spacing: 2px; margin: 12px 0; color: #fff; }
-        .tile p { font-size: 0.75rem; color: var(--text-dim); line-height: 1.6; margin: 0; font-family: sans-serif; }
-        .tile-tag { font-size: 0.55rem; color: var(--blue); letter-spacing: 2px; font-weight: 900; }
 
-        .btn-action { 
-            padding: 18px 30px; background: var(--blue); color: #000; 
-            font-weight: 900; font-size: 0.75rem; border: none; cursor: pointer; 
-            font-family: 'Orbitron'; clip-path: polygon(8% 0, 100% 0, 92% 100%, 0% 100%);
-            transition: 0.2s;
+        .card-content { flex: 1; }
+        .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 5px; color: #fff; letter-spacing: 1px; }
+        .card-desc { font-size: 0.75rem; color: #888; line-height: 1.4; }
+
+        /* --- Featured Piano Lab --- */
+        .card.piano-lab { 
+            grid-column: 1 / -1; 
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(15, 20, 30, 0.7) 100%);
+            border-color: var(--blue);
         }
-        .btn-action:active { transform: scale(0.96); background: #fff; }
-        @media (max-width: 767px) { .btn-action { width: 100%; } }
+        .card.piano-lab .card-icon { color: var(--blue); }
 
-        .footer-logo { margin-top: 60px; text-align: center; padding: 40px 0; border-top: 1px solid #111; }
-        .footer-logo a { color: #333; text-decoration: none; font-size: 0.55rem; letter-spacing: 4px; transition: 0.3s; }
-        .footer-logo a:hover { color: var(--gold); }
+        /* --- Color Coding for Kids --- */
+        .card.ear-training .card-icon { color: var(--gold); }
+        .card.beat-academy .card-icon { color: var(--green); }
+        .card.secret-classroom .card-icon { color: var(--purple); }
+
+        /* --- Responsive Tweaks --- */
+        @media (max-width: 850px) {
+            .content-stack { grid-template-columns: 1fr; }
+            header { flex-direction: column; gap: 15px; text-align: center; }
+        }
+
+        footer { margin-top: 50px; text-align: center; padding-bottom: 40px; }
+        .btn-portal {
+            display: inline-block; text-decoration: none; color: var(--gold); border: 1px solid var(--gold);
+            padding: 12px 25px; border-radius: 50px; font-size: 0.7rem; letter-spacing: 2px;
+            background: rgba(255, 204, 0, 0.05); transition: 0.3s;
+        }
+        .btn-portal:hover { background: var(--gold); color: #000; }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="logo">PSALMIST_<span>NINJA</span></div>
-        <div class="nav-menu">
-            <button class="menu-trigger" onclick="toggleMenu()" id="menuBtn">NEURAL_LINKS ▾</button>
-            <div id="navDropdown" class="dropdown-content">
-                <a href="grade_exam.html" class="dropdown-item critical">◈ TAKE_GRADE_EXAM</a>
-                <a href="theory.html" class="dropdown-item">◈ THEORY_DATABASE</a>
-                <a href="#" class="dropdown-item disabled">◈ COMMUNITY_FEED (LOCKED)</a>
-                <a href="settings.html" class="dropdown-item">◈ SYSTEM_SETTINGS</a>
-                <a href="logout.html" class="dropdown-item">◈ TERMINATE_SESSION</a>
-            </div>
+        <div class="user-info">
+            <h2 id="display-name">MUSIC NINJA</h2>
+            <span id="display-rank">LEVEL 01 ACADEMY</span>
         </div>
+        <div class="stat-pill">MY SCORE: <span id="display-xp" style="color:var(--gold)">00000</span></div>
     </header>
 
-    <div class="content-wrap">
-        <div class="user-hud">
-            <div class="user-identity">OPERATOR: <span id="display-name" style="color:var(--blue); font-weight:900;">---</span></div>
-            <div class="user-stat">SYNC: <span id="display-xp" style="color:#fff">00000</span> XP<br><span id="display-rank" style="color:var(--gold)">GRADE_01</span></div>
-        </div>
-
-        <div class="active-pathway">
-            <div class="pathway-info">
-                <span>PRIMARY_TERMINAL</span>
-                <h2>GRAND_STATION_PRO</h2>
+    <div class="content-stack">
+        <a href="grand_station.html" class="card piano-lab">
+            <div class="card-icon">🎹</div>
+            <div class="card-content">
+                <div class="card-title">THE PIANO LAB</div>
+                <div class="card-desc">Play the giant piano, record your songs, and explore cool sounds!</div>
             </div>
-            <button class="btn-action" onclick="window.location.href='grand_station.html'">LAUNCH_STUDIO</button>
-        </div>
+            <div style="color: var(--blue); font-size: 1.2rem;">❯</div>
+        </a>
 
-        <div class="grid-container">
-            <a href="rhythm_hub.html" class="tile">
-                <div>
-                    <div class="tile-tag">TEMPORAL_DRIVE</div>
-                    <h3>RHYTHM_HUB</h3>
-                    <p>Beat architecture, rhythmic identification protocols, and rudimental finger drills.</p>
-                </div>
-            </a>
+        <a href="pitch_hub.html" class="card ear-training">
+            <div class="card-icon">🎯</div>
+            <div class="card-content">
+                <div class="card-title">EAR TRAINING</div>
+                <div class="card-desc">Can you guess the note? Train your ears to hear like a master.</div>
+            </div>
+        </a>
 
-            <a href="pitch_hub.html" class="tile">
-                <div>
-                    <div class="tile-tag">FREQUENCY_CORE</div>
-                    <h3>PITCH_HUB</h3>
-                    <p>Interval relations, modal logic calibration, and high-stakes pitch combat training.</p>
-                </div>
-            </a>
-        </div>
+        <a href="rhythm_hub.html" class="card beat-academy">
+            <div class="card-icon">🥁</div>
+            <div class="card-content">
+                <div class="card-title">BEAT ACADEMY</div>
+                <div class="card-desc">Become a drum master! Learn the secrets of rhythm and timing.</div>
+            </div>
+        </a>
 
-        <div class="footer-logo">
-            <a href="https://www.psalmistvibesstudio.com/" target="_blank">PSALMISTVIBESTUDIO.COM // ACCREDITATION_PORTAL</a>
-        </div>
+        <a href="theory.html" class="card secret-classroom">
+            <div class="card-icon">📖</div>
+            <div class="card-content">
+                <div class="card-title">SECRET CLASSROOM</div>
+                <div class="card-desc">Unlock new levels and learn the magic rules of music theory.</div>
+            </div>
+        </a>
     </div>
 
+    <footer>
+        <a href="https://www.psalmistvibesstudio.com/" target="_blank" class="btn-portal">
+            VISIT THE STUDIO WEBSITE
+        </a>
+        <p style="font-size: 0.5rem; color: #333; margin-top: 30px; letter-spacing: 2px;">
+            SYSTEM_VER: 3.4.1 // PSALMIST NINJA STUDIOS
+        </p>
+    </footer>
+
     <script>
-        function toggleMenu() {
-            document.getElementById("navDropdown").classList.toggle("show");
-        }
-
-        // Global click listener to close menu
-        window.onclick = function(event) {
-            if (!event.target.matches('.menu-trigger')) {
-                const dropdowns = document.getElementsByClassName("dropdown-content");
-                for (let i = 0; i < dropdowns.length; i++) {
-                    let openDropdown = dropdowns[i];
-                    if (openDropdown.classList.contains('show')) {
-                        openDropdown.classList.remove('show');
-                    }
-                }
-            }
-        }
-
+        /**
+         * HUB SYNC LOGIC
+         * Keeps your XP and Level tracking working perfectly.
+         */
         window.onload = () => {
-            // Fetch persistent data
-            const user = localStorage.getItem('ninjaUser') || "NINJA_01";
             const xp = localStorage.getItem('totalXP') || "0";
             const level = localStorage.getItem('currentLevel') || "1";
+            const user = localStorage.getItem('ninjaUser') || "MUSIC NINJA";
 
-            // Update UI
             document.getElementById('display-name').innerText = user.toUpperCase();
             document.getElementById('display-xp').innerText = xp.toString().padStart(5, '0');
-            document.getElementById('display-rank').innerText = "GRADE_" + level.toString().padStart(2, '0');
+            document.getElementById('display-rank').innerText = "LEVEL " + level.toString().padStart(2, '0') + " ACADEMY";
         };
     </script>
 </body>
