@@ -34,7 +34,7 @@
             width: 100%; max-width: 1100px; padding: 25px 0;
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid rgba(255,255,255,0.05);
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .user-info h2 { margin: 0; font-size: 1rem; letter-spacing: 2px; color: var(--gold); }
@@ -48,6 +48,19 @@
             padding: 10px 20px; border-radius: 30px;
             font-size: 0.7rem; color: #fff;
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        }
+
+        /* --- Broadcast Bar --- */
+        #announcement-bar {
+            display: none; width: 100%; max-width: 1100px; 
+            background: rgba(255, 204, 0, 0.1); border: 1px solid var(--gold); 
+            color: var(--gold); padding: 15px; border-radius: 12px; 
+            margin-bottom: 25px; font-size: 0.7rem; text-align: center; 
+            letter-spacing: 1.5px; animation: glow 2s infinite alternate;
+        }
+        @keyframes glow {
+            from { box-shadow: 0 0 5px rgba(255, 204, 0, 0.2); }
+            to { box-shadow: 0 0 15px rgba(255, 204, 0, 0.4); }
         }
 
         /* --- Log Out Button --- */
@@ -86,7 +99,7 @@
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .card:hover { transform: translateY(-5px); border-color: var(--blue); }
+        .card:hover { transform: translateY(-5px); border-color: var(--blue); background: rgba(79, 172, 254, 0.05); }
         .card:active { transform: scale(0.98); }
 
         .card-icon {
@@ -112,6 +125,12 @@
         }
 
         footer { margin-top: 50px; text-align: center; padding-bottom: 40px; }
+        .btn-portal {
+            display: inline-block; text-decoration: none; color: var(--gold); border: 1px solid var(--gold);
+            padding: 12px 25px; border-radius: 50px; font-size: 0.7rem; letter-spacing: 2px;
+            background: rgba(255, 204, 0, 0.05); transition: 0.3s;
+        }
+        .btn-portal:hover { background: var(--gold); color: #000; }
     </style>
 </head>
 <body>
@@ -128,6 +147,10 @@
             </button>
         </div>
     </header>
+
+    <div id="announcement-bar">
+        <strong>SENSEI_NOTICE:</strong> <span id="announcement-text"></span>
+    </div>
 
     <div class="content-stack">
         <a href="grand_station.html" class="card piano-lab">
@@ -165,6 +188,9 @@
     </div>
 
     <footer>
+        <a href="https://www.psalmistvibesstudio.com/" target="_blank" class="btn-portal">
+            VISIT THE STUDIO WEBSITE
+        </a>
         <p style="font-size: 0.5rem; color: #333; margin-top: 30px; letter-spacing: 2px;">
             SYSTEM_VER: 3.4.1 // PSALMIST NINJA STUDIOS
         </p>
@@ -177,10 +203,17 @@
 
             document.getElementById('display-name').innerText = user.toUpperCase();
             document.getElementById('display-rank').innerText = "LEVEL " + level.toString().padStart(2, '0') + " ACADEMY";
+
+            // Load Sensei Announcement
+            const msg = localStorage.getItem('academy_announcement');
+            if (msg && msg.trim() !== "") {
+                document.getElementById('announcement-bar').style.display = 'block';
+                document.getElementById('announcement-text').innerText = msg;
+            }
         };
 
         function logout() {
-            if (confirm("DISCONNECT FROM HUB?\nYour current session will be closed.")) {
+            if (confirm("DISCONNECT FROM HUB?\nYour mission progress is saved in this browser.")) {
                 window.location.href = 'index.html';
             }
         }
