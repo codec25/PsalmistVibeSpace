@@ -7,162 +7,126 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg: #05070a; --panel: rgba(10, 15, 25, 0.98); --blue: #4facfe; 
-            --gold: #ffcc00; --green: #00ff88; --border: #1e2544; --red: #ff4b2b;
+            --bg: #020406; --panel: rgba(15, 20, 30, 0.95); --blue: #4facfe; 
+            --gold: #ffcc00; --red: #ff4b2b; --border: rgba(79, 172, 254, 0.2); --green: #00ff88; 
         }
+
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
-            display: flex; flex-direction: column; min-height: 100vh;
-            padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
-            background-image: radial-gradient(circle at center, #0b1426 0%, #05070a 100%);
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            padding: env(safe-area-inset-top) 10px 40px 10px;
             overflow-x: hidden;
         }
 
-        /* --- HUD --- */
-        .hud-top {
-            display: flex; justify-content: space-between; align-items: center; padding: 15px 20px;
-            font-size: 0.65rem; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.3);
-        }
+        header { width: 100%; max-width: 1100px; padding: 20px 0; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-weight: 900; letter-spacing: 2px; font-size: 0.9rem; }
+        .logo span { color: var(--blue); }
 
-        .main-stage { flex-grow: 1; width: 100%; max-width: 1100px; margin: 0 auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
-
-        /* --- Viz Terminal --- */
         .viz-terminal {
-            background: #000; border: 1px solid var(--border); border-radius: 12px;
-            height: 100px; position: relative; overflow: hidden;
+            width: 100%; max-width: 1100px; height: 120px; background: #000;
+            border: 1px solid var(--border); border-radius: 12px; margin-bottom: 20px;
+            overflow: hidden; position: relative;
         }
         canvas { width: 100%; height: 100%; }
 
-        /* --- Config Grid --- */
-        .config-grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-            gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid var(--border);
-        }
-        .config-box label { display: block; font-size: 0.5rem; color: #555; margin-bottom: 5px; letter-spacing: 1px; }
-
-        .btn-util { 
-            background: #0a0e17; border: 1px solid var(--border); color: var(--blue); 
-            padding: 8px; font-family: 'Orbitron'; font-size: 0.6rem; cursor: pointer; border-radius: 4px;
-            text-align: center; text-decoration: none; display: block;
+        .controls-grid {
+            width: 100%; max-width: 1100px; display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px; margin-bottom: 20px;
         }
 
-        /* --- Sequencer --- */
-        .sequencer-scroll { width: 100%; overflow-x: auto; padding-bottom: 10px; -webkit-overflow-scrolling: touch; }
-        .track-row { 
-            display: grid; grid-template-columns: 140px 1fr; gap: 15px; align-items: center;
-            background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; min-width: 850px; margin-bottom: 8px;
+        .ctrl-box { background: var(--panel); padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
+        .ctrl-box label { display: block; font-size: 0.5rem; color: #555; margin-bottom: 8px; letter-spacing: 1px; }
+
+        .btn-action {
+            width: 100%; padding: 12px; background: #0a0e17; border: 1px solid var(--border);
+            color: var(--blue); font-family: 'Orbitron'; font-size: 0.6rem; border-radius: 6px;
+            cursor: pointer; transition: 0.2s; text-align: center; text-decoration: none;
         }
 
-        .track-meta { display: flex; flex-direction: column; gap: 5px; }
-        .track-name { font-size: 0.65rem; color: var(--blue); font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
-        .load-btn { font-size: 0.5rem; color: var(--gold); border: 1px solid; padding: 3px 6px; border-radius: 4px; cursor: pointer; }
+        .sequencer-container { 
+            width: 100%; max-width: 1100px; background: var(--panel); 
+            border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+            overflow-x: auto;
+        }
+
+        .track-row { display: grid; grid-template-columns: 150px 1fr; gap: 20px; align-items: center; margin-bottom: 12px; min-width: 850px; }
+        .track-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .track-name { font-size: 0.65rem; font-weight: 700; color: var(--blue); }
+        .load-btn { font-size: 0.45rem; color: var(--gold); border: 1px solid var(--gold); padding: 2px 5px; border-radius: 3px; cursor: pointer; }
 
         .step-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 6px; }
         .step { 
-            aspect-ratio: 1/1; background: #080a0f; border: 1px solid #1a1a1a; 
-            cursor: pointer; border-radius: 5px; min-height: 40px;
+            aspect-ratio: 1/1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 4px; cursor: pointer; min-height: 35px;
         }
-        .step.active { background: var(--blue); box-shadow: 0 0 10px var(--blue); border-color: transparent; }
+        .step.active { background: var(--blue); box-shadow: 0 0 10px var(--blue); border: none; }
         .step.playing { border: 2px solid var(--gold); }
 
-        /* --- Footer Controls --- */
-        .master-controls {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 20px; background: rgba(0,0,0,0.4); border-radius: 12px; margin-top: auto;
+        #mission-briefing {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px;
         }
-        .btn-play { 
-            background: var(--green); color: #000; border: none; padding: 15px 40px; 
-            font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 50px;
-            font-size: 0.8rem; letter-spacing: 2px;
-        }
-        .btn-play.active { background: var(--red); }
-
-        /* --- Overlay --- */
-        #briefing-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95);
-            z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px;
-        }
-        .briefing-card {
-            max-width: 500px; padding: 30px; border: 1px solid var(--blue); background: var(--panel); border-radius: 20px;
-            text-align: center; box-shadow: 0 0 30px rgba(79, 172, 254, 0.2);
+        .brief-card {
+            max-width: 500px; background: var(--panel); border: 1px solid var(--blue);
+            padding: 30px; border-radius: 16px; text-align: center;
         }
 
-        @media (max-width: 600px) {
-            .hud-top { padding: 15px 10px; }
-            .btn-play { padding: 12px 25px; width: 100%; }
-            .master-controls { flex-direction: column; gap: 15px; }
+        .btn-main {
+            background: var(--blue); color: #000; border: none; padding: 15px 40px;
+            font-family: 'Orbitron'; font-weight: 900; border-radius: 50px; cursor: pointer; width: 100%;
         }
     </style>
 </head>
 <body>
 
-    <div id="briefing-overlay">
-        <div class="briefing-card">
-            <h2 style="color: var(--blue); font-size: 1rem; margin-top: 0;">MINI_STUDIO // INITIALIZATION</h2>
-            <div style="text-align: left; font-size: 0.75rem; line-height: 1.6; color: #ccc; margin: 20px 0;">
-                <p>• <b>NEURAL SEQUENCER:</b> 16-step temporal engine. Toggle steps to program triggers.</p>
-                <p>• <b>SAMPLE LOADER:</b> Replace defaults with custom user audio (WAV/MP3).</p>
-                <p>• <b>MOBILE INTEGRATION:</b> Safe-area support and touch-optimized sequencer grid.</p>
-                <p>• <b>DATA ARCHIVE:</b> Save patterns as <b>.ninja</b> protocol files.</p>
-            </div>
-            <button class="btn-play" onclick="closeBriefing()" style="width: 100%;">START_ENGINE</button>
-            <button class="btn-util" onclick="closeBriefing()" style="margin-top:10px; width:100%; border:none; color:#555;">SKIP_INSTRUCTIONS</button>
+    <div id="mission-briefing">
+        <div class="brief-card">
+            <h2 style="color: var(--blue); font-size: 1rem;">MINI_STUDIO // INITIALIZATION</h2>
+            <p style="font-size: 0.75rem; text-align: left; color: #ccc; line-height: 1.6; margin: 20px 0;">
+                • Program the 16-step grid to trigger neural audio pulses.<br>
+                • Load custom WAV/MP3 samples to customize your tracks.<br>
+                • Use the SKIP button to bypass these instructions.
+            </p>
+            <button class="btn-main" onclick="closeBriefing()">START_ENGINE</button>
+            <button class="btn-action" onclick="closeBriefing()" style="margin-top:10px; border:none; color:#555;">SKIP_INSTRUCTIONS</button>
         </div>
     </div>
 
-    <div class="hud-top">
-        <div>PROTOCOL: MINI_STUDIO</div>
+    <header>
+        <div class="logo">MINI_<span>STUDIO</span></div>
         <div style="display:flex; gap:10px;">
-            <button class="btn-util" onclick="savePattern()">SAVE</button>
-            <label class="btn-util" for="load-file" style="cursor:pointer">LOAD</label>
+            <button class="btn-action" onclick="savePattern()">SAVE</button>
+            <label class="btn-action" for="load-file">LOAD</label>
             <input type="file" id="load-file" style="display:none" accept=".ninja" onchange="loadPattern(this)">
-            <a href="rhythm_hub.html" class="btn-util">[ EXIT ]</a>
+        </div>
+    </header>
+
+    <div class="viz-terminal"><canvas id="visualizer"></canvas></div>
+
+    <div class="controls-grid">
+        <div class="ctrl-box">
+            <label>TEMPO</label>
+            <input type="range" id="bpm-slider" min="60" max="200" value="120" oninput="updateTempo(this.value)" style="width:100%;">
+            <div id="bpm-val" style="font-size:0.7rem; color:var(--gold); margin-top:5px;">120 BPM</div>
+        </div>
+        <div class="ctrl-box">
+            <label>ENGINE</label>
+            <button class="btn-main" id="play-btn" onclick="togglePlay()" style="padding:10px; font-size:0.6rem;">START</button>
         </div>
     </div>
 
-    <div class="main-stage">
-        <div class="viz-terminal">
-            <canvas id="studio-viz"></canvas>
-        </div>
-
-        <div class="config-grid">
-            <div class="config-box">
-                <label>TEMPO_SYNC</label>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <input type="range" id="bpm-slider" min="60" max="200" value="120" oninput="updateTempo(this.value)" style="flex-grow:1; accent-color: var(--gold);">
-                    <div style="font-size: 0.7rem; color: var(--gold); min-width:60px;"><span id="bpm-val">120</span> BPM</div>
-                </div>
-            </div>
-            <div class="config-box">
-                <label>METRO_CLOCK</label>
-                <button class="btn-util" id="metro-toggle" onclick="toggleMetro()" style="width:100%">OFF</button>
-            </div>
-            <div class="config-box">
-                <label>SYSTEM_DATA</label>
-                <button class="btn-util" onclick="clearPattern()" style="width:100%; color: var(--red);">RESET_GRID</button>
-            </div>
-        </div>
-
-        <div class="sequencer-scroll">
-            <div id="sequencer-grid"></div>
-        </div>
-
-        <div class="master-controls">
-            <button class="btn-play" id="play-btn" onclick="togglePlay()">START_ENGINE</button>
-            <div style="font-size: 0.5rem; color: #444; letter-spacing: 2px;">STATUS: NEURAL_LINK_READY</div>
-        </div>
-    </div>
+    <div class="sequencer-container"><div id="sequencer-grid"></div></div>
 
     <script>
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const analyzer = audioCtx.createAnalyser();
         const trackNames = ["KICK", "SNARE", "HI_HAT", "LEAD", "BASS"];
-        
         let sampleBuffers = [null, null, null, null, null];
         let grid = Array(5).fill().map(() => Array(16).fill(false));
-        let isPlaying = false, currentStep = 0, nextNoteTime = 0, tempo = 120, metroActive = false;
+        let isPlaying = false, currentStep = 0, nextNoteTime = 0, tempo = 120;
 
         function init() {
             const seq = document.getElementById('sequencer-grid');
@@ -171,86 +135,60 @@
                 const row = document.createElement('div');
                 row.className = 'track-row';
                 row.innerHTML = `
-                    <div class="track-meta">
-                        <div class="track-name">
-                            <span id="label-${i}">${name}</span>
-                            <label class="load-btn" for="sample-${i}">LOAD</label>
-                        </div>
-                        <input type="file" id="sample-${i}" style="display:none" accept="audio/*" onchange="loadUserSample(${i}, this)">
-                        <input type="range" min="0" max="1" step="0.01" value="0.7" id="vol-${i}" style="width:100%; height:3px; accent-color:var(--blue);">
+                    <div class="track-info">
+                        <div class="track-header"><span class="track-name" id="n-${i}">${name}</span><label class="load-btn" for="s-${i}">LOAD</label></div>
+                        <input type="file" id="s-${i}" style="display:none" accept="audio/*" onchange="loadSample(${i}, this)">
+                        <input type="range" min="0" max="1" step="0.01" value="0.7" id="v-${i}" style="width:100%;">
                     </div>
-                    <div class="step-grid" id="grid-${i}"></div>
+                    <div class="step-grid" id="g-${i}"></div>
                 `;
-                const sGrid = row.querySelector(`#grid-${i}`);
+                const g = row.querySelector(`#g-${i}`);
                 for(let s=0; s<16; s++) {
-                    const btn = document.createElement('div');
-                    btn.className = grid[i][s] ? 'step active' : 'step';
-                    btn.onclick = () => { if(audioCtx.state === 'suspended') audioCtx.resume(); grid[i][s] = !grid[i][s]; btn.classList.toggle('active'); };
-                    sGrid.appendChild(btn);
+                    const b = document.createElement('div');
+                    b.className = grid[i][s] ? 'step active' : 'step';
+                    b.onclick = () => { if(audioCtx.state==='suspended') audioCtx.resume(); grid[i][s]=!grid[i][s]; b.classList.toggle('active'); };
+                    g.appendChild(b);
                 }
                 seq.appendChild(row);
             });
-            startVisualizer();
+            drawVisualizer();
         }
 
-        async function loadUserSample(idx, input) {
+        async function loadSample(idx, input) {
             const file = input.files[0];
             if(!file) return;
             const buffer = await audioCtx.decodeAudioData(await file.arrayBuffer());
             sampleBuffers[idx] = buffer;
-            document.getElementById(`label-${idx}`).style.color = "var(--green)";
+            document.getElementById(`n-${idx}`).style.color = "var(--green)";
         }
 
         function triggerSound(idx, time) {
-            const vol = parseFloat(document.getElementById(`vol-${idx}`)?.value || 0.7);
+            const vol = parseFloat(document.getElementById(`v-${idx}`).value);
             if(sampleBuffers[idx]) {
-                const src = audioCtx.createBufferSource();
-                src.buffer = sampleBuffers[idx];
-                const g = audioCtx.createGain();
-                g.gain.setValueAtTime(vol, time);
-                src.connect(g).connect(audioCtx.destination);
-                src.connect(g).connect(analyzer);
-                src.start(time);
+                const s = audioCtx.createBufferSource(); s.buffer = sampleBuffers[idx];
+                const g = audioCtx.createGain(); g.gain.setValueAtTime(vol, time);
+                s.connect(g).connect(audioCtx.destination); s.connect(g).connect(analyzer);
+                s.start(time);
             } else {
-                const osc = audioCtx.createOscillator();
-                const g = audioCtx.createGain();
-                osc.frequency.setValueAtTime(idx === 0 ? 55 : 350 + (idx*100), time);
-                if(idx === 0) osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.2);
-                g.gain.setValueAtTime(vol * 0.4, time);
-                g.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
-                osc.connect(g).connect(audioCtx.destination);
-                osc.connect(g).connect(analyzer);
-                osc.start(time); osc.stop(time + 0.1);
+                const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                o.frequency.setValueAtTime(idx === 0 ? 55 : 200 + (idx*100), time);
+                g.gain.setValueAtTime(vol*0.3, time); g.gain.exponentialRampToValueAtTime(0.001, time+0.1);
+                o.connect(g).connect(audioCtx.destination); o.connect(g).connect(analyzer);
+                o.start(time); o.stop(time+0.1);
             }
-        }
-
-        function toggleMetro() {
-            metroActive = !metroActive;
-            const btn = document.getElementById('metro-toggle');
-            btn.innerText = metroActive ? "ON" : "OFF";
-            btn.style.color = metroActive ? "var(--green)" : "var(--blue)";
         }
 
         function scheduler() {
             while (nextNoteTime < audioCtx.currentTime + 0.1) {
                 for(let i=0; i<5; i++) { if(grid[i][currentStep]) triggerSound(i, nextNoteTime); }
-                if(metroActive && currentStep % 4 === 0) {
-                    const mOsc = audioCtx.createOscillator();
-                    const mG = audioCtx.createGain();
-                    mOsc.frequency.setValueAtTime(currentStep === 0 ? 1000 : 600, nextNoteTime);
-                    mG.gain.setValueAtTime(0.05, nextNoteTime);
-                    mG.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.05);
-                    mOsc.connect(mG).connect(audioCtx.destination);
-                    mOsc.start(nextNoteTime); mOsc.stop(nextNoteTime + 0.05);
-                }
-                updateVisualStep(currentStep);
+                updateVisual(currentStep);
                 nextNoteTime += (60 / tempo / 4);
                 currentStep = (currentStep + 1) % 16;
             }
             if (isPlaying) setTimeout(scheduler, 25);
         }
 
-        function updateVisualStep(s) {
+        function updateVisual(s) {
             document.querySelectorAll('.step').forEach(el => el.classList.remove('playing'));
             document.querySelectorAll('.track-row').forEach(row => {
                 const step = row.querySelector(`.step:nth-child(${s+1})`);
@@ -261,37 +199,29 @@
         function togglePlay() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             isPlaying = !isPlaying;
-            document.getElementById('play-btn').innerText = isPlaying ? "STOP_ENGINE" : "START_ENGINE";
-            document.getElementById('play-btn').classList.toggle('active', isPlaying);
+            document.getElementById('play-btn').innerText = isPlaying ? "STOP" : "START";
             if (isPlaying) { currentStep = 0; nextNoteTime = audioCtx.currentTime; scheduler(); }
         }
 
-        function updateTempo(v) { tempo = v; document.getElementById('bpm-val').innerText = v; }
-        function clearPattern() { grid = Array(5).fill().map(() => Array(16).fill(false)); init(); }
-        function closeBriefing() { document.getElementById('briefing-overlay').style.display = 'none'; if(audioCtx.state==='suspended') audioCtx.resume(); }
-
+        function updateTempo(v) { tempo = v; document.getElementById('bpm-val').innerText = v + " BPM"; }
+        function closeBriefing() { document.getElementById('mission-briefing').style.display='none'; }
+        
         function savePattern() {
-            const data = { grid, tempo };
-            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'session.ninja'; a.click();
+            const blob = new Blob([JSON.stringify({grid, tempo})], {type:'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'studio.ninja'; a.click();
         }
 
         function loadPattern(input) {
-            const file = input.files[0];
-            if(!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
                 const data = JSON.parse(e.target.result);
-                grid = data.grid; tempo = data.tempo;
-                document.getElementById('bpm-slider').value = tempo;
-                updateTempo(tempo);
-                init();
+                grid = data.grid; tempo = data.tempo; init();
             };
-            reader.readAsText(file);
+            reader.readAsText(input.files[0]);
         }
 
-        function startVisualizer() {
-            const canvas = document.getElementById('studio-viz');
+        function drawVisualizer() {
+            const canvas = document.getElementById('visualizer');
             const ctx = canvas.getContext('2d');
             function render() {
                 requestAnimationFrame(render);
@@ -311,8 +241,8 @@
         }
 
         window.onload = () => {
-            const canvas = document.getElementById('studio-viz');
-            canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
+            const c = document.getElementById('visualizer');
+            c.width = c.offsetWidth; c.height = c.offsetHeight;
             init();
         };
     </script>
