@@ -2,97 +2,128 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PITCH_RECOGNITION // Neural Training</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PROTOCOL_01: PITCH_RECOGNITION</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg: #020408; --panel: rgba(10, 15, 25, 0.9); --blue: #4facfe; 
-            --gold: #ffcc00; --green: #00ff88; --border: #1e2544; --red: #ff4b2b;
+            --bg: #020406; --panel: rgba(15, 20, 30, 0.7); --blue: #4facfe; 
+            --gold: #ffcc00; --green: #00ff88; --border: rgba(79, 172, 254, 0.2); --red: #ff4b2b;
         }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
-            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
-            background-image: radial-gradient(circle at center, #0b1426 0%, #020408 100%);
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #020406 100%);
+            overflow-x: hidden;
+            padding: env(safe-area-inset-top) 15px 40px 15px;
         }
 
+        /* --- Minimalist HUD --- */
         .hud-top {
-            display: flex; justify-content: space-between; align-items: center; padding: 15px 40px;
-            font-size: 0.65rem; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.3);
+            width: 100%; max-width: 800px; padding: 20px 0;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); margin-bottom: 20px;
         }
+        .hud-top div { font-size: 0.6rem; letter-spacing: 2px; }
+        .xp-display { color: var(--gold); font-weight: 700; }
+        .exit-link { color: var(--blue); text-decoration: none; font-weight: 900; }
 
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .main-stage { width: 100%; max-width: 600px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
 
-        /* --- Toggles & Config --- */
-        .controls-row { display: flex; gap: 20px; margin-bottom: 25px; }
-        .config-box { background: rgba(255,255,255,0.05); padding: 10px 15px; border: 1px solid var(--border); display: flex; align-items: center; gap: 10px; border-radius: 4px; }
-        .config-box label { font-size: 0.55rem; color: var(--blue); letter-spacing: 1px; }
+        /* --- Refined Config Controls --- */
+        .controls-row { 
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 100%;
+        }
+        .config-box { 
+            background: var(--panel); border: 1px solid var(--border); padding: 8px 12px; 
+            border-radius: 12px; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px);
+        }
+        .config-box label { font-size: 0.5rem; color: var(--blue); letter-spacing: 1px; text-transform: uppercase; }
         
         .toggle-btn { 
-            background: #111; border: 1px solid var(--border); color: #555; 
-            padding: 8px 15px; font-family: 'Orbitron'; font-size: 0.6rem; cursor: pointer; 
+            background: rgba(255,255,255,0.05); border: 1px solid transparent; color: #666; 
+            padding: 5px 10px; font-family: 'Orbitron'; font-size: 0.55rem; cursor: pointer; border-radius: 6px;
         }
-        .toggle-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.05); }
+        .toggle-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.1); }
 
-        /* --- View Containers --- */
-        .view-container { width: 100%; display: flex; justify-content: center; min-height: 160px; }
+        select { background: none; color: #fff; border: 1px solid var(--border); font-family: 'Orbitron'; font-size: 0.6rem; border-radius: 4px; padding: 2px; }
+
+        /* --- Visualization Area --- */
+        .view-container { 
+            width: 100%; min-height: 140px; display: flex; justify-content: center; align-items: center;
+            background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px inset var(--border);
+        }
         .hidden { display: none !important; }
 
-        /* Screen View */
-        .viz-window {
-            width: 400px; height: 100px; background: rgba(0,0,0,0.6); border: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: center; border-radius: 8px;
+        .pitch-orb { 
+            width: 60px; height: 60px; border-radius: 50%; background: var(--blue); opacity: 0.1; 
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
         }
-        .pitch-orb { width: 40px; height: 40px; border-radius: 50%; background: var(--blue); opacity: 0.1; transition: 0.2s; }
-        .pitch-orb.active { opacity: 1; box-shadow: 0 0 30px var(--blue); background: #fff; transform: scale(1.2); }
+        .pitch-orb.active { opacity: 1; box-shadow: 0 0 40px var(--blue); background: #fff; transform: scale(1.2); }
 
-        /* Piano View */
-        .piano-view { display: flex; gap: 2px; background: #000; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
-        .key { width: 30px; height: 100px; background: #ddd; border-radius: 0 0 4px 4px; position: relative; }
+        .piano-view { display: flex; gap: 2px; padding: 15px; background: #000; border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; max-width: 100%; }
+        .key { width: 30px; height: 100px; background: #ddd; border-radius: 0 0 4px 4px; flex-shrink: 0; }
         .key.black { background: #222; width: 20px; height: 65px; margin-left: -10px; margin-right: -10px; z-index: 2; border: 1px solid #000; }
-        .key.active { background: var(--blue) !important; box-shadow: 0 0 15px var(--blue); }
+        .key.active { background: var(--blue) !important; box-shadow: 0 0 20px var(--blue); transform: translateY(2px); }
 
-        /* --- Choices --- */
-        .choices-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 15px; width: 550px; margin-top: 30px; }
-        .choice-btn { 
-            background: rgba(10, 17, 26, 0.8); border: 1px solid var(--border); color: #fff; padding: 20px;
-            font-family: 'Orbitron'; font-size: 0.8rem; cursor: pointer; transition: 0.2s; font-weight: 700;
+        /* --- Choices Grid --- */
+        .choices-grid { 
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%;
         }
-        .choice-btn:hover { border-color: var(--blue); }
+        .choice-btn { 
+            background: var(--panel); border: 1px solid var(--border); color: #fff; padding: 20px;
+            font-family: 'Orbitron'; font-size: 0.9rem; font-weight: 700; cursor: pointer; border-radius: 15px;
+            backdrop-filter: blur(10px); transition: 0.2s;
+        }
+        .choice-btn:active { transform: scale(0.95); background: rgba(79, 172, 254, 0.2); }
 
-        .action-btns { margin-top: 30px; display: flex; gap: 15px; }
-        .btn-main { background: var(--blue); color: #000; border: none; padding: 15px 35px; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 4px; }
-        .btn-sub { background: #1a1a1a; color: var(--gold); border: 1px solid var(--gold); padding: 15px 25px; font-family: 'Orbitron'; cursor: pointer; border-radius: 4px; font-size: 0.7rem; }
+        /* --- Action Buttons --- */
+        .action-btns { width: 100%; display: flex; gap: 15px; margin-top: 10px; }
+        .btn-main { 
+            flex: 2; background: var(--blue); color: #000; border: none; padding: 20px; 
+            font-family: 'Orbitron'; font-weight: 900; border-radius: 15px; cursor: pointer; letter-spacing: 2px;
+        }
+        .btn-sub { 
+            flex: 1; background: none; color: var(--gold); border: 1px solid var(--gold); 
+            padding: 20px; font-family: 'Orbitron'; border-radius: 15px; cursor: pointer; font-size: 0.6rem;
+        }
+
+        @media (min-width: 768px) {
+            .choices-grid { grid-template-columns: repeat(4, 1fr); }
+            .hud-top div { font-size: 0.8rem; }
+        }
     </style>
 </head>
 <body>
 
     <div class="hud-top">
-        <div>PROTOCOL_01: PITCH_RECOGNITION</div>
-        <div id="global-xp">XP: 00000</div>
-        <a href="pitch_hub.html" style="color: var(--blue); text-decoration: none;">[ EXIT_TO_HUB ]</a>
+        <div>PROTOCOL_01: <span style="color:var(--blue)">PITCH_REC</span></div>
+        <div id="global-xp" class="xp-display">XP: 00000</div>
+        <a href="pitch_hub.html" class="exit-link">EXIT</a>
     </div>
 
     <div class="main-stage">
         
         <div class="controls-row">
             <div class="config-box">
-                <label>INTERFACE:</label>
-                <button class="toggle-btn active" id="view-screen" onclick="setView('screen')">SCREEN</button>
+                <label>View</label>
+                <button class="toggle-btn active" id="view-screen" onclick="setView('screen')">ORB</button>
                 <button class="toggle-btn" id="view-piano" onclick="setView('piano')">PIANO</button>
             </div>
 
             <div class="config-box">
-                <label>COACH_MODE:</label>
+                <label>Coach</label>
                 <button class="toggle-btn" id="coach-toggle" onclick="toggleCoach()">OFF</button>
             </div>
 
             <div class="config-box">
-                <label>CHOICES:</label>
-                <select id="choiceCount" onchange="setupButtons()" style="background:#000; color:#fff; border:1px solid var(--border); font-family:Orbitron; font-size:0.6rem;">
-                    <option value="2">2</option>
-                    <option value="4" selected>4</option>
-                    <option value="6">6</option>
+                <label>Pool</label>
+                <select id="choiceCount" onchange="setupButtons()">
+                    <option value="3">3</option>
+                    <option value="6" selected>6</option>
                     <option value="12">12</option>
                 </select>
             </div>
@@ -108,8 +139,8 @@
         <div class="choices-grid" id="choices-container"></div>
 
         <div class="action-btns">
-            <button class="btn-main" onclick="generateNewSignal()">NEW_SIGNAL</button>
-            <button class="btn-sub" onclick="playSignal()">REPEAT_SIGNAL</button>
+            <button class="btn-main" onclick="generateNewSignal()">NEW SIGNAL</button>
+            <button class="btn-sub" onclick="playSignal()">REPEAT</button>
         </div>
     </div>
 
@@ -154,6 +185,7 @@
         }
 
         function playSignal() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             const freq = 440 * Math.pow(2, (currentMidi - 69) / 12);
             const osc = audioCtx.createOscillator();
             const g = audioCtx.createGain();
@@ -210,6 +242,11 @@
                 setTimeout(generateNewSignal, 700);
             } else {
                 btn.style.backgroundColor = "var(--red)";
+                btn.style.borderColor = "var(--red)";
+                setTimeout(() => {
+                    btn.style.backgroundColor = "";
+                    btn.style.borderColor = "";
+                }, 400);
             }
         }
 
@@ -220,7 +257,8 @@
         }
 
         function refreshXP() {
-            document.getElementById('global-xp').innerText = `XP: ${localStorage.getItem('totalXP') || '00000'}`;
+            const xp = localStorage.getItem('totalXP') || '0';
+            document.getElementById('global-xp').innerText = `XP: ${xp.toString().padStart(5, '0')}`;
         }
 
         window.onload = initPiano;
