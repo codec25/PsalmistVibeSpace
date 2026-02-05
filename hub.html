@@ -21,124 +21,122 @@
             background: var(--bg); 
             color: #fff; 
             font-family: 'Orbitron', sans-serif; 
-            padding: 40px; 
+            padding: 20px; 
             display: flex; 
             flex-direction: column; 
             align-items: center;
             min-height: 100vh;
+            box-sizing: border-box;
         }
         
         /* Navigation Header */
         .top-nav { 
             width: 100%; 
-            max-width: 1200px; 
+            max-width: 1100px; 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            margin-bottom: 40px; 
+            margin-bottom: 30px; 
             border-bottom: 1px solid var(--border); 
-            padding-bottom: 20px; 
+            padding-bottom: 15px; 
         }
 
-        .user-identity { font-weight: 900; letter-spacing: 4px; color: var(--blue); }
-        .user-stat { color: var(--gold); font-size: 0.75rem; letter-spacing: 2px; }
+        .user-identity { font-size: 0.8rem; font-weight: 900; letter-spacing: 2px; color: var(--blue); }
+        .user-stat { color: var(--gold); font-size: 0.65rem; letter-spacing: 1px; text-align: right; }
 
-        /* Active Lesson Banner */
+        /* Active Lesson Banner - Responsive Stack */
         .active-pathway { 
             width: 100%; 
             max-width: 1100px; 
             background: linear-gradient(90deg, rgba(79, 172, 254, 0.1) 0%, rgba(10, 14, 23, 0) 100%); 
             border-left: 4px solid var(--blue); 
-            padding: 35px; 
-            margin-bottom: 40px; 
+            padding: 25px; 
+            margin-bottom: 30px; 
             display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+            flex-direction: column; 
+            gap: 20px;
+            box-sizing: border-box;
+        }
+
+        @media (min-width: 768px) {
+            .active-pathway { flex-direction: row; justify-content: space-between; align-items: center; padding: 35px; }
         }
         
-        /* Main Navigation Grid */
+        /* Main Navigation Grid - Responsive Columns */
         .grid-container { 
             display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 25px; 
+            grid-template-columns: 1fr; 
+            gap: 20px; 
             width: 100%; 
             max-width: 1100px; 
         }
+
+        @media (min-width: 600px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 950px) { .grid-container { grid-template-columns: repeat(3, 1fr); } }
 
         .tile { 
             background: var(--panel); 
             border: 1px solid var(--border); 
-            padding: 30px; 
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            padding: 25px; 
+            transition: 0.3s ease; 
             cursor: pointer; 
             position: relative; 
-            overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 140px;
         }
 
         .tile:hover { 
             border-color: var(--blue); 
-            box-shadow: 0 0 30px rgba(79, 172, 254, 0.2); 
-            transform: translateY(-8px); 
+            box-shadow: 0 0 20px rgba(79, 172, 254, 0.1); 
+            transform: translateY(-5px); 
         }
 
-        .tile h3 { font-size: 0.95rem; letter-spacing: 3px; margin: 15px 0 10px 0; }
-        .tile p { font-size: 0.65rem; color: var(--text-dim); line-height: 1.6; margin: 0; }
-        .tile-tag { font-size: 0.5rem; color: var(--blue); opacity: 0.7; letter-spacing: 2px; }
+        .tile h3 { font-size: 0.9rem; letter-spacing: 2px; margin: 10px 0; }
+        .tile p { font-size: 0.65rem; color: var(--text-dim); line-height: 1.5; margin: 0; }
+        .tile-tag { font-size: 0.5rem; color: var(--blue); opacity: 0.7; letter-spacing: 1.5px; text-transform: uppercase; }
 
-        /* Instructor Notes Section */
+        /* Instructor Communiqe */
         .feedback-box { 
             width: 100%; 
             max-width: 1100px; 
-            margin-top: 40px; 
-            padding: 25px; 
+            margin-top: 30px; 
+            padding: 20px; 
             border: 1px solid var(--gold); 
-            background: rgba(255, 204, 0, 0.03); 
-            font-size: 0.75rem; 
-            line-height: 1.5;
-            position: relative;
+            background: rgba(255, 204, 0, 0.02); 
+            font-size: 0.7rem; 
+            box-sizing: border-box;
         }
 
-        .feedback-box::before {
-            content: "SYSTEM_MESSAGE";
-            position: absolute;
-            top: -10px;
-            left: 20px;
-            background: var(--bg);
-            padding: 0 10px;
-            color: var(--gold);
-            font-size: 0.5rem;
-        }
-
-        /* External Link Footer */
-        .external-footer { margin-top: 80px; padding-bottom: 40px; text-align: center; }
+        /* Recruitment Footer */
+        .external-footer { margin-top: 60px; padding: 20px; text-align: center; }
         .studio-link { 
-            color: #1a1a1a; 
+            color: #222; 
             text-decoration: none; 
-            font-size: 0.6rem; 
-            letter-spacing: 3px; 
-            transition: 0.5s; 
-            font-weight: 400;
+            font-size: 0.55rem; 
+            letter-spacing: 2px; 
+            transition: 0.4s;
+            display: block;
+            line-height: 1.8;
         }
-        .studio-link:hover { 
-            color: var(--gold); 
-            text-shadow: 0 0 10px var(--gold); 
-        }
+        .studio-link:hover { color: var(--gold); text-shadow: 0 0 8px var(--gold); }
 
         .btn-action { 
-            padding: 15px 35px; 
+            padding: 15px 30px; 
             background: var(--blue); 
             color: #000; 
             font-weight: 900; 
-            font-size: 0.8rem; 
+            font-size: 0.75rem; 
             border: none; 
             cursor: pointer; 
             font-family: 'Orbitron';
             clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
-            transition: 0.3s;
+            width: 100%;
+            max-width: 250px;
         }
 
-        .btn-action:hover { background: var(--gold); transform: scale(1.05); }
+        @media (max-width: 767px) { .btn-action { max-width: 100%; } }
 
     </style>
 </head>
@@ -146,85 +144,91 @@
 
     <div class="top-nav">
         <div class="user-identity">CORE // <span id="display-name">OPERATOR</span></div>
-        <div class="user-stat">SYNC_LEVEL: <span id="display-xp">0</span> | RANK: <span id="display-rank">GRADE_01</span></div>
+        <div class="user-stat">SYNC: <span id="display-xp">0</span><br>RANK: <span id="display-rank">GRADE_01</span></div>
     </div>
 
     <div class="active-pathway">
         <div>
-            <div style="font-size: 0.55rem; color: var(--blue); margin-bottom: 12px; letter-spacing: 2px;">VISIT <a href="https://www.psalmistvibesstudio.com/" target="_blank" style="color: var(--red); text-decoration: none;">PSALMISTVIBESTUDIO.COM</a> FOR_ONSITE AND ONLINE REGISTRATION</div>
-            <div style="font-size: 1.5rem; letter-spacing: 6px; font-weight: 900;" id="pathway-title">GRADE_01: PULSE_SYNCHRONIZATION</div>
+            <div style="font-size: 0.5rem; color: var(--blue); margin-bottom: 8px; letter-spacing: 2px;">NEURAL_OBJECTIVE</div>
+            <div style="font-size: 1.1rem; letter-spacing: 3px; font-weight: 900;" id="pathway-title">GRADE_01: PULSE_INIT</div>
         </div>
-        <button class="btn-action" onclick="window.location.href='mini_studio.html'">RESUME_SESSION</button>
+        <button class="btn-action" onclick="window.location.href='mini_studio.html'">RESUME_STUDY</button>
     </div>
 
     <div class="grid-container">
         <div class="tile" onclick="window.location.href='mini_studio.html'">
-            <div class="tile-tag">TEMPORAL_MECHANICS</div>
-            <h3>RHYTHM_HUB</h3>
-            <p>Master rhythmic subdivision and tempo-strike accuracy protocols.</p>
+            <div>
+                <div class="tile-tag">TEMPORAL_HUB</div>
+                <h3>RHYTHM_LAB</h3>
+            </div>
+            <p>Master rhythmic accuracy and pulse stabilization drills.</p>
         </div>
 
         <div class="tile" style="border-color: var(--red);" onclick="window.location.href='grade_exam.html'">
-            <div class="tile-tag" style="color: var(--red);">ACCREDITATION_GATE</div>
-            <h3>GRADE_EXAM</h3>
-            <p>Validate your neural stability and advance to the next professional tier.</p>
+            <div>
+                <div class="tile-tag" style="color: var(--red);">GATE_KEEPER</div>
+                <h3>GRADE_EXAM</h3>
+            </div>
+            <p>Validate your current skill tier to unlock advanced pathways.</p>
         </div>
 
         <div class="tile" style="border-color: var(--blue);" onclick="window.location.href='mini_studio.html'">
-            <div class="tile-tag">VIRTUAL_PRODUCTION</div>
-            <h3>GRAND_STATION</h3>
-            <p>Access the full DAW suite: Vocals, MIDI, and Neural Sample Engine.</p>
+            <div>
+                <div class="tile-tag">PRODUCTION</div>
+                <h3>GRAND_STATION</h3>
+            </div>
+            <p>The full V-Series Studio for recording and sound design.</p>
         </div>
 
         <div class="tile">
-            <div class="tile-tag">DATA_ARCHIVE</div>
-            <h3>KNOWLEDGE_BASE</h3>
-            <p>Review the 12-Grade curriculum and tactile instrumental drills.</p>
+            <div>
+                <div class="tile-tag">ARCHIVE</div>
+                <h3>SYLLABUS</h3>
+            </div>
+            <p>Theoretical database for harmonic and melodic ninjutsu.</p>
         </div>
 
         <div class="tile">
-            <div class="tile-tag">FREQUENCY_STABILITY</div>
-            <h3>PITCH_HUB</h3>
-            <p>Interval calibration and harmonic frequency identification training.</p>
+            <div>
+                <div class="tile-tag">FREQUENCY</div>
+                <h3>PITCH_HUB</h3>
+            </div>
+            <p>Calibrate your ears for interval and chordal identification.</p>
         </div>
 
         <div class="tile">
-            <div class="tile-tag">GLOBAL_SYNC</div>
-            <h3>LEADERBOARD</h3>
-            <p>Compare performance metrics with the elite Psalmist Ninja network.</p>
+            <div>
+                <div class="tile-tag">NETWORK</div>
+                <h3>LEADERBOARD</h3>
+            </div>
+            <p>Real-time sync metrics from the global Ninja community.</p>
         </div>
     </div>
 
     <div class="feedback-box">
-        <strong style="color: var(--gold); letter-spacing: 1px;">INSTRUCTOR_COMMUNIQUE:</strong> <br>
-        <span id="note-content" style="opacity: 0.8; display: block; margin-top: 10px;">Initializing connection to Conservatory...</span>
+        <strong style="color: var(--gold);">COMMUNIQUE:</strong> <br>
+        <span id="note-content" style="opacity: 0.7;">Awaiting connection to Instructor...</span>
     </div>
 
     <div class="external-footer">
         <a href="https://www.psalmistvibesstudio.com/" target="_blank" class="studio-link">
-            VISIT_PSALMISTVIBESTUDIO.COM_FOR_ONSITE_AND_ONLINE_REGISTRATION
+            ENROLL_FOR_ADVANCED_TRAINING_AT_PSALMISTVIBESTUDIO.COM
         </a>
     </div>
 
     <script>
         window.onload = () => {
-            // Retrieve session data from LocalStorage
-            const user = localStorage.getItem('ninjaUser') || "GUEST_OPERATOR";
+            const user = localStorage.getItem('ninjaUser') || "GUEST";
             const xp = localStorage.getItem('totalXP') || "0";
             const level = localStorage.getItem('currentLevel') || "1";
             const note = localStorage.getItem('teacherNote');
 
-            // Inject into UI
             document.getElementById('display-name').innerText = user;
             document.getElementById('display-xp').innerText = xp;
             document.getElementById('display-rank').innerText = "GRADE_" + level.toString().padStart(2, '0');
             document.getElementById('pathway-title').innerText = "GRADE_" + level.toString().padStart(2, '0') + ": ACTIVE_MISSION";
             
-            if(note) {
-                document.getElementById('note-content').innerText = note;
-            } else {
-                document.getElementById('note-content').innerText = "Welcome, " + user + ". Complete your Grade Exam to receive personalized feedback.";
-            }
+            if(note) document.getElementById('note-content').innerText = note;
         };
     </script>
 </body>
