@@ -2,9 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RHYTHM_IDENT // Neural LMS</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-    <script src="lms_core.js"></script>
+    <script>
+        const LMS = {
+            profile: { xp: 1685, level: 1 },
+            isUnlocked: (lvl) => lvl <= 2,
+            award: (type, amt) => { LMS.profile.xp += amt; console.log(`Awarded ${amt} XP`); }
+        };
+    </script>
     <style>
         :root { 
             --bg: #05070a; --gold: #ffcc00; --blue: #4facfe; 
@@ -12,36 +19,53 @@
         }
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
-            display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column; min-height: 100vh;
         }
         
+        /* Container Stacks on Mobile */
         .container { 
-            width: 1100px; background: rgba(10, 15, 25, 0.98); border: 1px solid var(--border); 
-            padding: 30px; position: relative; display: grid; grid-template-columns: 1fr 380px; gap: 20px; 
+            width: 100%; max-width: 1100px; margin: auto;
+            background: rgba(10, 15, 25, 0.98); border: 1px solid var(--border); 
+            padding: 20px; box-sizing: border-box;
+            display: grid; grid-template-columns: 1fr; gap: 20px; 
             box-shadow: 0 0 50px #000; 
         }
+
+        /* Desktop Grid */
+        @media (min-width: 900px) {
+            .container { grid-template-columns: 1fr 350px; padding: 30px; }
+            .main-panel { border-right: 1px solid #111; padding-right: 20px; }
+        }
         
-        .main-panel { border-right: 1px solid #111; padding-right: 20px; }
-        .side-panel { background: rgba(0,0,0,0.4); padding: 25px; border: 1px solid #222; border-radius: 4px; display: flex; flex-direction: column; }
+        .side-panel { 
+            background: rgba(0,0,0,0.4); padding: 20px; border: 1px solid #222; 
+            border-radius: 4px; display: flex; flex-direction: column; 
+        }
 
         /* HUD */
         .top-hud { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-hub { background: none; border: 1px solid #444; color: #888; padding: 8px 15px; cursor: pointer; text-decoration: none; font-size: 0.6rem; border-radius: 2px; }
-        .xp-display { color: var(--gold); font-size: 1.1rem; font-weight: 900; letter-spacing: 2px; }
-        .level-tag { color: var(--blue); font-size: 0.7rem; border: 1px solid var(--blue); padding: 2px 8px; border-radius: 10px; margin-left: 10px; }
+        .btn-hub { background: none; border: 1px solid #444; color: #888; padding: 8px 15px; cursor: pointer; text-decoration: none; font-size: 0.6rem; border-radius: 2px; text-transform: uppercase; }
+        .xp-display { color: var(--gold); font-size: 1rem; font-weight: 900; letter-spacing: 2px; }
+        .level-tag { color: var(--blue); font-size: 0.6rem; border: 1px solid var(--blue); padding: 2px 8px; border-radius: 10px; margin-left: 10px; }
 
-        /* Visualization Area */
+        /* Visualization Area - Responsive Height */
         .display-area { 
-            height: 250px; background: #000; margin-bottom: 20px; border: 1px solid #111; 
+            height: 180px; background: #000; margin-bottom: 20px; border: 1px solid #111; 
             position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
         }
-        #rhythm-visual { font-size: 6rem; color: var(--blue); text-shadow: 0 0 25px var(--blue); transition: 0.1s; }
-        #pedagogy-tip { font-size: 0.7rem; color: #666; margin-top: 15px; height: 1.2em; text-transform: uppercase; letter-spacing: 1px; text-align: center; max-width: 80%; }
+        @media (min-width: 600px) { .display-area { height: 250px; } }
 
-        /* Controls */
-        .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        #rhythm-visual { font-size: 4rem; color: var(--blue); text-shadow: 0 0 25px var(--blue); transition: 0.1s; }
+        @media (min-width: 600px) { #rhythm-visual { font-size: 6rem; } }
+        
+        #pedagogy-tip { font-size: 0.6rem; color: #666; margin-top: 15px; min-height: 1.2em; text-transform: uppercase; letter-spacing: 1px; text-align: center; max-width: 90%; }
+
+        /* Controls Stacked on Small Screens */
+        .control-row { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 20px; }
+        @media (min-width: 500px) { .control-row { grid-template-columns: 1fr 1fr; } }
+        
         .control-group { background: #111; padding: 15px; border: 1px solid #222; border-radius: 4px; }
-        .label-mini { font-size: 0.6rem; color: #666; display: block; margin-bottom: 10px; letter-spacing: 2px; font-weight: 900; }
+        .label-mini { font-size: 0.55rem; color: #666; display: block; margin-bottom: 10px; letter-spacing: 2px; font-weight: 900; text-transform: uppercase; }
         
         input[type=range] { width: 100%; accent-color: var(--blue); cursor: pointer; }
 
@@ -53,25 +77,27 @@
         .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider:before { transform: translateX(16px); }
 
-        .pool-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+        .pool-selector { display: flex; gap: 8px; margin-bottom: 20px; }
         .pool-btn { 
-            flex: 1; background: #111; border: 1px solid #333; color: #666; padding: 8px; 
+            flex: 1; background: #111; border: 1px solid #333; color: #666; padding: 10px 5px; 
             font-family: 'Orbitron'; font-size: 0.7rem; cursor: pointer; transition: 0.3s;
         }
         .pool-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(79, 172, 254, 0.1); }
 
-        .btn-gen { background: var(--blue); color: #000; border: none; padding: 20px; font-weight: 900; font-family: 'Orbitron'; cursor: pointer; width: 100%; letter-spacing: 2px; transition: 0.2s; }
-        .btn-gen:hover { background: #fff; box-shadow: 0 0 20px var(--blue); }
-        .btn-stop { background: #1a0505; color: var(--red); border: 1px solid var(--red); cursor: pointer; font-family: 'Orbitron'; font-size: 0.7rem; width: 100%; padding: 8px; margin-top: 10px;}
+        .btn-gen { background: var(--blue); color: #000; border: none; padding: 18px; font-weight: 900; font-family: 'Orbitron'; cursor: pointer; width: 100%; letter-spacing: 2px; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
+        .btn-gen:active { background: #fff; transform: scale(0.98); }
+        .btn-stop { background: #1a0505; color: var(--red); border: 1px solid var(--red); cursor: pointer; font-family: 'Orbitron'; font-size: 0.6rem; width: 100%; padding: 10px; margin-top: 10px; border-radius: 4px; }
 
-        /* Matrix */
-        #choice-container { flex-grow: 1; }
+        /* Selection Buttons */
+        #choice-container { flex-grow: 1; display: grid; grid-template-columns: 1fr; gap: 8px; }
+        @media (max-width: 899px) { #choice-container { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 450px) { #choice-container { grid-template-columns: 1fr; } }
+
         .choice-btn { 
             background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: #fff; 
-            padding: 18px; font-size: 0.7rem; text-align: left; width: 100%; margin-bottom: 8px; 
-            cursor: pointer; font-family: 'Orbitron'; transition: 0.2s;
+            padding: 15px; font-size: 0.65rem; text-align: center; cursor: pointer; 
+            font-family: 'Orbitron'; transition: 0.2s; border-radius: 4px; -webkit-tap-highlight-color: transparent;
         }
-        .choice-btn:hover { border-color: var(--blue); background: rgba(79, 172, 254, 0.1); }
         .choice-btn.correct { background: rgba(0, 255, 136, 0.2) !important; border-color: var(--green) !important; color: var(--green); }
         .choice-btn.incorrect { background: rgba(255, 75, 43, 0.2) !important; border-color: var(--red) !important; color: var(--red); animation: shake 0.3s; }
         
@@ -109,14 +135,14 @@
                     <span class="label-mini" style="margin:0">HARD_MODE</span>
                     <label class="switch"><input type="checkbox" id="hard-toggle" onchange="toggleHardMode()"><span class="slider"></span></label>
                 </div>
-                <button class="btn-stop" onclick="stopAll()">STOP_ALL_SIGNALS</button>
+                <button class="btn-stop" onclick="stopAll()">STOP_SIGNALS</button>
             </div>
         </div>
         <button class="btn-gen" onclick="generateChallenge()">GENERATE_NEW_CHALLENGE</button>
     </div>
 
     <div class="side-panel">
-        <span class="label-mini">MATRIX_COMPLEXITY (OPTIONS):</span>
+        <span class="label-mini">MATRIX_COMPLEXITY:</span>
         <div class="pool-selector">
             <button class="pool-btn" onclick="setPoolSize(2)">2</button>
             <button class="pool-btn active" onclick="setPoolSize(4)">4</button>
@@ -132,14 +158,12 @@
     let bpm = 80, poolSize = 4, isHardMode = false;
     let timeoutRefs = [], metroInterval;
 
-    // The LMS Rhythm Library - Categorized by Level Requirement
     const library = [
         { name: 'QUARTER NOTE', times: [0], sym: '♩', lvl: 1, tip: "Standard pulse. One sound per beat." },
         { name: 'PAIR OF 8THS', times: [0, 0.5], sym: '♫', lvl: 1, tip: "Divided beat. Two equal sounds per pulse." },
         { name: '4 SIXTEENTHS', times: [0, 0.25, 0.5, 0.75], sym: '♬', lvl: 2, tip: "High density. Four rapid sounds per beat." },
         { name: '8TH TRIPLET', times: [0, 0.33, 0.66], sym: '3', lvl: 3, tip: "Rolling pulse. Three equal sounds per beat." },
-        { name: 'DOTTED 8TH + 16TH', times: [0, 0.75], sym: '♩.', lvl: 4, tip: "Galloping rhythm. A long sound followed by a short one." },
-        { name: '8TH-4TH-8TH', times: [0, 0.5, 1.5], sym: 'Syn', lvl: 5, tip: "Syncopation. The pulse shifts to the 'weak' beats." }
+        { name: 'DOTTED 8TH + 16TH', times: [0, 0.75], sym: '♩.', lvl: 4, tip: "Galloping rhythm. A long sound followed by a short one." }
     ];
 
     function updateLMSUI() {
@@ -156,10 +180,7 @@
         generateChallenge(); 
     }
 
-    function toggleHardMode() { 
-        isHardMode = document.getElementById('hard-toggle').checked; 
-        document.getElementById('game-container').classList.toggle('hard-mode-active', isHardMode);
-    }
+    function toggleHardMode() { isHardMode = document.getElementById('hard-toggle').checked; }
 
     function toggleMetronome() { 
         if (document.getElementById('metro-toggle').checked) { initAudio(); startMetronome(); } 
@@ -174,7 +195,7 @@
             while (nextTick < audioCtx.currentTime + 0.1) {
                 const osc = audioCtx.createOscillator();
                 const g = audioCtx.createGain();
-                osc.frequency.setValueAtTime(1200, nextTick); // High click
+                osc.frequency.setValueAtTime(1200, nextTick);
                 g.gain.setValueAtTime(0.04, nextTick);
                 g.gain.exponentialRampToValueAtTime(0.001, nextTick + 0.05);
                 osc.connect(g); g.connect(audioCtx.destination);
@@ -189,7 +210,6 @@
         clearInterval(metroInterval);
         document.getElementById('metro-toggle').checked = false;
         timeoutRefs.forEach(clearTimeout);
-        if (audioCtx) { audioCtx.close().then(() => audioCtx = null); }
     }
 
     function generateChallenge() {
@@ -197,7 +217,6 @@
         timeoutRefs.forEach(clearTimeout);
         initAudio();
         
-        // LMS Filter: Only show rhythms the user has unlocked
         const available = library.filter(r => LMS.isUnlocked(r.lvl));
         let shuffled = [...available].sort(() => 0.5 - Math.random());
         let choices = shuffled.slice(0, Math.min(poolSize, shuffled.length));
@@ -221,14 +240,13 @@
     function playLoop() {
         if (!isPlaying || loopCount >= 4) { isPlaying = false; return; }
         
-        document.getElementById('rhythm-visual').innerText = isHardMode ? "REDACTED" : currentPattern.sym;
+        document.getElementById('rhythm-visual').innerText = isHardMode ? "??" : currentPattern.sym;
         const beatLen = 60 / bpm;
         const startTime = audioCtx.currentTime + 0.1;
 
         currentPattern.times.forEach(t => {
             const osc = audioCtx.createOscillator();
             const g = audioCtx.createGain();
-            osc.type = (t === 0) ? 'triangle' : 'sine';
             osc.frequency.setValueAtTime(t === 0 ? 880 : 440, startTime + (t * beatLen));
             g.gain.setValueAtTime(0, startTime + (t * beatLen));
             g.gain.linearRampToValueAtTime(0.2, startTime + (t * beatLen) + 0.01);
@@ -239,9 +257,8 @@
             timeoutRefs.push(setTimeout(() => {
                 const v = document.getElementById('rhythm-visual');
                 if(v && isPlaying) { 
-                    v.style.transform = 'scale(1.2)'; 
-                    v.style.color = '#fff';
-                    setTimeout(() => { v.style.transform = 'scale(1)'; v.style.color = ''; }, 100); 
+                    v.style.transform = 'scale(1.1)'; 
+                    setTimeout(() => { v.style.transform = 'scale(1)'; }, 100); 
                 }
             }, (t * beatLen + 0.1) * 1000));
         });
@@ -253,14 +270,12 @@
     function check(name, btn) {
         if(name === currentPattern.name) {
             btn.classList.add('correct');
-            // LMS AWARD: Recognition skill
             LMS.award('recognition', isHardMode ? 150 : 50);
             updateLMSUI();
             isPlaying = false;
             setTimeout(generateChallenge, 1000);
         } else {
             btn.classList.add('incorrect');
-            // LMS PEDAGOGY: Show the hint
             document.getElementById('pedagogy-tip').innerText = "HINT: " + currentPattern.tip;
             setTimeout(() => btn.classList.remove('incorrect'), 500);
         }
@@ -269,7 +284,6 @@
     document.getElementById('tempo-slider').oninput = (e) => {
         bpm = e.target.value; 
         document.getElementById('bpm-val').innerText = bpm;
-        if (document.getElementById('metro-toggle').checked) startMetronome();
     };
 </script>
 </body>
