@@ -2,18 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>PROTOCOL_02: INTERVAL_RELATIONS</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg: #020408; --panel: rgba(10, 15, 25, 0.9); --blue: #4facfe; 
-            --gold: #ffcc00; --green: #00ff88; --border: #1e2544; --red: #ff4b2b;
+            --bg: #05070a; --panel: rgba(10, 15, 25, 0.98); --blue: #4facfe; 
+            --gold: #ffcc00; --green: #00ff88; --border: #1e2544; --red: #ff4b2b; --staff: #334466;
         }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
-            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
-            background-image: radial-gradient(circle at center, #0b1426 0%, #020408 100%);
+            display: flex; flex-direction: column; min-height: 100vh;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #05070a 100%);
         }
 
         .hud-top {
@@ -21,101 +23,164 @@
             font-size: 0.65rem; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.3);
         }
 
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .main-stage { flex-grow: 1; width: 100%; max-width: 900px; margin: 0 auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
 
-        /* --- Toggles & Config --- */
-        .controls-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 25px; }
-        .config-box { background: rgba(255,255,255,0.05); padding: 8px 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 10px; border-radius: 4px; }
-        .config-box label { font-size: 0.5rem; color: var(--blue); letter-spacing: 1px; }
-        
-        .toggle-btn { 
-            background: #111; border: 1px solid var(--border); color: #555; 
-            padding: 6px 12px; font-family: 'Orbitron'; font-size: 0.55rem; cursor: pointer; 
+        /* --- Config Grid --- */
+        .config-grid { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+            gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid var(--border);
         }
-        .toggle-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.05); }
+        .config-box label { display: block; font-size: 0.5rem; color: #555; margin-bottom: 5px; letter-spacing: 1px; }
 
-        /* --- View Containers --- */
-        .view-container { width: 100%; display: flex; justify-content: center; min-height: 160px; }
+        .toggle-btn { 
+            width: 100%; background: #0a0e17; border: 1px solid var(--border); color: #888; 
+            padding: 10px; font-family: 'Orbitron'; font-size: 0.6rem; cursor: pointer; border-radius: 4px;
+        }
+        .toggle-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(79, 172, 254, 0.1); }
+        select { width: 100%; background: #0a0e17; border: 1px solid var(--border); color: var(--blue); padding: 8px; font-family: 'Orbitron'; font-size: 0.6rem; border-radius: 4px; outline: none; }
+
+        /* --- Viz Window --- */
+        .viz-terminal {
+            background: #000; border: 1px solid var(--border); border-radius: 12px;
+            height: 240px; position: relative; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        .staff-svg { width: 90%; height: 160px; }
+        .staff-line { stroke: var(--staff); stroke-width: 1.5; }
+        .ledger-line { stroke: var(--staff); stroke-width: 1.5; opacity: 0; transition: opacity 0.3s; }
+        .ledger-line.visible { opacity: 1; }
+        .note-head { fill: var(--blue); opacity: 0; transition: 0.2s; filter: drop-shadow(0 0 8px var(--blue)); }
+        .note-head.active { opacity: 1; }
+        .clef-text { fill: var(--staff); font-family: serif; font-size: 50px; font-weight: bold; pointer-events: none; }
+
+        .piano-view { display: flex; gap: 2px; padding: 20px; background: #000; border-radius: 8px; width: 100%; justify-content: center; overflow-x: auto; }
+        .key { width: 28px; height: 110px; background: #ddd; border-radius: 0 0 4px 4px; position: relative; transition: 0.2s; flex-shrink: 0; }
+        .key.black { background: #222; width: 18px; height: 70px; margin-left: -9px; margin-right: -9px; z-index: 2; border: 1px solid #000; }
+        .key.active { background: var(--blue) !important; box-shadow: 0 0 20px var(--blue); }
+
         .hidden { display: none !important; }
 
-        .viz-window {
-            width: 500px; height: 120px; background: rgba(0,0,0,0.6); border: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: center; border-radius: 8px; gap: 40px;
+        #solution-reveal { 
+            position: absolute; top: 10px; font-size: 0.55rem; color: var(--gold); 
+            opacity: 0; transition: opacity 0.4s; letter-spacing: 2px; text-transform: uppercase;
         }
-        .radar-node { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--blue); opacity: 0.1; transition: 0.2s; }
-        .radar-node.active { opacity: 1; box-shadow: 0 0 25px var(--blue); background: #fff; }
-
-        .piano-view { display: flex; gap: 2px; background: #000; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
-        .key { width: 28px; height: 90px; background: #ddd; border-radius: 0 0 4px 4px; position: relative; }
-        .key.black { background: #222; width: 18px; height: 60px; margin-left: -9px; margin-right: -9px; z-index: 2; border: 1px solid #000; }
-        .key.active { background: var(--blue) !important; box-shadow: 0 0 15px var(--blue); }
 
         /* --- Choices --- */
-        .choices-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; width: 600px; margin-top: 20px; }
+        .choices-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; }
         .choice-btn { 
-            background: rgba(10, 17, 26, 0.8); border: 1px solid var(--border); color: #fff; padding: 15px;
-            font-family: 'Orbitron'; font-size: 0.65rem; cursor: pointer; transition: 0.2s;
+            background: rgba(255,255,255,0.02); border: 1px solid var(--border); color: #fff; padding: 16px;
+            font-family: 'Orbitron'; font-size: 0.7rem; cursor: pointer; border-radius: 8px;
         }
-        .choice-btn.correct { background: var(--green) !important; color: #000; }
-        .choice-btn.wrong { background: var(--red) !important; }
+        .choice-btn.success { border-color: var(--green); color: var(--green); background: rgba(0, 255, 136, 0.1); }
+        .choice-btn.fail { border-color: var(--red); color: var(--red); opacity: 0.3; }
 
-        .action-btns { margin-top: 30px; display: flex; gap: 15px; }
-        .btn-main { background: var(--blue); color: #000; border: none; padding: 15px 35px; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 4px; }
-        .btn-sub { background: #1a1a1a; color: var(--gold); border: 1px solid var(--gold); padding: 15px 25px; font-family: 'Orbitron'; cursor: pointer; border-radius: 4px; font-size: 0.7rem; }
+        .btn-action { background: var(--blue); color: #000; border: none; padding: 20px; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 12px; width: 100%; font-size: 0.8rem; }
+        .btn-secondary { background: #111; color: var(--blue); border: 1px solid var(--blue); padding: 15px; font-family: 'Orbitron'; font-weight: 700; cursor: pointer; border-radius: 12px; font-size: 0.65rem; }
+
+        /* --- History Log --- */
+        .history-panel {
+            background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 12px; padding: 15px;
+            margin-top: 10px; font-size: 0.55rem; max-height: 150px; overflow-y: auto;
+        }
+        .history-item { 
+            display: flex; justify-content: space-between; border-bottom: 1px solid #111; padding: 6px 0;
+            color: #888;
+        }
+        .history-item.pass { color: var(--green); }
+        .history-item.fail { color: var(--red); }
+
+        /* --- Tutorial Overlay --- */
+        #tutorial-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85);
+            z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center;
+        }
+        .tutorial-box {
+            max-width: 400px; padding: 30px; border: 1px solid var(--blue); background: var(--panel); border-radius: 12px;
+            box-shadow: 0 0 30px rgba(79, 172, 254, 0.2);
+        }
+        .tutorial-text { font-size: 0.7rem; line-height: 1.6; color: #ccc; margin-bottom: 25px; }
+        .btn-skip { background: transparent; border: 1px solid #333; color: #555; padding: 10px; font-family: 'Orbitron'; font-size: 0.5rem; border-radius: 4px; cursor: pointer; margin-top: 10px; width: 100%; }
     </style>
 </head>
 <body>
 
+    <div id="tutorial-overlay">
+        <div class="tutorial-box">
+            <h2 style="color: var(--blue); font-size: 0.9rem; margin-top: 0;">NEURAL_ONBOARDING</h2>
+            <p id="tutorial-msg" class="tutorial-text">Welcome to Protocol_02. Use the PULSE SIGNAL to hear two tones. Identify the musical distance between them.</p>
+            <button class="btn-action" onclick="nextTutorialStep()" style="padding: 12px;">CONTINUE</button>
+            <button class="btn-skip" onclick="closeTutorial()">SKIP_ALL_INSTRUCTIONS</button>
+        </div>
+    </div>
+
     <div class="hud-top">
         <div>PROTOCOL_02: INTERVAL_RELATIONS</div>
         <div id="global-xp">XP: 00000</div>
-        <a href="pitch_hub.html" style="color: var(--blue); text-decoration: none;">[ EXIT ]</a>
+        <div style="display:flex; gap:15px; align-items:center;">
+            <span onclick="resetTutorial()" style="cursor:pointer; color:#444; font-size:0.5rem; text-decoration:underline;">RESET_GUIDE</span>
+            <a href="pitch_hub.html" style="color: var(--blue); text-decoration: none;">[ EXIT ]</a>
+        </div>
     </div>
 
     <div class="main-stage">
-        
-        <div class="controls-row">
+        <div class="config-grid">
             <div class="config-box">
-                <label>VIEW:</label>
-                <button class="toggle-btn active" id="view-screen" onclick="setView('screen')">RADAR</button>
-                <button class="toggle-btn" id="view-piano" onclick="setView('piano')">PIANO</button>
+                <label>VIEW_INTERFACE</label>
+                <div style="display:flex; gap:5px;">
+                    <button class="toggle-btn active" id="view-staff-btn" onclick="setView('staff')">STAFF</button>
+                    <button class="toggle-btn" id="view-piano-btn" onclick="setView('piano')">PIANO</button>
+                </div>
             </div>
-
             <div class="config-box">
-                <label>TEMPO (MS):</label>
-                <input type="range" id="tempoSlider" min="200" max="1500" value="700" step="100" style="accent-color: var(--blue);">
-                <span id="tempoVal" style="font-size: 0.6rem; width: 30px;">700</span>
-            </div>
-
-            <div class="config-box">
-                <label>CHOICES:</label>
-                <select id="choiceCount" onchange="setupButtons()" style="background:#000; color:#fff; border:none; font-family:Orbitron; font-size:0.6rem;">
-                    <option value="2">2</option>
-                    <option value="4" selected>4</option>
-                    <option value="6">6</option>
-                    <option value="12">ALL</option>
+                <label>CHOICE_LIMIT</label>
+                <select id="matrix-count" onchange="setupButtons()">
+                    <option value="2">2 OPTIONS</option>
+                    <option value="4" selected>4 OPTIONS</option>
+                    <option value="6">6 OPTIONS</option>
+                    <option value="8">8 OPTIONS</option>
+                    <option value="12">ALL (12)</option>
                 </select>
             </div>
-
             <div class="config-box">
-                <label>COACH:</label>
+                <label>TEMPO (PULSE)</label>
+                <input type="range" id="tempoSlider" min="300" max="1500" value="800" step="100" style="width:100%; accent-color: var(--blue);">
+            </div>
+            <div class="config-box">
+                <label>COACH_ASSIST</label>
                 <button class="toggle-btn" id="coach-toggle" onclick="toggleCoach()">OFF</button>
             </div>
         </div>
 
-        <div class="view-container">
-            <div class="viz-window" id="screen-display">
-                <div class="radar-node" id="node-1"></div>
-                <div class="radar-node" id="node-2"></div>
+        <div class="viz-terminal">
+            <div id="solution-reveal">SOLVING...</div>
+            <div id="staff-display" style="width:100%; text-align:center;">
+                <svg class="staff-svg" viewBox="0 0 400 160">
+                    <text x="10" y="105" class="clef-text">𝄞</text>
+                    <line x1="50" y1="60" x2="350" y2="60" class="staff-line" />
+                    <line x1="50" y1="75" x2="350" y2="75" class="staff-line" />
+                    <line x1="50" y1="90" x2="350" y2="90" class="staff-line" />
+                    <line x1="50" y1="105" x2="350" y2="105" class="staff-line" />
+                    <line x1="50" y1="120" x2="350" y2="120" class="staff-line" />
+                    <line id="ledger-up" x1="235" y1="45" x2="265" y2="45" class="ledger-line" />
+                    <line id="ledger-down" x1="135" y1="135" x2="165" y2="135" class="ledger-line" />
+                    <ellipse id="note1" cx="150" cy="90" rx="9" ry="7" class="note-head" />
+                    <ellipse id="note2" cx="250" cy="90" rx="9" ry="7" class="note-head" />
+                </svg>
             </div>
-            <div class="piano-view hidden" id="piano-display"></div>
+            <div id="piano-display" class="piano-view hidden"></div>
         </div>
 
-        <div class="choices-grid" id="choices-container"></div>
+        <div id="choices-container" class="choices-grid"></div>
 
-        <div class="action-btns">
-            <button class="btn-main" onclick="generateInterval()">NEW_PULSE</button>
-            <button class="btn-sub" onclick="playInterval()">REPEAT</button>
+        <div style="display:flex; flex-direction:column; gap:10px; width:100%;">
+            <button class="btn-action" onclick="generateInterval()">NEW_PULSE_SIGNAL</button>
+            <button class="btn-secondary" onclick="playCurrentInterval()">REPEAT_PULSE</button>
+        </div>
+
+        <div class="history-panel" id="history-log">
+            <div style="color:var(--blue); margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom:5px;">SESSION_HISTORY</div>
+            <div id="history-list"></div>
         </div>
     </div>
 
@@ -128,18 +193,60 @@
             {n: "Minor 7th", s: 10}, {n: "Major 7th", s: 11}, {n: "Octave", s: 12}
         ];
 
-        let baseMidi, targetMidi, currentInterval, coachMode = false, currentView = 'screen';
+        let baseMidi, targetMidi, currentIntervalData, coachMode = false, currentView = 'staff', tutorialStep = 0;
 
-        document.getElementById('tempoSlider').oninput = function() {
-            document.getElementById('tempoVal').innerText = this.value;
-        };
+        function runTutorial() {
+            if (!localStorage.getItem('tutorialSeen')) {
+                document.getElementById('tutorial-overlay').style.display = 'flex';
+                tutorialStep = 0;
+            }
+        }
+
+        function closeTutorial() {
+            document.getElementById('tutorial-overlay').style.display = 'none';
+            localStorage.setItem('tutorialSeen', 'true');
+        }
+
+        function resetTutorial() {
+            localStorage.removeItem('tutorialSeen');
+            location.reload();
+        }
+
+        function nextTutorialStep() {
+            const msgs = [
+                "Switch between STAFF and PIANO view in the Config Grid. Enable COACH_ASSIST if you need visual help.",
+                "The VIZ_TERMINAL remains stealthy. The interval name only reveals itself once you solve it.",
+                "Adjust TEMPO and CHOICE_LIMIT to increase difficulty. Begin training."
+            ];
+            if (tutorialStep < msgs.length) {
+                document.getElementById('tutorial-msg').innerText = msgs[tutorialStep];
+                tutorialStep++;
+            } else {
+                closeTutorial();
+            }
+        }
+
+        function initPiano() {
+            const bed = document.getElementById('piano-display');
+            bed.innerHTML = '';
+            for(let i=0; i<25; i++) {
+                const midiVal = 60 + i;
+                const k = document.createElement('div');
+                k.className = [1,3,6,8,10].includes(midiVal%12) ? 'key black' : 'key';
+                k.id = `piano-key-${midiVal}`;
+                bed.appendChild(k);
+            }
+            refreshXP();
+            runTutorial();
+        }
 
         function setView(view) {
             currentView = view;
-            document.getElementById('view-screen').classList.toggle('active', view === 'screen');
-            document.getElementById('view-piano').classList.toggle('active', view === 'piano');
-            document.getElementById('screen-display').classList.toggle('hidden', view !== 'screen');
+            document.getElementById('view-staff-btn').classList.toggle('active', view === 'staff');
+            document.getElementById('view-piano-btn').classList.toggle('active', view === 'piano');
+            document.getElementById('staff-display').classList.toggle('hidden', view !== 'staff');
             document.getElementById('piano-display').classList.toggle('hidden', view !== 'piano');
+            if(view === 'piano') initPiano();
         }
 
         function toggleCoach() {
@@ -148,88 +255,96 @@
             document.getElementById('coach-toggle').classList.toggle('active', coachMode);
         }
 
-        function initPiano() {
-            const bed = document.getElementById('piano-display');
-            for(let i=0; i<25; i++) {
-                const k = document.createElement('div');
-                k.className = [1,3,6,8,10].includes(i%12) ? 'key black' : 'key';
-                k.id = `key-${i+48}`;
-                bed.appendChild(k);
-            }
-            refreshXP();
-            generateInterval();
+        function getStaffY(midi) {
+            const stepMap = [0, 0.5, 1, 1.5, 2, 3, 3.5, 4, 4.5, 5, 5.5, 6]; 
+            let relative = midi - 60;
+            let octaves = Math.floor(relative / 12);
+            let semi = relative % 12;
+            let steps = (octaves * 7) + stepMap[semi];
+            return 135 - (steps * 7.5); 
         }
 
         function generateInterval() {
-            baseMidi = 55 + Math.floor(Math.random() * 10);
-            const randomInterval = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
-            currentInterval = randomInterval.n;
-            targetMidi = baseMidi + randomInterval.s;
-            
-            playInterval();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            document.getElementById('solution-reveal').style.opacity = "0";
+            baseMidi = 60 + Math.floor(Math.random() * 5);
+            currentIntervalData = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
+            targetMidi = baseMidi + currentIntervalData.s;
+            playCurrentInterval();
             setupButtons();
         }
 
-        function playInterval() {
+        function playCurrentInterval() {
+            if (!baseMidi) return;
             const tempo = parseInt(document.getElementById('tempoSlider').value);
-            playTone(baseMidi, 0);
-            if(coachMode) triggerVisual(baseMidi, 'node-1', 0);
-            
+            const y1 = getStaffY(baseMidi);
+            const y2 = getStaffY(targetMidi);
+            document.getElementById('note1').setAttribute('cy', y1);
+            document.getElementById('note2').setAttribute('cy', y2);
+            document.getElementById('ledger-up').classList.toggle('visible', y2 <= 45);
+            document.getElementById('ledger-down').classList.toggle('visible', y1 >= 135);
+
+            playTone(baseMidi);
+            if(coachMode) triggerVisual(baseMidi, 'note1');
             setTimeout(() => {
-                playTone(targetMidi, 0);
-                if(coachMode) triggerVisual(targetMidi, 'node-2', 0);
+                playTone(targetMidi);
+                if(coachMode) triggerVisual(targetMidi, 'note2');
             }, tempo);
         }
 
-        function playTone(midi, start) {
+        function playTone(midi) {
             const freq = 440 * Math.pow(2, (midi - 69) / 12);
             const osc = audioCtx.createOscillator();
             const g = audioCtx.createGain();
             osc.connect(g); g.connect(audioCtx.destination);
-            g.gain.setValueAtTime(0.15, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+            g.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
             osc.frequency.value = freq;
-            osc.start(); osc.stop(audioCtx.currentTime + 1);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.8);
         }
 
-        function triggerVisual(midi, nodeId, delay) {
-            if(currentView === 'screen') {
-                const node = document.getElementById(nodeId);
-                node.classList.add('active');
-                setTimeout(() => node.classList.remove('active'), 500);
-            } else {
-                const key = document.getElementById(`key-${midi}`);
-                if(key) {
-                    key.classList.add('active');
-                    setTimeout(() => key.classList.remove('active'), 500);
-                }
-            }
+        function triggerVisual(midi, staffId) {
+            const note = document.getElementById(staffId);
+            note.classList.add('active');
+            setTimeout(() => note.classList.remove('active'), 600);
+            const key = document.getElementById(`piano-key-${midi}`);
+            if(key) { key.classList.add('active'); setTimeout(() => key.classList.remove('active'), 600); }
         }
 
         function setupButtons() {
             const container = document.getElementById('choices-container');
             container.innerHTML = '';
-            const count = parseInt(document.getElementById('choiceCount').value);
-            
-            let options = [INTERVALS.find(i => i.n === currentInterval)];
+            if(!currentIntervalData) return;
+            const count = parseInt(document.getElementById('matrix-count').value);
+            let options = [currentIntervalData];
             while(options.length < count) {
                 let r = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
-                if(!options.includes(r)) options.push(r);
+                if(!options.find(o => o.n === r.n)) options.push(r);
             }
-            
             options.sort((a,b) => a.s - b.s).forEach(opt => {
                 const b = document.createElement('button');
                 b.className = 'choice-btn';
                 b.innerText = opt.n;
-                b.onclick = () => {
-                    if(opt.n === currentInterval) {
-                        b.classList.add('correct');
-                        addXP(75);
-                        setTimeout(generateInterval, 800);
-                    } else { b.classList.add('wrong'); }
-                };
+                b.onclick = () => handleChoice(opt, b);
                 container.appendChild(b);
             });
+        }
+
+        function handleChoice(opt, btn) {
+            const correct = opt.n === currentIntervalData.n;
+            const historyList = document.getElementById('history-list');
+            const item = document.createElement('div');
+            item.className = `history-item ${correct ? 'pass' : 'fail'}`;
+            item.innerHTML = `<span>${currentIntervalData.n}</span><span>${correct ? 'MATCH' : 'MISSED'}</span>`;
+            historyList.prepend(item);
+            if(correct) {
+                btn.classList.add('success');
+                addXP(75);
+                const sol = document.getElementById('solution-reveal');
+                sol.innerText = `IDENTIFIED: ${opt.n} (+${opt.s})`;
+                sol.style.opacity = "1";
+                setTimeout(generateInterval, 1200);
+            } else { btn.classList.add('fail'); }
         }
 
         function addXP(amt) {
@@ -242,7 +357,7 @@
             document.getElementById('global-xp').innerText = `XP: ${localStorage.getItem('totalXP') || '00000'}`;
         }
 
-        window.onload = initPiano;
+        window.onload = () => { initPiano(); generateInterval(); };
     </script>
 </body>
 </html>
