@@ -8,7 +8,7 @@
     <style>
         :root { 
             --bg: #05070a; --panel: #0a0e17; --blue: #4facfe; 
-            --gold: #ffcc00; --border: #1e2544; --green: #00ff88;
+            --gold: #ffcc00; --border: #1e2544; --green: #00ff88; --red: #ff4b2b;
         }
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
@@ -19,68 +19,77 @@
 
         /* --- Header / HUD --- */
         .hud-header {
-            width: 100%; max-width: 1200px; padding: 30px; display: flex; 
+            width: 100%; max-width: 1200px; padding: 25px; display: flex; 
             justify-content: space-between; align-items: center; box-sizing: border-box;
         }
         .xp-display { 
             border: 1px solid var(--gold); padding: 10px 20px; 
             color: var(--gold); font-size: 0.8rem; letter-spacing: 2px;
-            box-shadow: 0 0 10px rgba(255, 204, 0, 0.2);
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.1);
         }
-        .rank-tag { font-size: 0.6rem; color: var(--blue); margin-top: 5px; text-align: right; letter-spacing: 1px; }
+        .rank-tag { font-size: 0.6rem; color: var(--blue); margin-top: 5px; text-align: right; text-transform: uppercase; }
 
-        /* --- Grid Layout --- */
+        /* --- Grid Layout (Auto-Responsive) --- */
         .main-grid {
-            display: grid; grid-template-columns: repeat(3, 350px); 
-            gap: 30px; margin-top: 50px; padding-bottom: 50px;
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            width: 90%;
+            max-width: 1100px;
+            gap: 25px; 
+            margin-top: 30px; 
+            padding-bottom: 60px;
         }
 
-        /* --- Mission Cards --- */
+        /* --- Card Styles --- */
         .card {
             background: var(--panel); border: 1px solid var(--border);
             padding: 30px; position: relative; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer; overflow: hidden; display: flex; flex-direction: column;
+            cursor: pointer; display: flex; flex-direction: column;
+            text-decoration: none; color: inherit; box-sizing: border-box;
         }
-        .card:hover { border-color: var(--blue); transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .card::before {
-            content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--border); transition: 0.3s;
-        }
+        .card:hover { border-color: var(--blue); transform: translateY(-5px); box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
+        .card::before { content: ""; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--border); transition: 0.3s; }
         .card:hover::before { background: var(--blue); }
 
-        .card-tag { font-size: 0.55rem; color: var(--blue); letter-spacing: 2px; margin-bottom: 15px; text-transform: uppercase; }
+        .card-tag { font-size: 0.55rem; color: var(--blue); letter-spacing: 2px; margin-bottom: 12px; opacity: 0.7; }
         .card-title { font-size: 1.2rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 10px; }
-        .card-desc { font-size: 0.75rem; color: #666; line-height: 1.5; margin-bottom: 20px; flex-grow: 1; }
+        .card-desc { font-size: 0.75rem; color: #777; line-height: 1.6; margin-bottom: 25px; flex-grow: 1; }
         
         .btn-launch {
-            display: inline-block; padding: 10px 20px; border: 1px solid var(--blue);
-            color: var(--blue); text-decoration: none; font-size: 0.65rem; transition: 0.3s;
-            text-align: center;
+            padding: 12px; border: 1px solid var(--blue);
+            color: var(--blue); font-size: 0.65rem; text-align: center; transition: 0.3s;
+            text-transform: uppercase; letter-spacing: 2px;
         }
-        .btn-launch:hover { background: var(--blue); color: #000; }
+        .card:hover .btn-launch { background: var(--blue); color: #000; }
 
-        /* --- Special Vault Section --- */
+        /* --- Vault Card (Full-Width Force) --- */
         .vault-card {
-            grid-column: span 3; background: linear-gradient(90deg, #0a0e17 0%, #161b22 100%);
-            border: 1px solid var(--gold); display: flex; justify-content: space-between; align-items: center;
-            padding: 40px;
+            grid-column: 1 / -1; /* Spans all available columns */
+            background: linear-gradient(90deg, #0a0e17 0%, #161b22 100%);
+            border: 1px solid var(--gold);
+            flex-direction: row; align-items: center; justify-content: space-between;
         }
         .vault-card:hover { border-color: #fff; }
-        .vault-info { flex: 1; }
-        .status-badge { 
-            display: inline-block; background: rgba(255, 204, 0, 0.1); color: var(--gold); 
-            padding: 6px 12px; font-size: 0.6rem; border-radius: 3px; margin-top: 10px;
-            border: 1px solid rgba(255, 204, 0, 0.3);
+        .vault-card .btn-launch { border-color: var(--gold); color: var(--gold); min-width: 160px; }
+        .vault-card:hover .btn-launch { background: var(--gold); color: #000; }
+
+        /* --- Mobile Tweaks --- */
+        @media (max-width: 768px) {
+            .hud-header { flex-direction: column; gap: 20px; text-align: center; }
+            .rank-tag { text-align: center; }
+            .vault-card { flex-direction: column; text-align: center; gap: 20px; }
+            .main-grid { grid-template-columns: 1fr; }
         }
 
-        footer { font-size: 0.6rem; color: #333; margin-top: auto; padding: 40px; letter-spacing: 2px; }
+        footer { font-size: 0.6rem; color: #333; padding: 40px; text-align: center; letter-spacing: 3px; }
     </style>
 </head>
 <body>
 
 <div class="hud-header">
     <div>
-        <div style="font-weight: 900; letter-spacing: 8px; font-size: 1.5rem;">PSALMIST_NINJA</div>
-        <div style="font-size: 0.6rem; color: #444;">EAR TRAINING SYSTEM // NEURAL_OS</div>
+        <div style="font-weight: 900; letter-spacing: 8px; font-size: 1.4rem;">PSALMIST_NINJA</div>
+        <div style="font-size: 0.6rem; color: #444; margin-top: 4px;">NEURAL_INTERFACE // V3.4.1</div>
     </div>
     <div>
         <div id="global-xp" class="xp-display">XP: 000000</div>
@@ -89,93 +98,75 @@
 </div>
 
 <div class="main-grid">
-    <div class="card vault-card" onclick="location.href='theory.html'">
-        <div class="vault-info">
-            <div class="card-tag">CENTRAL_DATABASE</div>
+    <a href="theory.html" class="card vault-card">
+        <div>
+            <div class="card-tag">CENTRAL_CORE</div>
             <div class="card-title">THEORY_VAULT</div>
-            <div class="card-desc">Master the 12-Grade professional syllabus. Required for high-level ranking.</div>
-            <span id="grade-status" class="status-badge">CURRENT_GRADE: 01</span>
+            <div id="grade-status" style="font-size: 0.65rem; color: var(--gold);">GRADE: 01 // UNLOCKED</div>
         </div>
-        <a href="theory.html" class="btn-launch" style="border-color: var(--gold); color: var(--gold);">SECURE_ACCESS</a>
-    </div>
+        <div class="btn-launch">SECURE_ACCESS</div>
+    </a>
 
-    <div class="card" onclick="location.href='pitch_recognition.html'">
+    <a href="pitch_recognition.html" class="card">
         <div class="card-tag">PROTOCOL_01</div>
-        <div class="card-title">PITCH_RECOGNITION</div>
-        <div class="card-desc">Neural identification of isolated frequencies. Calibrate your absolute pitch nodes.</div>
-        <a href="pitch_recognition.html" class="btn-launch">INITIALIZE</a>
-    </div>
+        <div class="card-title">PITCH_REC</div>
+        <div class="card-desc">Calibrate neural frequency identification. Identify notes by ear in isolation.</div>
+        <div class="btn-launch">INITIALIZE</div>
+    </a>
 
-    <div class="card" onclick="location.href='interval_relations.html'">
+    <a href="interval_relations.html" class="card">
         <div class="card-tag">PROTOCOL_02</div>
-        <div class="card-title">INTERVAL_MATRIX</div>
-        <div class="card-desc">Analyze the geometric distance between notes. The core of melodic intelligence.</div>
-        <a href="interval_relations.html" class="btn-launch">INITIALIZE</a>
-    </div>
+        <div class="card-title">INTERVALS</div>
+        <div class="card-desc">Geometric distance mapping. The foundation of melodic and harmonic phrasing.</div>
+        <div class="btn-launch">INITIALIZE</div>
+    </a>
 
-    <div class="card" onclick="location.href='modal_logic.html'">
+    <a href="modal_logic.html" class="card">
         <div class="card-tag">PROTOCOL_03</div>
         <div class="card-title">MODAL_LOGIC</div>
-        <div class="card-desc">Deconstruct the 7 Diatonic Modes. Master the emotional spectrum of sound.</div>
-        <a href="modal_logic.html" class="btn-launch">INITIALIZE</a>
-    </div>
+        <div class="card-desc">Deconstruct the 7 Diatonic Modes. Access the full spectrum of emotional sound.</div>
+        <div class="btn-launch">INITIALIZE</div>
+    </a>
 
-    <div class="card" onclick="location.href='battle_engine.html'">
+    <a href="battle_engine.html" class="card">
         <div class="card-tag">COMBAT_ARENA</div>
-        <div class="card-title">BATTLE_ENGINE</div>
-        <div class="card-desc">Direct engagement with rhythmic and harmonic rivals. Maximum XP yield.</div>
-        <a href="battle_engine.html" class="btn-launch" style="border-color: #ff4b2b; color: #ff4b2b;">ENGAGE_RIVAL</a>
-    </div>
+        <div class="card-title">BATTLE_MODE</div>
+        <div class="card-desc">Face harmonic rivals. Test your speed and accuracy for maximum XP rewards.</div>
+        <div class="btn-launch" style="border-color: var(--red); color: var(--red);">ENGAGE_RIVAL</div>
+    </a>
 </div>
 
-<footer>&copy; 2026 PSALMIST NINJA STUDIOS // SYSTEM_VER: 3.4.1_STABLE</footer>
+<footer>&copy; 2026 PSALMIST NINJA STUDIOS</footer>
 
 <script>
-    /**
-     * NEURAL LINK SYSTEM
-     * Synchronizes global progress across all modules
-     */
     function updateHUD() {
-        // 1. Fetch data from the Neural Vault (LocalStorage)
+        // Fetch Neural Data
         const xp = parseInt(localStorage.getItem('totalXP')) || 0;
-        const currentGrade = parseInt(localStorage.getItem('currentLevel')) || 1;
+        const grade = parseInt(localStorage.getItem('currentLevel')) || 1;
 
-        // 2. Update XP HUD with 6-digit formatting
+        // Update XP Display
         document.getElementById('global-xp').innerText = `XP: ${xp.toString().padStart(6, '0')}`;
 
-        // 3. Update Theory Grade Status
-        document.getElementById('grade-status').innerText = `CURRENT_GRADE: ${currentGrade.toString().padStart(2, '0')}`;
+        // Update Grade Status
+        document.getElementById('grade-status').innerText = `GRADE: ${grade.toString().padStart(2, '0')} // ${grade >= 12 ? 'MASTERED' : 'IN_PROGRESS'}`;
 
-        // 4. Calculate Dynamic Rank and Visual Level
+        // Dynamic Rank Logic
         let rank = "INITIATE";
-        let color = "#4facfe"; // Default Blue
+        let color = "var(--blue)";
+        
+        if (xp >= 50000) { rank = "PITCH_MASTER"; color = "var(--gold)"; }
+        else if (xp >= 15000) { rank = "HARMONIC_KNIGHT"; color = "var(--green)"; }
+        else if (xp >= 5000) { rank = "ACOLYTE"; color = "var(--blue)"; }
 
-        if (xp >= 50000) {
-            rank = "PITCH_MASTER";
-            color = "#ffcc00"; // Gold
-        } else if (xp >= 15000) {
-            rank = "HARMONIC_KNIGHT";
-            color = "#00ff88"; // Green
-        } else if (xp >= 5000) {
-            rank = "ACOLYTE";
-            color = "#4facfe"; 
-        }
-
-        const calculatedLevel = Math.floor(xp / 2500) + 1;
+        const lvl = Math.floor(xp / 2500) + 1;
         const rankTag = document.getElementById('rank-name');
-        rankTag.innerText = `${rank} // LEVEL ${calculatedLevel.toString().padStart(2, '0')}`;
+        rankTag.innerText = `${rank} // LEVEL ${lvl.toString().padStart(2, '0')}`;
         rankTag.style.color = color;
     }
 
-    // Refresh state when page loads or when user switches back to this tab
+    // Refresh on Load and Tab Focus
     window.onload = updateHUD;
     window.onfocus = updateHUD;
-
-    // Reset XP function (For developer testing - call from console)
-    function dev_resetProgress() {
-        localStorage.clear();
-        location.reload();
-    }
 </script>
 
 </body>
