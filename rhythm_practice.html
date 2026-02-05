@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RHYTHM_PRACTICE // Rudimental Training</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PRACTICE_DRILLS // Neural_Ninja</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -14,87 +14,116 @@
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
             display: flex; flex-direction: column; height: 100vh; overflow: hidden;
             background-image: radial-gradient(circle at center, #0b1426 0%, #030508 100%);
+            touch-action: manipulation; /* Prevents double-tap zoom */
         }
 
+        /* --- Responsive HUD --- */
         .hud-top {
-            display: flex; justify-content: space-between; align-items: center; padding: 15px 40px;
-            font-size: 0.65rem; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.3);
+            display: flex; justify-content: space-between; align-items: center; padding: 10px 15px;
+            font-size: 0.55rem; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        .xp-display { color: var(--gold); font-weight: 900; letter-spacing: 1px; }
+
+        /* --- Main Stage --- */
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; align-items: center; position: relative; padding: 10px; }
+
+        /* --- Mobile-Friendly Controls --- */
+        .controls-row { 
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; max-width: 600px;
+            margin-bottom: 15px; z-index: 5;
+        }
+        @media (min-width: 768px) { .controls-row { grid-template-columns: repeat(4, 1fr); } }
+
+        .config-box { 
+            background: rgba(255,255,255,0.05); padding: 8px; border: 1px solid var(--border); 
+            display: flex; flex-direction: column; gap: 4px; border-radius: 4px;
+        }
+        .config-box label { font-size: 0.45rem; color: var(--blue); letter-spacing: 1px; font-weight: 900; }
+        
+        select, input[type="range"] { 
+            background: #000; color: #fff; border: 1px solid var(--border); 
+            font-family: Orbitron; font-size: 0.6rem; width: 100%; height: 30px;
         }
 
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-
-        .controls-row { display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; justify-content: center; }
-        .config-box { background: rgba(255,255,255,0.05); padding: 8px 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 10px; border-radius: 4px; }
-        .config-box label { font-size: 0.5rem; color: var(--blue); letter-spacing: 1px; }
-
-        .lane-container { display: flex; gap: 20px; height: 420px; perspective: 500px; }
+        /* --- Responsive Waterfall Grid --- */
+        .lane-container { 
+            display: flex; gap: 10px; height: 60vh; width: 100%; max-width: 500px;
+            perspective: 800px; position: relative;
+        }
+        
         .lane { 
-            width: 85px; height: 100%; background: rgba(255,255,255,0.02); 
+            flex: 1; height: 100%; background: rgba(255,255,255,0.02); 
             border: 1px solid var(--border); position: relative; overflow: hidden;
-            border-radius: 4px;
+            border-radius: 4px; display: flex; align-items: flex-end;
         }
+
         .hit-zone {
-            position: absolute; bottom: 20px; width: 100%; height: 60px;
+            width: 100%; height: 70px; margin-bottom: 10px;
             border-top: 2px solid var(--blue); background: rgba(79, 172, 254, 0.1);
-            display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 900; color: var(--blue);
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 1rem; font-weight: 900; color: var(--blue);
+            transition: 0.1s; -webkit-tap-highlight-color: transparent;
         }
-        .hit-zone.active { background: var(--blue); color: #000; box-shadow: 0 0 30px var(--blue); }
+        .hit-zone.active { background: var(--blue); color: #000; box-shadow: 0 0 30px var(--blue); transform: scale(0.95); }
 
         .note {
-            position: absolute; width: 100%; height: 22px; background: var(--gold);
+            position: absolute; width: 100%; height: 20px; background: var(--gold);
             box-shadow: 0 0 15px var(--gold); border-radius: 2px;
+            pointer-events: none;
         }
 
-        .status-msg { margin-top: 20px; color: var(--gold); font-size: 0.8rem; height: 20px; font-weight: 700; }
-        
-        select, input[type="range"] { background: #000; color: #fff; border: 1px solid var(--border); font-family: Orbitron; font-size: 0.6rem; }
+        /* --- Play/Initialize Button --- */
+        .btn-start {
+            width: 100%; max-width: 400px; padding: 15px; background: var(--blue); 
+            border: none; font-family: 'Orbitron'; font-weight: 900; cursor: pointer;
+            margin-top: 10px; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0% 100%);
+        }
+        .btn-start.running { background: var(--red); color: #fff; }
+
+        .status-msg { margin-top: 10px; color: var(--gold); font-size: 0.6rem; font-weight: 700; text-align: center; }
     </style>
 </head>
 <body>
 
     <div class="hud-top">
-        <div>PROTOCOL_04: RUDIMENTAL_PRACTICE</div>
-        <div id="xp-display">XP: 00000</div>
-        <div>[SPACE] PLAY/PAUSE</div>
-        <a href="rhythm_hub.html" style="color:var(--blue); text-decoration:none;">[ EXIT ]</a>
+        <div class="xp-display" id="xp-display">XP: 00000</div>
+        <div style="color:var(--blue); font-weight: 900;">DRILL_PROTOCOL_v4</div>
+        <a href="rhythm_hub.html" style="color:var(--red); text-decoration:none;">[ EXIT ]</a>
     </div>
 
     <div class="main-stage">
         <div class="controls-row">
             <div class="config-box">
-                <label>FINGERS:</label>
+                <label>FINGERS</label>
                 <select id="fingerCount" onchange="initLanes()">
-                    <option value="2">2 (D, J)</option>
-                    <option value="4" selected>4 (S, D, J, K)</option>
+                    <option value="2">2 (D / J)</option>
+                    <option value="4" selected>4 (S D J K)</option>
                 </select>
             </div>
-
             <div class="config-box">
-                <label>RUDIMENT:</label>
+                <label>RUDIMENT</label>
                 <select id="patternType" onchange="resetPattern()">
                     <option value="random">RANDOM_FLUX</option>
-                    <option value="paradiddle">PARADIDDLE (LRLL RLRR)</option>
-                    <option value="double_paradiddle">DBL_PARADIDDLE (LRLRLL RLRLRR)</option>
-                    <option value="double_stroke">DBL_STROKE_ROLL (LL RR)</option>
-                    <option value="flam">FLAMS (lR rL)</option>
+                    <option value="paradiddle">PARADIDDLE</option>
+                    <option value="double_stroke">DBL_STROKE</option>
+                    <option value="flam">FLAMS</option>
                 </select>
             </div>
-
             <div class="config-box">
-                <label>BPM:</label>
-                <input type="range" id="bpmSlider" min="40" max="220" value="100" oninput="updateBPM()">
-                <span id="bpmVal" style="font-size:0.6rem; width:30px;">100</span>
+                <label>BPM: <span id="bpmVal">100</span></label>
+                <input type="range" id="bpmSlider" min="60" max="200" value="100" oninput="updateBPM()">
             </div>
-
             <div class="config-box">
-                <label>STATUS:</label>
-                <span id="play-state" style="font-size: 0.6rem; color: var(--gold);">PAUSED</span>
+                <label>SYNC_STATUS</label>
+                <span id="play-state" style="font-size: 0.6rem; color: var(--gold); font-weight: 900;">IDLE</span>
             </div>
         </div>
 
         <div class="lane-container" id="lane-wrapper"></div>
 
-        <div class="status-msg" id="msg">SELECT PROTOCOL AND PRESS SPACE</div>
+        <button class="btn-start" id="start-btn" onclick="toggleGame()">INITIALIZE_DRILL</button>
+        <div class="status-msg" id="msg">TAP THE ZONES WHEN NOTES ALIGN</div>
     </div>
 
     <script>
@@ -102,24 +131,36 @@
         let gameLoop;
         let notes = [];
         let patternStep = 0;
+        let spawnTimeout;
 
         const PATTERNS = {
             paradiddle: ['L', 'R', 'L', 'L', 'R', 'L', 'R', 'R'],
-            double_paradiddle: ['L', 'R', 'L', 'R', 'L', 'L', 'R', 'L', 'R', 'L', 'R', 'R'],
             double_stroke: ['L', 'L', 'R', 'R'],
             flam: ['lR', 'rL'] 
         };
         
         function initLanes() {
-            stopGame();
+            if(isPlaying) stopGame();
             const wrapper = document.getElementById('lane-wrapper');
             wrapper.innerHTML = '';
             const count = parseInt(document.getElementById('fingerCount').value);
             const layout = count === 2 ? ['D', 'J'] : ['S', 'D', 'J', 'K'];
+            
             layout.forEach(key => {
                 const lane = document.createElement('div');
                 lane.className = 'lane'; lane.id = `lane-${key.toLowerCase()}`;
-                lane.innerHTML = `<div class="hit-zone" id="zone-${key.toLowerCase()}">${key}</div>`;
+                
+                const zone = document.createElement('div');
+                zone.className = 'hit-zone';
+                zone.id = `zone-${key.toLowerCase()}`;
+                zone.innerText = key;
+                
+                // Add touch and mouse support for the zones
+                const handleHit = (e) => { e.preventDefault(); triggerHit(key.toLowerCase()); };
+                zone.addEventListener('touchstart', handleHit);
+                zone.addEventListener('mousedown', handleHit);
+                
+                lane.appendChild(zone);
                 wrapper.appendChild(lane);
             });
             refreshXP();
@@ -132,16 +173,23 @@
 
         function startGame() {
             isPlaying = true;
-            document.getElementById('play-state').innerText = "RUNNING";
+            const btn = document.getElementById('start-btn');
+            btn.innerText = "TERMINATE_SESSION";
+            btn.classList.add('running');
+            document.getElementById('play-state').innerText = "LINKED";
             document.getElementById('play-state').style.color = "var(--green)";
-            gameLoop = setInterval(updatePhysics, 20);
+            gameLoop = setInterval(updatePhysics, 16);
             spawnNotes();
         }
 
         function stopGame() {
             isPlaying = false;
             clearInterval(gameLoop);
-            document.getElementById('play-state').innerText = "PAUSED";
+            clearTimeout(spawnTimeout);
+            const btn = document.getElementById('start-btn');
+            btn.innerText = "INITIALIZE_DRILL";
+            btn.classList.remove('running');
+            document.getElementById('play-state').innerText = "IDLE";
             document.getElementById('play-state').style.color = "var(--gold)";
             notes.forEach(n => n.el.remove());
             notes = [];
@@ -160,10 +208,10 @@
             if (laneEl) {
                 const noteEl = document.createElement('div');
                 noteEl.className = 'note';
-                noteEl.style.top = '0px';
-                if (hand === hand.toLowerCase()) noteEl.style.opacity = "0.5"; 
+                noteEl.style.top = '-20px';
+                if (hand === hand.toLowerCase()) noteEl.style.opacity = "0.4"; 
                 laneEl.appendChild(noteEl);
-                notes.push({ el: noteEl, top: 0, key: targetKey });
+                notes.push({ el: noteEl, top: -20, key: targetKey });
             }
         }
 
@@ -179,8 +227,7 @@
             } else {
                 const seq = PATTERNS[pType];
                 const command = seq[patternStep];
-                
-                if (command.length > 1) { // Flam 
+                if (command.length > 1) { 
                     createNote(command[0]); 
                     setTimeout(() => createNote(command[1]), 100);
                 } else {
@@ -188,46 +235,62 @@
                 }
                 patternStep = (patternStep + 1) % seq.length;
             }
-            setTimeout(spawnNotes, nextSpawnDelay);
+            spawnTimeout = setTimeout(spawnNotes, nextSpawnDelay);
         }
 
         function updatePhysics() {
-            const speed = parseInt(document.getElementById('bpmSlider').value) / 18;
-            notes.forEach((note, index) => {
-                note.top += speed;
-                note.el.style.top = note.top + 'px';
-                if (note.top > 420) {
-                    note.el.remove();
-                    notes.splice(index, 1);
-                }
-            });
-        }
-
-        window.addEventListener('keydown', (e) => {
-            if (e.code === "Space") { e.preventDefault(); toggleGame(); }
-            if (!isPlaying) return;
-            const key = e.key.toLowerCase();
-            const zone = document.getElementById(`zone-${key}`);
-            if (zone) {
-                zone.classList.add('active');
-                setTimeout(() => zone.classList.remove('active'), 100);
-                const hitIndex = notes.findIndex(n => n.key === key && n.top > 330 && n.top < 390);
-                if (hitIndex !== -1) {
-                    addXP(10);
-                    notes[hitIndex].el.remove();
-                    notes.splice(hitIndex, 1);
+            const containerHeight = document.getElementById('lane-wrapper').offsetHeight;
+            const speed = (parseInt(document.getElementById('bpmSlider').value) / 60) * 4;
+            
+            for (let i = notes.length - 1; i >= 0; i--) {
+                notes[i].top += speed;
+                notes[i].el.style.top = notes[i].top + 'px';
+                
+                if (notes[i].top > containerHeight) {
+                    notes[i].el.remove();
+                    notes.splice(i, 1);
                 }
             }
+        }
+
+        function triggerHit(key) {
+            if (!isPlaying) return;
+            const zone = document.getElementById(`zone-${key}`);
+            const containerHeight = document.getElementById('lane-wrapper').offsetHeight;
+            const hitZoneTop = containerHeight - 80;
+            const hitZoneBottom = containerHeight;
+
+            zone.classList.add('active');
+            setTimeout(() => zone.classList.remove('active'), 100);
+
+            const hitIndex = notes.findIndex(n => n.key === key && n.top > hitZoneTop && n.top < hitZoneBottom);
+            if (hitIndex !== -1) {
+                addXP(25);
+                notes[hitIndex].el.style.background = "var(--green)";
+                notes[hitIndex].el.style.boxShadow = "0 0 20px var(--green)";
+                setTimeout(() => {
+                    if(notes[hitIndex]) {
+                        notes[hitIndex].el.remove();
+                        notes.splice(hitIndex, 1);
+                    }
+                }, 50);
+            }
+        }
+
+        // Keyboard support still works for desktop
+        window.addEventListener('keydown', (e) => {
+            if (e.code === "Space") { e.preventDefault(); toggleGame(); }
+            if (isPlaying) triggerHit(e.key.toLowerCase());
         });
 
         function addXP(amt) {
             let total = parseInt(localStorage.getItem('totalXP') || 0) + amt;
             localStorage.setItem('totalXP', total);
-            document.getElementById('xp-display').innerText = `XP: ${total}`;
+            document.getElementById('xp-display').innerText = `XP: ${total.toString().padStart(5, '0')}`;
         }
 
         function refreshXP() {
-            document.getElementById('xp-display').innerText = `XP: ${localStorage.getItem('totalXP') || '00000'}`;
+            document.getElementById('xp-display').innerText = `XP: ${(localStorage.getItem('totalXP') || '0').padStart(5, '0')}`;
         }
 
         window.onload = initLanes;
