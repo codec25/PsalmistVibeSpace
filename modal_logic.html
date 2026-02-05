@@ -2,234 +2,333 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harmonic Calibration | Psalmist Ninja</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MODAL_LOGIC // Neural Calibration</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg: #030508; --panel: #0a111a; --blue: #4facfe; 
+            --bg: #05070a; --panel: rgba(10, 15, 25, 0.98); --blue: #4facfe; 
             --gold: #ffcc00; --green: #00ff88; --border: #1e2544; --red: #ff4b2b;
         }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
-            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
-            background-image: radial-gradient(circle at center, #0b1426 0%, #030508 100%);
+            display: flex; flex-direction: column; min-height: 100vh;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #05070a 100%);
         }
 
-        /* --- HUD --- */
-        .hud-top {
-            display: flex; justify-content: space-between; align-items: center; padding: 15px 40px;
-            font-size: 0.65rem; letter-spacing: 3px; border-bottom: 1px solid var(--border);
-            background: rgba(0,0,0,0.3);
+        /* --- Global XP HUD --- */
+        .header-shield {
+            width: 100%; background: var(--panel); border-bottom: 2px solid var(--border);
+            padding: 15px 20px; position: sticky; top: 0; z-index: 100;
         }
-
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .hud-content { display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto; width: 100%; }
         
-        /* --- Toggles & Config --- */
-        .controls-row { display: flex; gap: 20px; margin-bottom: 25px; }
-        .config-box { background: rgba(255,255,255,0.05); padding: 10px 15px; border: 1px solid var(--border); display: flex; align-items: center; gap: 10px; border-radius: 4px; }
-        .config-box label { font-size: 0.55rem; color: var(--blue); letter-spacing: 1px; }
+        .main-stage { 
+            flex-grow: 1; width: 100%; max-width: 900px; margin: 0 auto;
+            padding: 20px; display: flex; flex-direction: column; gap: 20px;
+        }
+
+        /* --- Discreet Instruction Overlay --- */
+        .instruction-bar {
+            background: rgba(79, 172, 254, 0.05);
+            border: 1px dashed var(--border);
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 0.55rem;
+            color: #556688;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .instruction-bar b { color: var(--blue); }
+
+        /* --- Controls --- */
+        .config-grid { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); 
+            gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid var(--border);
+        }
+        .config-box label { display: block; font-size: 0.5rem; color: #555; margin-bottom: 5px; letter-spacing: 1px; }
         
         .toggle-btn { 
-            background: #111; border: 1px solid var(--border); color: #555; 
-            padding: 8px 15px; font-family: 'Orbitron'; font-size: 0.6rem; cursor: pointer; 
+            width: 100%; background: #0a0e17; border: 1px solid var(--border); color: #888; 
+            padding: 10px; font-family: 'Orbitron'; font-size: 0.6rem; cursor: pointer; border-radius: 4px;
         }
-        .toggle-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.05); }
+        .toggle-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(79, 172, 254, 0.1); }
 
-        /* --- View Containers --- */
-        .view-container { width: 100%; display: flex; justify-content: center; min-height: 180px; }
-        .hidden { display: none !important; }
-
-        /* Screen View */
-        .viz-window {
-            width: 700px; height: 150px; background: rgba(0,0,0,0.6); border: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: center; border-radius: 8px;
+        /* --- Visualizer --- */
+        .viz-terminal {
+            background: #000; border: 1px solid var(--border); border-radius: 12px;
+            height: 160px; display: flex; align-items: center; justify-content: center; position: relative;
+            overflow: hidden; border-left: 4px solid var(--blue);
         }
-        .pulse-light { width: 18px; height: 18px; border-radius: 50%; background: var(--blue); margin: 0 15px; opacity: 0.05; transition: 0.1s; }
-        .pulse-light.active { opacity: 1; box-shadow: 0 0 20px var(--blue); background: #fff; }
+        .pulse-light { width: 10px; height: 10px; border-radius: 50%; background: var(--blue); margin: 0 6px; opacity: 0.1; }
+        .pulse-light.active { opacity: 1; box-shadow: 0 0 15px var(--blue); background: #fff; transform: scale(1.4); }
+        .interval-tag { position: absolute; bottom: 10px; width: 100%; text-align: center; font-size: 0.55rem; color: var(--gold); letter-spacing: 2px; }
 
-        /* Piano View */
-        .piano-view { display: flex; gap: 2px; background: #000; padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
-        .key { width: 35px; height: 120px; background: #ddd; border-radius: 0 0 4px 4px; position: relative; }
-        .key.black { background: #222; width: 24px; height: 75px; margin-left: -12px; margin-right: -12px; z-index: 2; border: 1px solid #000; }
-        .key.active { background: var(--blue) !important; box-shadow: 0 0 20px var(--blue); }
+        /* --- Piano --- */
+        .piano-view { display: flex; gap: 2px; background: #000; padding: 15px; border-radius: 8px; overflow-x: auto; justify-content: center; }
+        .key { width: 35px; height: 100px; background: #eee; border-radius: 0 0 4px 4px; flex-shrink: 0; border: 1px solid #999; }
+        .key.black { background: #222; width: 24px; height: 60px; margin-left: -12px; margin-right: -12px; z-index: 2; border: 1px solid #000; }
+        .key.active { background: var(--blue) !important; box-shadow: 0 0 20px var(--blue); transform: translateY(2px); }
 
-        /* --- Choices --- */
-        .choices-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; width: 550px; margin-top: 30px; }
+        /* --- Interface --- */
+        .choices-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .choice-btn { 
-            background: rgba(10, 17, 26, 0.8); border: 1px solid var(--border); color: #fff; padding: 18px;
-            font-family: 'Orbitron'; font-size: 0.75rem; cursor: pointer; transition: 0.2s;
+            background: rgba(255,255,255,0.02); border: 1px solid var(--border); color: #fff; padding: 16px;
+            font-family: 'Orbitron'; font-size: 0.7rem; cursor: pointer; border-radius: 8px;
         }
-        .choice-btn.success { background: var(--green) !important; color: #000; }
-        .choice-btn.fail { background: var(--red) !important; opacity: 0.5; }
+        .choice-btn.success { border-color: var(--green); color: var(--green); background: rgba(0, 255, 136, 0.1); }
+        .choice-btn.fail { border-color: var(--red); color: var(--red); opacity: 0.3; }
 
-        .action-btns { margin-top: 30px; display: flex; gap: 20px; }
-        .btn-main { background: var(--blue); color: #000; border: none; padding: 15px 40px; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 4px; }
-        .btn-stop { background: #1a1a1a; color: #666; border: 1px solid #333; padding: 15px 40px; font-family: 'Orbitron'; cursor: pointer; border-radius: 4px; }
+        .btn-action { 
+            background: var(--blue); color: #000; border: none; padding: 20px; 
+            font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 12px; width: 100%;
+            font-size: 0.8rem; box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn-secondary {
+            background: #111; color: var(--blue); border: 1px solid var(--blue); padding: 15px;
+            font-family: 'Orbitron'; font-weight: 700; cursor: pointer; border-radius: 12px;
+            font-size: 0.65rem; flex: 1;
+        }
+
+        .btn-stop {
+            background: #1a1a1a; color: #cc0000; border: 1px solid #441111; padding: 15px;
+            font-family: 'Orbitron'; font-weight: 700; cursor: pointer; border-radius: 12px;
+            font-size: 0.65rem; flex: 1;
+        }
+
+        .hidden { display: none !important; }
+        @media (max-width: 600px) { .choices-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
-    <div class="hud-top">
-        <div>PROTOCOL_03: MODAL_LOGIC</div>
-        <div id="global-xp">XP: 01685</div>
-        <a href="pitch_hub.html" style="color: var(--blue); text-decoration: none;">[ EXIT ]</a>
+<div class="header-shield">
+    <div class="hud-content">
+        <div>
+            <span style="font-weight: 900; font-size: 0.7rem; color: var(--blue);">MODAL_LOGIC</span>
+            <div id="xp-display" style="font-size: 0.5rem; color: var(--gold); margin-top: 3px;">XP: 0000</div>
+        </div>
+        <a href="pitch_hub.html" style="text-decoration:none; color: #888; font-size: 0.55rem; border: 1px solid #333; padding: 6px 12px; border-radius: 6px; letter-spacing: 1px;">BACK_TO_HUB</a>
+    </div>
+</div>
+
+<div class="main-stage">
+    
+    <div class="instruction-bar" id="task-prompt">
+        INITIALIZE <b>RANDOM_SIGNAL</b> TO BEGIN CALIBRATION
     </div>
 
-    <div class="main-stage">
-        
-        <div class="controls-row">
-            <div class="config-box">
-                <label>INTERFACE_VIEW:</label>
-                <button class="toggle-btn active" id="view-screen" onclick="setView('screen')">SCREEN</button>
-                <button class="toggle-btn" id="view-piano" onclick="setView('piano')">PIANO</button>
-            </div>
-
-            <div class="config-box">
-                <label>COACH_MODE:</label>
-                <button class="toggle-btn" id="coach-toggle" onclick="toggleCoach()">OFF</button>
-            </div>
-
-            <div class="config-box">
-                <label>OPTIONS:</label>
-                <select id="choiceCount" style="background:#000; color:#fff; border:1px solid var(--border); font-family:Orbitron; font-size:0.6rem;">
-                    <option value="2">2</option>
-                    <option value="4" selected>4</option>
-                    <option value="7">7</option>
-                </select>
+    <div class="config-grid">
+        <div class="config-box">
+            <label>VISUAL_MATRIX</label>
+            <div style="display:flex; gap:5px;">
+                <button class="toggle-btn active" id="view-screen" onclick="setView('screen')">WAVE</button>
+                <button class="toggle-btn" id="view-piano" onclick="setView('piano')">KEYS</button>
             </div>
         </div>
-
-        <div class="view-container">
-            <div class="viz-window" id="screen-display">
-                <div class="pulse-light"></div>
-                <div class="pulse-light"></div>
-                <div class="pulse-light"></div>
-                <div class="pulse-light"></div>
-                <div class="pulse-light"></div>
-                <div class="pulse-light"></div>
-                <div class="pulse-light"></div>
-            </div>
-
-            <div class="piano-view hidden" id="piano-display"></div>
+        <div class="config-box">
+            <label>COACH_ASSIST</label>
+            <button class="toggle-btn" id="coach-toggle" onclick="toggleCoach()">DISABLED</button>
         </div>
+        <div class="config-box">
+            <label>DIFFICULTY</label>
+            <select id="choiceCount" style="background:#000; color:#fff; border:1px solid var(--border); padding:8px; font-family:Orbitron; font-size:0.55rem; width:100%;">
+                <option value="2">NOVICE (2)</option>
+                <option value="4" selected>SCHOLAR (4)</option>
+                <option value="7">ELITE (7)</option>
+            </select>
+        </div>
+    </div>
 
-        <div class="choices-grid" id="choices-container"></div>
+    
 
-        <div class="action-btns">
-            <button class="btn-main" id="startBtn" onclick="startTest()">INITIALIZE_SIGNAL</button>
+    <div class="viz-terminal" id="screen-display">
+        <div class="pulse-light"></div><div class="pulse-light"></div><div class="pulse-light"></div>
+        <div class="pulse-light"></div><div class="pulse-light"></div><div class="pulse-light"></div>
+        <div class="pulse-light"></div>
+        <div class="interval-tag" id="interval-label">WAITING_FOR_SIGNAL</div>
+    </div>
+
+    <div class="piano-view hidden" id="piano-display"></div>
+
+    <div id="choices-container" class="choices-grid"></div>
+
+    <div style="display:flex; flex-direction:column; gap:10px; width:100%;">
+        <button class="btn-action" id="startBtn" onclick="startTest()">NEW_RANDOM_SIGNAL</button>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-secondary" onclick="replaySignal()">REPLAY_SIGNAL</button>
             <button class="btn-stop" onclick="stopTest()">STOP_SIGNAL</button>
         </div>
     </div>
+</div>
 
-    <script>
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let playInterval, isPlaying = false, coachMode = false, currentView = 'screen';
-        let currentModalName = "", currentSequence = [];
+<script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let playInterval = null, isPlaying = false, coachMode = false, currentView = 'screen';
+    let currentModalName = "", currentSequence = [];
+    let firstTry = true;
 
-        const MODES = {
-            "IONIAN": [0, 2, 4, 5, 7, 9, 11], "DORIAN": [0, 2, 3, 5, 7, 9, 10],
-            "PHRYGIAN": [0, 1, 3, 5, 7, 8, 10], "LYDIAN": [0, 2, 4, 6, 7, 9, 11],
-            "MIXOLYDIAN": [0, 2, 4, 5, 7, 9, 10], "AEOLIAN": [0, 2, 3, 5, 7, 8, 10], "LOCRIAN": [0, 1, 3, 5, 6, 8, 10]
-        };
+    const MODES = {
+        "IONIAN": [0, 2, 4, 5, 7, 9, 11], "DORIAN": [0, 2, 3, 5, 7, 9, 10],
+        "PHRYGIAN": [0, 1, 3, 5, 7, 8, 10], "LYDIAN": [0, 2, 4, 6, 7, 9, 11],
+        "MIXOLYDIAN": [0, 2, 4, 5, 7, 9, 10], "AEOLIAN": [0, 2, 3, 5, 7, 8, 10], "LOCRIAN": [0, 1, 3, 5, 6, 8, 10]
+    };
 
-        function setView(view) {
-            currentView = view;
-            document.getElementById('view-screen').classList.toggle('active', view === 'screen');
-            document.getElementById('view-piano').classList.toggle('active', view === 'piano');
-            document.getElementById('screen-display').classList.toggle('hidden', view !== 'screen');
-            document.getElementById('piano-display').classList.toggle('hidden', view !== 'piano');
-            stopTest();
+    const INTERVAL_NAMES = { 0:"ROOT", 1:"b2", 2:"M2", 3:"b3", 4:"M3", 5:"P4", 6:"#4/b5", 7:"P5", 8:"b6", 9:"M6", 10:"b7", 11:"M7" };
+
+    function setInstruction(text) {
+        document.getElementById('task-prompt').innerHTML = text;
+    }
+
+    function updateXP(amount) {
+        let xp = parseInt(localStorage.getItem('totalXP') || 0);
+        xp += amount;
+        localStorage.setItem('totalXP', xp);
+        document.getElementById('xp-display').innerText = `XP: ${xp.toString().padStart(4, '0')}`;
+    }
+
+    function setView(view) {
+        currentView = view;
+        document.getElementById('view-screen').classList.toggle('active', view === 'screen');
+        document.getElementById('view-piano').classList.toggle('active', view === 'piano');
+        document.getElementById('screen-display').classList.toggle('hidden', view !== 'screen');
+        document.getElementById('piano-display').classList.toggle('hidden', view !== 'piano');
+        stopTest();
+    }
+
+    function toggleCoach() {
+        coachMode = !coachMode;
+        document.getElementById('coach-toggle').innerText = coachMode ? "ENABLED" : "DISABLED";
+        document.getElementById('coach-toggle').classList.toggle('active', coachMode);
+        clearVisuals();
+    }
+
+    function initPiano() {
+        const bed = document.getElementById('piano-display');
+        bed.innerHTML = '';
+        for(let i=0; i<13; i++) {
+            const k = document.createElement('div');
+            k.className = [1,3,6,8,10].includes(i%12) ? 'key black' : 'key';
+            k.id = `key-${i}`;
+            bed.appendChild(k);
         }
+    }
 
-        function toggleCoach() {
-            coachMode = !coachMode;
-            const btn = document.getElementById('coach-toggle');
-            btn.innerText = coachMode ? "ON" : "OFF";
-            btn.classList.toggle('active', coachMode);
-        }
+    function startTest() {
+        stopTest();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const keys = Object.keys(MODES);
+        currentModalName = keys[Math.floor(Math.random() * keys.length)];
+        currentSequence = MODES[currentModalName];
+        firstTry = true;
+        setupButtons();
+        isPlaying = true;
+        document.getElementById('startBtn').innerText = "SIGNAL_LOOPING...";
+        setInstruction("LISTEN TO THE INTERVALS AND <b>IDENTIFY THE MODE</b>");
+        runLoop(true);
+    }
 
-        function initPiano() {
-            const bed = document.getElementById('piano-display');
-            for(let i=0; i<13; i++) {
-                const k = document.createElement('div');
-                k.className = [1,3,6,8,10].includes(i%12) ? 'key black' : 'key';
-                k.id = `key-${i}`;
-                bed.appendChild(k);
+    function replaySignal() {
+        if (!currentSequence.length) return;
+        stopTest();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        setInstruction("REPLAYING CURRENT SIGNAL... <b>OBSERVE PATTERN</b>");
+        runLoop(false);
+    }
+
+    function runLoop(loop) {
+        let step = 0;
+        playInterval = setInterval(() => {
+            playNote(currentSequence[step]);
+            visualizeStep(step);
+            step++;
+            if (step >= 7) {
+                if (loop) { step = 0; } 
+                else { setTimeout(stopTest, 500); }
             }
+        }, 550);
+    }
+
+    function playNote(semitones) {
+        const freq = 220 * Math.pow(2, semitones / 12);
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.connect(g); g.connect(audioCtx.destination);
+        g.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+        osc.frequency.value = freq;
+        osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+    }
+
+    function visualizeStep(step) {
+        clearVisuals();
+        if(coachMode) {
+            document.getElementById('interval-label').innerText = `INTERVAL: ${INTERVAL_NAMES[currentSequence[step]]}`;
+            document.getElementById('interval-label').style.color = "var(--gold)";
+            if(currentView === 'screen') {
+                document.querySelectorAll('.pulse-light')[step].classList.add('active');
+            } else {
+                const key = document.getElementById(`key-${currentSequence[step]}`);
+                if(key) key.classList.add('active');
+            }
+        } else {
+            document.getElementById('interval-label').innerText = `STEP ${step + 1} / 7`;
+            document.getElementById('interval-label').style.color = "var(--blue)";
         }
+    }
 
-        function startTest() {
-            if(isPlaying) stopTest();
-            const keys = Object.keys(MODES);
-            currentModalName = keys[Math.floor(Math.random() * keys.length)];
-            currentSequence = MODES[currentModalName];
-            setupButtons();
-            isPlaying = true;
-            runLoop();
+    function setupButtons() {
+        const container = document.getElementById('choices-container');
+        container.innerHTML = '';
+        const count = parseInt(document.getElementById('choiceCount').value);
+        let options = [currentModalName];
+        while(options.length < count) {
+            let r = Object.keys(MODES)[Math.floor(Math.random() * 7)];
+            if(!options.includes(r)) options.push(r);
         }
-
-        function runLoop() {
-            let step = 0;
-            playInterval = setInterval(() => {
-                // Audio
-                const freq = 440 * Math.pow(2, ((60 + currentSequence[step]) - 69) / 12);
-                const osc = audioCtx.createOscillator();
-                const g = audioCtx.createGain();
-                osc.connect(g); g.connect(audioCtx.destination);
-                g.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-                osc.frequency.value = freq;
-                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
-
-                // Visuals - ONLY if Coach Mode is ON
-                clearVisuals();
-                if(coachMode) {
-                    if(currentView === 'screen') {
-                        document.querySelectorAll('.pulse-light')[step].classList.add('active');
-                    } else {
-                        document.getElementById(`key-${currentSequence[step]}`).classList.add('active');
-                    }
+        options.sort().forEach(name => {
+            const b = document.createElement('button');
+            b.className = 'choice-btn';
+            b.innerText = name;
+            b.onclick = () => {
+                if(name === currentModalName) { 
+                    b.classList.add('success');
+                    if(firstTry) updateXP(100); 
+                    stopTest();
+                    document.getElementById('startBtn').innerText = "SUCCESS! NEW SIGNAL?";
+                    setInstruction("CALIBRATION SUCCESSFUL. <b>XP AWARDED</b>");
+                } else { 
+                    b.classList.add('fail');
+                    firstTry = false;
+                    setInstruction("SIGNAL MISMATCH. <b>TRY AGAIN</b>");
                 }
+            };
+            container.appendChild(b);
+        });
+    }
 
-                step = (step + 1) % 7;
-            }, 600);
+    function stopTest() {
+        isPlaying = false;
+        if(playInterval) { clearInterval(playInterval); playInterval = null; }
+        clearVisuals();
+        document.getElementById('interval-label').innerText = "SIGNAL_TERMINATED";
+        document.getElementById('interval-label').style.color = "#444";
+        if (currentSequence.length > 0 && document.getElementById('startBtn').innerText !== "SUCCESS! NEW SIGNAL?") {
+            setInstruction("SIGNAL PAUSED. <b>REPLAY</b> OR <b>IDENTIFY</b>");
         }
+    }
 
-        function setupButtons() {
-            const container = document.getElementById('choices-container');
-            container.innerHTML = '';
-            const count = parseInt(document.getElementById('choiceCount').value);
-            let options = [currentModalName];
-            while(options.length < count) {
-                let r = Object.keys(MODES)[Math.floor(Math.random() * 7)];
-                if(!options.includes(r)) options.push(r);
-            }
-            options.sort().forEach(name => {
-                const b = document.createElement('button');
-                b.className = 'choice-btn';
-                b.innerText = name;
-                b.onclick = () => {
-                    if(name === currentModalName) { 
-                        b.classList.add('success'); stopTest(); 
-                    } else { b.classList.add('fail'); }
-                };
-                container.appendChild(b);
-            });
-        }
+    function clearVisuals() {
+        document.querySelectorAll('.pulse-light').forEach(l => l.classList.remove('active'));
+        document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+    }
 
-        function stopTest() {
-            isPlaying = false;
-            clearInterval(playInterval);
-            clearVisuals();
-        }
-
-        function clearVisuals() {
-            document.querySelectorAll('.pulse-light').forEach(l => l.classList.remove('active'));
-            document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
-        }
-
-        window.onload = initPiano;
-    </script>
+    window.onload = () => { initPiano(); updateXP(0); };
+</script>
 </body>
 </html>
