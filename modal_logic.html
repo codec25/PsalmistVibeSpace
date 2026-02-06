@@ -30,6 +30,20 @@
             padding: 20px; display: flex; flex-direction: column; gap: 20px;
         }
 
+        /* --- Neural Guidance System (Manual UI) --- */
+        .manual-container {
+            background: #0d1117; border: 1px solid var(--border); border-radius: 12px;
+            padding: 25px; position: relative; border-left: 4px solid var(--blue);
+            margin-bottom: 5px;
+        }
+        .manual-tag { 
+            position: absolute; top: -12px; right: 20px; background: var(--gold); 
+            color: #000; font-size: 0.5rem; font-weight: 900; padding: 4px 12px; border-radius: 4px; letter-spacing: 1px;
+        }
+        .manual-content h2 { color: var(--blue); font-size: 1rem; margin: 0 0 10px 0; letter-spacing: 2px; }
+        .manual-body { color: #8b949e; font-size: 0.75rem; line-height: 1.6; }
+        .technical-spec { color: var(--gold); font-size: 0.6rem; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #30363d; font-weight: 700; }
+
         /* --- Discreet Instruction Overlay --- */
         .instruction-bar {
             background: rgba(79, 172, 254, 0.05);
@@ -60,7 +74,7 @@
         /* --- Visualizer --- */
         .viz-terminal {
             background: #000; border: 1px solid var(--border); border-radius: 12px;
-            height: 160px; display: flex; align-items: center; justify-content: center; position: relative;
+            height: 140px; display: flex; align-items: center; justify-content: center; position: relative;
             overflow: hidden; border-left: 4px solid var(--blue);
         }
         .pulse-light { width: 10px; height: 10px; border-radius: 50%; background: var(--blue); margin: 0 6px; opacity: 0.1; }
@@ -118,6 +132,17 @@
 
 <div class="main-stage">
     
+    <div class="manual-container">
+        <div class="manual-tag">NEURAL_GUIDANCE</div>
+        <div class="manual-content">
+            <h2>DIATONIC_SPECTRUM</h2>
+            <div class="manual-body">
+                Modes are the seven internal permutations of the major scale. Each mode shifts the root position, altering the sequence of intervals and creating a unique emotional color. Calibration requires identifying the specific pattern of whole and half-steps.
+            </div>
+            <div class="technical-spec">TECH: SEVEN-NOTE PERMUTATION / FREQUENCY_MAPPING</div>
+        </div>
+    </div>
+
     <div class="instruction-bar" id="task-prompt">
         INITIALIZE <b>RANDOM_SIGNAL</b> TO BEGIN CALIBRATION
     </div>
@@ -144,8 +169,6 @@
         </div>
     </div>
 
-    
-
     <div class="viz-terminal" id="screen-display">
         <div class="pulse-light"></div><div class="pulse-light"></div><div class="pulse-light"></div>
         <div class="pulse-light"></div><div class="pulse-light"></div><div class="pulse-light"></div>
@@ -167,6 +190,7 @@
 </div>
 
 <script>
+    // All original game logic scripts (audioCtx, MODES, checkAnswer, etc.) remain untouched
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     let playInterval = null, isPlaying = false, coachMode = false, currentView = 'screen';
     let currentModalName = "", currentSequence = [];
