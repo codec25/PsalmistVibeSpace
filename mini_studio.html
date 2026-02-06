@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MINI_STUDIO // Neural Sequencer</title>
+    <title>PSALMIST // Mini Studio</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -20,9 +20,17 @@
             overflow-x: hidden;
         }
 
-        header { width: 100%; max-width: 1100px; padding: 20px 0; display: flex; justify-content: space-between; align-items: center; }
+        header { width: 100%; max-width: 1100px; padding: 20px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
         .logo { font-weight: 900; letter-spacing: 2px; font-size: 0.9rem; }
         .logo span { color: var(--blue); }
+
+        .studio-nav { display: flex; gap: 10px; align-items: center; }
+        .btn-action-nav {
+            background: #0a0e17; border: 1px solid var(--border); color: var(--blue); 
+            padding: 8px 12px; font-family: 'Orbitron'; font-size: 0.55rem; border-radius: 6px;
+            cursor: pointer; text-decoration: none; transition: 0.2s;
+        }
+        .btn-piano { background: var(--blue); color: #000; font-weight: 900; }
 
         .viz-terminal {
             width: 100%; max-width: 1100px; height: 120px; background: #000;
@@ -40,10 +48,10 @@
         .ctrl-box { background: var(--panel); padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
         .ctrl-box label { display: block; font-size: 0.5rem; color: #555; margin-bottom: 8px; letter-spacing: 1px; }
 
-        .btn-action {
-            width: 100%; padding: 12px; background: #0a0e17; border: 1px solid var(--border);
-            color: var(--blue); font-family: 'Orbitron'; font-size: 0.6rem; border-radius: 6px;
-            cursor: pointer; transition: 0.2s; text-align: center; text-decoration: none;
+        .btn-main {
+            background: var(--blue); color: #000; border: none; padding: 15px;
+            font-family: 'Orbitron'; font-weight: 900; border-radius: 50px; cursor: pointer; width: 100%;
+            font-size: 0.6rem;
         }
 
         .sequencer-container { 
@@ -54,7 +62,7 @@
 
         .track-row { display: grid; grid-template-columns: 150px 1fr; gap: 20px; align-items: center; margin-bottom: 12px; min-width: 850px; }
         .track-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .track-name { font-size: 0.65rem; font-weight: 700; color: var(--blue); }
+        .track-name { font-size: 0.65rem; font-weight: 700; color: var(--blue); cursor:pointer; }
         .load-btn { font-size: 0.45rem; color: var(--gold); border: 1px solid var(--gold); padding: 2px 5px; border-radius: 3px; cursor: pointer; }
 
         .step-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 6px; }
@@ -74,9 +82,11 @@
             padding: 30px; border-radius: 16px; text-align: center;
         }
 
-        .btn-main {
-            background: var(--blue); color: #000; border: none; padding: 15px 40px;
-            font-family: 'Orbitron'; font-weight: 900; border-radius: 50px; cursor: pointer; width: 100%;
+        .milestone-banner { 
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
+            background: var(--green); color: #000; padding: 10px 30px; 
+            border-radius: 50px; font-weight: 900; font-size: 0.7rem; 
+            z-index: 9999; box-shadow: 0 0 30px var(--green); 
         }
     </style>
 </head>
@@ -84,23 +94,21 @@
 
     <div id="mission-briefing">
         <div class="brief-card">
-            <h2 style="color: var(--blue); font-size: 1rem;">MINI_STUDIO // INITIALIZATION</h2>
+            <h2 style="color: var(--blue); font-size: 1rem;">PSALMIST // MINI_STUDIO</h2>
             <p style="font-size: 0.75rem; text-align: left; color: #ccc; line-height: 1.6; margin: 20px 0;">
                 • Program the 16-step grid to trigger neural audio pulses.<br>
-                • Load custom WAV/MP3 samples to customize your tracks.<br>
-                • Use the SKIP button to bypass these instructions.
+                • Load custom samples to unleash the creative beast.<br>
+                • Your session time is tracked discreetly at the top.
             </p>
-            <button class="btn-main" onclick="closeBriefing()">START_ENGINE</button>
-            <button class="btn-action" onclick="closeBriefing()" style="margin-top:10px; border:none; color:#555;">SKIP_INSTRUCTIONS</button>
+            <button class="btn-main" onclick="closeBriefing()">INITIALIZE_ENGINE</button>
         </div>
     </div>
 
     <header>
-        <div class="logo">MINI_<span>STUDIO</span></div>
-        <div style="display:flex; gap:10px;">
-            <button class="btn-action" onclick="savePattern()">SAVE</button>
-            <label class="btn-action" for="load-file">LOAD</label>
-            <input type="file" id="load-file" style="display:none" accept=".ninja" onchange="loadPattern(this)">
+        <div class="logo">PSALMIST // <span>MINI_STUDIO</span></div>
+        <div class="studio-nav">
+            <a href="hub.html" class="btn-action-nav">BACK_TO_HUB</a>
+            <a href="grand_station.html" class="btn-action-nav btn-piano">GRAND_STATION</a>
         </div>
     </header>
 
@@ -108,25 +116,78 @@
 
     <div class="controls-grid">
         <div class="ctrl-box">
-            <label>TEMPO</label>
+            <label>TEMPO & SESSION</label>
             <input type="range" id="bpm-slider" min="60" max="200" value="120" oninput="updateTempo(this.value)" style="width:100%;">
-            <div id="bpm-val" style="font-size:0.7rem; color:var(--gold); margin-top:5px;">120 BPM</div>
+            <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                <div id="bpm-val" style="font-size:0.7rem; color:var(--gold);">120 BPM</div>
+                <div id="session-timer" onclick="toggleTimerDisplay()" style="font-size:0.55rem; color:var(--blue); cursor:pointer; opacity:0.5;" title="Toggle Discreet Mode">00:00</div>
+            </div>
         </div>
         <div class="ctrl-box">
-            <label>ENGINE</label>
-            <button class="btn-main" id="play-btn" onclick="togglePlay()" style="padding:10px; font-size:0.6rem;">START</button>
+            <label>ENGINE_STATUS</label>
+            <button class="btn-main" id="play-btn" onclick="togglePlay()">START_ENGINE</button>
+        </div>
+        <div class="ctrl-box">
+            <label>RECORDING</label>
+            <button class="btn-main" onclick="toggleRecording()" id="rec-btn">REC_BEAT</button>
+            <a id="download-link" style="display:none;margin-top:8px;font-size:0.55rem;color:var(--gold);" download="beat.wav">DOWNLOAD_BEAT</a>
         </div>
     </div>
 
-    <div class="sequencer-container"><div id="sequencer-grid"></div></div>
+    <div class="sequencer-container">
+        <div style="text-align: center; font-size: 0.45rem; color: var(--gold); margin-bottom: 15px; letter-spacing: 2px; opacity: 0.6;">CREATIVE_BEAST_MODE: ACTIVE</div>
+        <div id="sequencer-grid"></div>
+    </div>
 
     <script>
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const analyzer = audioCtx.createAnalyser();
-        const trackNames = ["KICK", "SNARE", "HI_HAT", "LEAD", "BASS"];
+        const dest = audioCtx.createMediaStreamDestination();
+        analyzer.connect(dest);
+        analyzer.connect(audioCtx.destination);
+
+        const trackNames = ["KICK", "SNARE", "HI_HAT", "CONGA", "OPEN_HAT"];
         let sampleBuffers = [null, null, null, null, null];
         let grid = Array(5).fill().map(() => Array(16).fill(false));
         let isPlaying = false, currentStep = 0, nextNoteTime = 0, tempo = 120;
+
+        // Session Logic
+        let sessionSeconds = 0;
+        let timerVisible = true;
+
+        // Recording
+        let mediaRecorder = null;
+        let recordedChunks = [];
+
+        const patternPresets = {
+            KICK: [
+                [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+                [1,0,0,1, 0,0,1,0, 1,0,0,1, 0,0,1,0],
+                [1,0,0,0, 0,0,1,0, 1,0,0,0, 0,1,0,0]
+            ],
+            SNARE: [
+                [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
+                [0,1,0,0, 0,1,0,0, 0,1,0,0, 0,1,0,0],
+                [0,0,1,0, 1,0,0,0, 0,0,1,0, 1,0,0,0]
+            ],
+            HI_HAT: [
+                [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
+                [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+                [1,1,0,1, 1,0,1,1, 0,1,1,0, 1,1,0,1]
+            ],
+            CONGA: [
+                [1,0,0,1, 0,1,0,0, 1,0,1,0, 0,1,0,0],
+                [0,1,0,1, 0,0,1,0, 1,0,0,1, 0,1,0,0],
+                [1,0,1,0, 1,0,0,1, 0,1,0,1, 0,0,1,0]
+            ],
+            OPEN_HAT: [
+                [0,0,0,1, 0,0,0,1, 0,0,0,1, 0,0,0,1],
+                [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
+                [0,1,0,0, 0,1,0,0, 0,1,0,0, 0,1,0,0]
+            ]
+        };
+
+        let patternIndex = [0,0,0,0,0];
 
         function init() {
             const seq = document.getElementById('sequencer-grid');
@@ -136,7 +197,10 @@
                 row.className = 'track-row';
                 row.innerHTML = `
                     <div class="track-info">
-                        <div class="track-header"><span class="track-name" id="n-${i}">${name}</span><label class="load-btn" for="s-${i}">LOAD</label></div>
+                        <div class="track-header">
+                            <span class="track-name" id="n-${i}" onclick="cyclePattern(${i})">${name}</span>
+                            <label class="load-btn" for="s-${i}">LOAD</label>
+                        </div>
                         <input type="file" id="s-${i}" style="display:none" accept="audio/*" onchange="loadSample(${i}, this)">
                         <input type="range" min="0" max="1" step="0.01" value="0.7" id="v-${i}" style="width:100%;">
                     </div>
@@ -151,8 +215,36 @@
                 }
                 seq.appendChild(row);
             });
+            loadDefaultDrums();
             drawVisualizer();
         }
+
+        function initSessionTimer() {
+            setInterval(() => {
+                sessionSeconds++;
+                if (sessionSeconds > 0 && sessionSeconds % 900 === 0) showBeastMilestone();
+                const mins = Math.floor(sessionSeconds / 60).toString().padStart(2, '0');
+                const secs = (sessionSeconds % 60).toString().padStart(2, '0');
+                const el = document.getElementById('session-timer');
+                if (timerVisible) {
+                    el.innerText = `${mins}:${secs}`;
+                    el.style.opacity = "0.5";
+                } else {
+                    el.innerText = `--:--`;
+                    el.style.opacity = "0.2";
+                }
+            }, 1000);
+        }
+
+        function showBeastMilestone() {
+            const banner = document.createElement('div');
+            banner.className = 'milestone-banner';
+            banner.innerText = "UNLEASHED: CREATIVE_LEVEL_INCREASED";
+            document.body.appendChild(banner);
+            setTimeout(() => banner.remove(), 5000);
+        }
+
+        function toggleTimerDisplay() { timerVisible = !timerVisible; }
 
         async function loadSample(idx, input) {
             const file = input.files[0];
@@ -162,22 +254,77 @@
             document.getElementById(`n-${idx}`).style.color = "var(--green)";
         }
 
-        function triggerSound(idx, time) {
-            const vol = parseFloat(document.getElementById(`v-${idx}`).value);
-            if(sampleBuffers[idx]) {
-                const s = audioCtx.createBufferSource(); s.buffer = sampleBuffers[idx];
-                const g = audioCtx.createGain(); g.gain.setValueAtTime(vol, time);
-                s.connect(g).connect(audioCtx.destination); s.connect(g).connect(analyzer);
-                s.start(time);
-            } else {
-                const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-                o.frequency.setValueAtTime(idx === 0 ? 55 : 200 + (idx*100), time);
-                g.gain.setValueAtTime(vol*0.3, time); g.gain.exponentialRampToValueAtTime(0.001, time+0.1);
-                o.connect(g).connect(audioCtx.destination); o.connect(g).connect(analyzer);
-                o.start(time); o.stop(time+0.1);
+        /* -------- REAL DRUM SYNTH -------- */
+        function createKick() {
+            const length = audioCtx.sampleRate * 0.5;
+            const buffer = audioCtx.createBuffer(1, length, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            let phase = 0;
+            for(let i=0;i<length;i++){
+                const t = i / audioCtx.sampleRate;
+                const freq = 150 * Math.exp(-t*8);
+                phase += 2*Math.PI*freq/audioCtx.sampleRate;
+                data[i] = Math.sin(phase) * Math.exp(-t*10);
             }
+            return buffer;
         }
 
+        function createSnare() {
+            const length = audioCtx.sampleRate * 0.3;
+            const buffer = audioCtx.createBuffer(1, length, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for(let i=0;i<length;i++){
+                const t = i / audioCtx.sampleRate;
+                data[i] = (Math.random()*2-1) * Math.exp(-t*12);
+            }
+            return buffer;
+        }
+
+        function createHat(open=false) {
+            const length = audioCtx.sampleRate * (open ? 1 : 0.15);
+            const buffer = audioCtx.createBuffer(1, length, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for(let i=0;i<length;i++){
+                const t = i / audioCtx.sampleRate;
+                data[i] = (Math.random()*2-1) * Math.exp(-t*(open?3:20));
+            }
+            return buffer;
+        }
+
+        function createConga() {
+            const length = audioCtx.sampleRate * 0.4;
+            const buffer = audioCtx.createBuffer(1, length, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            let phase = 0;
+            for(let i=0;i<length;i++){
+                const t = i / audioCtx.sampleRate;
+                const freq = 220 * Math.exp(-t*2);
+                phase += 2*Math.PI*freq/audioCtx.sampleRate;
+                data[i] = Math.sin(phase) * Math.exp(-t*6);
+            }
+            return buffer;
+        }
+
+        function loadDefaultDrums() {
+            sampleBuffers[0] = createKick();
+            sampleBuffers[1] = createSnare();
+            sampleBuffers[2] = createHat(false);
+            sampleBuffers[3] = createConga();
+            sampleBuffers[4] = createHat(true);
+        }
+
+        function triggerSound(idx, time) {
+            const vol = parseFloat(document.getElementById(`v-${idx}`).value);
+            const s = audioCtx.createBufferSource();
+            s.buffer = sampleBuffers[idx];
+            const g = audioCtx.createGain();
+            g.gain.setValueAtTime(vol, time);
+            s.connect(g).connect(audioCtx.destination);
+            s.connect(g).connect(analyzer);
+            s.start(time);
+        }
+
+        /* -------- SEQUENCER -------- */
         function scheduler() {
             while (nextNoteTime < audioCtx.currentTime + 0.1) {
                 for(let i=0; i<5; i++) { if(grid[i][currentStep]) triggerSound(i, nextNoteTime); }
@@ -199,27 +346,46 @@
         function togglePlay() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             isPlaying = !isPlaying;
-            document.getElementById('play-btn').innerText = isPlaying ? "STOP" : "START";
+            document.getElementById('play-btn').innerText = isPlaying ? "STOP_ENGINE" : "START_ENGINE";
             if (isPlaying) { currentStep = 0; nextNoteTime = audioCtx.currentTime; scheduler(); }
         }
 
         function updateTempo(v) { tempo = v; document.getElementById('bpm-val').innerText = v + " BPM"; }
         function closeBriefing() { document.getElementById('mission-briefing').style.display='none'; }
-        
-        function savePattern() {
-            const blob = new Blob([JSON.stringify({grid, tempo})], {type:'application/json'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'studio.ninja'; a.click();
+
+        /* -------- PATTERN CYCLER -------- */
+        function cyclePattern(track) {
+            const name = trackNames[track];
+            patternIndex[track] = (patternIndex[track] + 1) % patternPresets[name].length;
+            grid[track] = patternPresets[name][patternIndex[track]].map(v => !!v);
+            const steps = document.querySelectorAll(`#g-${track} .step`);
+            steps.forEach((s,i)=>s.classList.toggle('active',grid[track][i]));
         }
 
-        function loadPattern(input) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const data = JSON.parse(e.target.result);
-                grid = data.grid; tempo = data.tempo; init();
-            };
-            reader.readAsText(input.files[0]);
+        /* -------- RECORDING -------- */
+        function toggleRecording() {
+            if (!mediaRecorder || mediaRecorder.state === "inactive") {
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(dest.stream);
+                mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+                mediaRecorder.onstop = exportRecording;
+                mediaRecorder.start();
+                document.getElementById("rec-btn").innerText = "STOP_REC";
+            } else {
+                mediaRecorder.stop();
+                document.getElementById("rec-btn").innerText = "REC_BEAT";
+            }
         }
 
+        function exportRecording() {
+            const blob = new Blob(recordedChunks, { type: "audio/wav" });
+            const url = URL.createObjectURL(blob);
+            const link = document.getElementById("download-link");
+            link.href = url;
+            link.style.display = "block";
+        }
+
+        /* -------- VISUALIZER -------- */
         function drawVisualizer() {
             const canvas = document.getElementById('visualizer');
             const ctx = canvas.getContext('2d');
@@ -244,6 +410,7 @@
             const c = document.getElementById('visualizer');
             c.width = c.offsetWidth; c.height = c.offsetHeight;
             init();
+            initSessionTimer();
         };
     </script>
 </body>
