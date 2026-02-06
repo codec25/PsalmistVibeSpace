@@ -21,7 +21,23 @@
             padding: env(safe-area-inset-top) 15px 40px 15px;
         }
 
-        /* --- Minimalist HUD --- */
+        /* --- Guidance System --- */
+        .protocol-briefing {
+            width: 100%; max-width: 600px; background: rgba(79, 172, 254, 0.1);
+            border: 1px solid var(--blue); border-radius: 12px; padding: 15px;
+            margin-bottom: 20px; font-size: 0.65rem; line-height: 1.5; color: var(--blue);
+            animation: fadeIn 0.8s ease-out; position: relative;
+        }
+        .briefing-close { position: absolute; top: 10px; right: 10px; cursor: pointer; color: #fff; font-size: 0.8rem; }
+        
+        .hint-text {
+            font-size: 0.6rem; color: #555; letter-spacing: 2px; margin-bottom: 8px;
+            text-transform: uppercase; text-align: center; width: 100%; min-height: 12px;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- UI Elements --- */
         .hud-top {
             width: 100%; max-width: 800px; padding: 20px 0;
             display: flex; justify-content: space-between; align-items: center;
@@ -33,10 +49,7 @@
 
         .main-stage { width: 100%; max-width: 600px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
 
-        /* --- Refined Config Controls --- */
-        .controls-row { 
-            display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 100%;
-        }
+        .controls-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 100%; }
         .config-box { 
             background: var(--panel); border: 1px solid var(--border); padding: 8px 12px; 
             border-radius: 12px; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px);
@@ -51,7 +64,6 @@
 
         select { background: none; color: #fff; border: 1px solid var(--border); font-family: 'Orbitron'; font-size: 0.6rem; border-radius: 4px; padding: 2px; }
 
-        /* --- Visualization Area --- */
         .view-container { 
             width: 100%; min-height: 140px; display: flex; justify-content: center; align-items: center;
             background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px inset var(--border);
@@ -69,10 +81,7 @@
         .key.black { background: #222; width: 20px; height: 65px; margin-left: -10px; margin-right: -10px; z-index: 2; border: 1px solid #000; }
         .key.active { background: var(--blue) !important; box-shadow: 0 0 20px var(--blue); transform: translateY(2px); }
 
-        /* --- Choices Grid --- */
-        .choices-grid { 
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%;
-        }
+        .choices-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
         .choice-btn { 
             background: var(--panel); border: 1px solid var(--border); color: #fff; padding: 20px;
             font-family: 'Orbitron'; font-size: 0.9rem; font-weight: 700; cursor: pointer; border-radius: 15px;
@@ -80,7 +89,6 @@
         }
         .choice-btn:active { transform: scale(0.95); background: rgba(79, 172, 254, 0.2); }
 
-        /* --- Action Buttons --- */
         .action-btns { width: 100%; display: flex; gap: 15px; margin-top: 10px; }
         .btn-main { 
             flex: 2; background: var(--blue); color: #000; border: none; padding: 20px; 
@@ -89,11 +97,6 @@
         .btn-sub { 
             flex: 1; background: none; color: var(--gold); border: 1px solid var(--gold); 
             padding: 20px; font-family: 'Orbitron'; border-radius: 15px; cursor: pointer; font-size: 0.6rem;
-        }
-
-        @media (min-width: 768px) {
-            .choices-grid { grid-template-columns: repeat(4, 1fr); }
-            .hud-top div { font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -107,18 +110,22 @@
 
     <div class="main-stage">
         
+        <div id="briefing" class="protocol-briefing">
+            <span class="briefing-close" onclick="this.parentElement.style.display='none'">[X]</span>
+            <strong>NINJA_PROTOCOL:</strong> Listen to the frequency. Match the note to the grid below. 
+            Enable <strong>COACH</strong> if you need a visual prompt on the ORB or PIANO.
+        </div>
+
         <div class="controls-row">
             <div class="config-box">
                 <label>View</label>
                 <button class="toggle-btn active" id="view-screen" onclick="setView('screen')">ORB</button>
                 <button class="toggle-btn" id="view-piano" onclick="setView('piano')">PIANO</button>
             </div>
-
             <div class="config-box">
                 <label>Coach</label>
                 <button class="toggle-btn" id="coach-toggle" onclick="toggleCoach()">OFF</button>
             </div>
-
             <div class="config-box">
                 <label>Pool</label>
                 <select id="choiceCount" onchange="setupButtons()">
@@ -137,6 +144,8 @@
         </div>
 
         <div class="choices-grid" id="choices-container"></div>
+
+        <div class="hint-text" id="action-hint">READY FOR SIGNAL INPUT</div>
 
         <div class="action-btns">
             <button class="btn-main" onclick="generateNewSignal()">NEW SIGNAL</button>
@@ -164,6 +173,7 @@
             btn.innerText = coachMode ? "ON" : "OFF";
             btn.classList.toggle('active', coachMode);
             if(!coachMode) clearVisuals();
+            document.getElementById('action-hint').innerText = coachMode ? "COACH_ACTIVE: VISUAL DATA ENABLED" : "COACH_OFF: PURE AUDIO PROTOCOL";
         }
 
         function initPiano() {
@@ -175,11 +185,11 @@
                 bed.appendChild(k);
             }
             refreshXP();
-            generateNewSignal();
         }
 
         function generateNewSignal() {
             currentMidi = 60 + Math.floor(Math.random() * 12);
+            document.getElementById('action-hint').innerText = "SIGNAL_ACTIVE: SELECT MATCHING NODE";
             playSignal();
             setupButtons();
         }
@@ -194,7 +204,6 @@
             g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
             osc.frequency.value = freq;
             osc.start(); osc.stop(audioCtx.currentTime + 1.2);
-            
             if(coachMode) triggerVisuals();
         }
 
@@ -218,13 +227,11 @@
             const container = document.getElementById('choices-container');
             container.innerHTML = '';
             const count = parseInt(document.getElementById('choiceCount').value);
-            
             let choices = [currentMidi];
             while(choices.length < count) {
                 let r = 60 + Math.floor(Math.random() * 12);
                 if(!choices.includes(r)) choices.push(r);
             }
-            
             choices.sort((a,b) => a - b).forEach(midi => {
                 const b = document.createElement('button');
                 b.className = 'choice-btn';
@@ -238,21 +245,29 @@
             if(midi === currentMidi) {
                 btn.style.backgroundColor = "var(--green)";
                 btn.style.color = "#000";
+                document.getElementById('action-hint').innerText = "SIGNAL_MATCHED // +50 XP ACQUIRED";
                 addXP(50);
                 setTimeout(generateNewSignal, 700);
             } else {
                 btn.style.backgroundColor = "var(--red)";
                 btn.style.borderColor = "var(--red)";
-                setTimeout(() => {
-                    btn.style.backgroundColor = "";
-                    btn.style.borderColor = "";
-                }, 400);
+                document.getElementById('action-hint').innerText = "SIGNAL_MISMATCH // RE-SYNC REQUIRED";
+                setTimeout(() => { btn.style.backgroundColor = ""; btn.style.borderColor = ""; }, 400);
             }
         }
 
+        /**
+         * FULL SYSTEM SYNC LOGIC
+         * Updates XP, Calculates Level, and Syncs for Teacher Roster
+         */
         function addXP(amt) {
             let total = parseInt(localStorage.getItem('totalXP') || 0) + amt;
             localStorage.setItem('totalXP', total);
+            
+            // Auto-Leveling Logic (1 level per 2500 XP)
+            let newLevel = Math.floor(total / 2500) + 1;
+            localStorage.setItem('currentLevel', newLevel);
+            
             refreshXP();
         }
 
