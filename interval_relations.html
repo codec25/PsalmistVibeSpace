@@ -2,349 +2,213 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PROTOCOL_02: INTERVAL_RELATIONS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PROTOCOL_02: INTERVAL_MATRIX</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg: #05070a; --panel: rgba(10, 15, 25, 0.98); --blue: #4facfe; 
-            --gold: #ffcc00; --green: #00ff88; --border: #1e2544; --red: #ff4b2b; --staff: #334466;
+            --bg: #020406; --panel: rgba(15, 20, 30, 0.7); --blue: #4facfe; 
+            --gold: #ffcc00; --green: #00ff88; --border: rgba(79, 172, 254, 0.2); --red: #ff4b2b;
         }
+        
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
-            display: flex; flex-direction: column; min-height: 100vh;
-            background-image: radial-gradient(circle at center, #0b1426 0%, #05070a 100%);
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #020406 100%);
+            overflow-x: hidden;
+            padding: env(safe-area-inset-top) 15px 40px 15px;
         }
 
+        /* --- Guidance System Styles --- */
+        .protocol-briefing {
+            width: 100%; max-width: 600px; background: rgba(79, 172, 254, 0.1);
+            border: 1px solid var(--blue); border-radius: 12px; padding: 15px;
+            margin-bottom: 20px; font-size: 0.65rem; line-height: 1.5; color: var(--blue);
+            animation: fadeIn 0.8s ease-out; position: relative;
+        }
+        .briefing-close { position: absolute; top: 10px; right: 10px; cursor: pointer; color: #fff; font-size: 0.8rem; }
+        
+        .hint-text {
+            font-size: 0.6rem; color: #555; letter-spacing: 2px; margin-bottom: 8px;
+            text-transform: uppercase; text-align: center; width: 100%;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Existing Styles (Unchanged) --- */
         .hud-top {
-            display: flex; justify-content: space-between; align-items: center; padding: 15px 40px;
-            font-size: 0.65rem; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.3);
+            width: 100%; max-width: 800px; padding: 20px 0;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); margin-bottom: 20px;
+        }
+        .hud-top div { font-size: 0.6rem; letter-spacing: 2px; }
+        .xp-display { color: var(--gold); font-weight: 700; }
+        .exit-link { color: var(--blue); text-decoration: none; font-weight: 900; }
+
+        .main-stage { width: 100%; max-width: 600px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+
+        .matrix-display {
+            width: 100%; height: 200px; background: rgba(255,255,255,0.02);
+            border-radius: 20px; border: 1px inset var(--border);
+            display: flex; justify-content: center; align-items: center; position: relative;
         }
 
-        .main-stage { flex-grow: 1; width: 100%; max-width: 900px; margin: 0 auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-
-        /* --- Config Grid --- */
-        .config-grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-            gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid var(--border);
+        .node-container { display: flex; gap: 15px; }
+        .node { 
+            width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--blue);
+            opacity: 0.2; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .config-box label { display: block; font-size: 0.5rem; color: #555; margin-bottom: 5px; letter-spacing: 1px; }
+        .node.active { opacity: 1; background: #fff; box-shadow: 0 0 30px var(--blue); transform: scale(1.1); }
 
-        .toggle-btn { 
-            width: 100%; background: #0a0e17; border: 1px solid var(--border); color: #888; 
-            padding: 10px; font-family: 'Orbitron'; font-size: 0.6rem; cursor: pointer; border-radius: 4px;
+        .choices-grid { 
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%;
         }
-        .toggle-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(79, 172, 254, 0.1); }
-        select { width: 100%; background: #0a0e17; border: 1px solid var(--border); color: var(--blue); padding: 8px; font-family: 'Orbitron'; font-size: 0.6rem; border-radius: 4px; outline: none; }
-
-        /* --- Viz Window --- */
-        .viz-terminal {
-            background: #000; border: 1px solid var(--border); border-radius: 12px;
-            height: 240px; position: relative; overflow: hidden;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-
-        .staff-svg { width: 90%; height: 160px; }
-        .staff-line { stroke: var(--staff); stroke-width: 1.5; }
-        .ledger-line { stroke: var(--staff); stroke-width: 1.5; opacity: 0; transition: opacity 0.3s; }
-        .ledger-line.visible { opacity: 1; }
-        .note-head { fill: var(--blue); opacity: 0; transition: 0.2s; filter: drop-shadow(0 0 8px var(--blue)); }
-        .note-head.active { opacity: 1; }
-        .clef-text { fill: var(--staff); font-family: serif; font-size: 50px; font-weight: bold; pointer-events: none; }
-
-        .piano-view { display: flex; gap: 2px; padding: 20px; background: #000; border-radius: 8px; width: 100%; justify-content: center; overflow-x: auto; }
-        .key { width: 28px; height: 110px; background: #ddd; border-radius: 0 0 4px 4px; position: relative; transition: 0.2s; flex-shrink: 0; }
-        .key.black { background: #222; width: 18px; height: 70px; margin-left: -9px; margin-right: -9px; z-index: 2; border: 1px solid #000; }
-        .key.active { background: var(--blue) !important; box-shadow: 0 0 20px var(--blue); }
-
-        .hidden { display: none !important; }
-
-        #solution-reveal { 
-            position: absolute; top: 10px; font-size: 0.55rem; color: var(--gold); 
-            opacity: 0; transition: opacity 0.4s; letter-spacing: 2px; text-transform: uppercase;
-        }
-
-        /* --- Choices --- */
-        .choices-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; }
         .choice-btn { 
-            background: rgba(255,255,255,0.02); border: 1px solid var(--border); color: #fff; padding: 16px;
-            font-family: 'Orbitron'; font-size: 0.7rem; cursor: pointer; border-radius: 8px;
+            background: var(--panel); border: 1px solid var(--border); color: #fff; padding: 18px;
+            font-family: 'Orbitron'; font-size: 0.8rem; font-weight: 700; cursor: pointer; border-radius: 12px;
+            transition: 0.2s;
         }
-        .choice-btn.success { border-color: var(--green); color: var(--green); background: rgba(0, 255, 136, 0.1); }
-        .choice-btn.fail { border-color: var(--red); color: var(--red); opacity: 0.3; }
+        .choice-btn:active { transform: scale(0.95); background: rgba(79, 172, 254, 0.2); }
 
-        .btn-action { background: var(--blue); color: #000; border: none; padding: 20px; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 12px; width: 100%; font-size: 0.8rem; }
-        .btn-secondary { background: #111; color: var(--blue); border: 1px solid var(--blue); padding: 15px; font-family: 'Orbitron'; font-weight: 700; cursor: pointer; border-radius: 12px; font-size: 0.65rem; }
-
-        /* --- History Log --- */
-        .history-panel {
-            background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 12px; padding: 15px;
-            margin-top: 10px; font-size: 0.55rem; max-height: 150px; overflow-y: auto;
+        .action-btns { width: 100%; display: flex; gap: 15px; margin-top: 10px; }
+        .btn-main { 
+            flex: 2; background: var(--blue); color: #000; border: none; padding: 20px; 
+            font-family: 'Orbitron'; font-weight: 900; border-radius: 15px; cursor: pointer; letter-spacing: 2px;
         }
-        .history-item { 
-            display: flex; justify-content: space-between; border-bottom: 1px solid #111; padding: 6px 0;
-            color: #888;
+        .btn-sub { 
+            flex: 1; background: none; color: var(--gold); border: 1px solid var(--gold); 
+            padding: 20px; font-family: 'Orbitron'; border-radius: 15px; cursor: pointer; font-size: 0.6rem;
         }
-        .history-item.pass { color: var(--green); }
-        .history-item.fail { color: var(--red); }
-
-        /* --- Tutorial Overlay --- */
-        #tutorial-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85);
-            z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center;
-        }
-        .tutorial-box {
-            max-width: 400px; padding: 30px; border: 1px solid var(--blue); background: var(--panel); border-radius: 12px;
-            box-shadow: 0 0 30px rgba(79, 172, 254, 0.2);
-        }
-        .tutorial-text { font-size: 0.7rem; line-height: 1.6; color: #ccc; margin-bottom: 25px; }
-        .btn-skip { background: transparent; border: 1px solid #333; color: #555; padding: 10px; font-family: 'Orbitron'; font-size: 0.5rem; border-radius: 4px; cursor: pointer; margin-top: 10px; width: 100%; }
     </style>
 </head>
 <body>
 
-    <div id="tutorial-overlay">
-        <div class="tutorial-box">
-            <h2 style="color: var(--blue); font-size: 0.9rem; margin-top: 0;">NEURAL_ONBOARDING</h2>
-            <p id="tutorial-msg" class="tutorial-text">Welcome to Protocol_02. Use the PULSE SIGNAL to hear two tones. Identify the musical distance between them.</p>
-            <button class="btn-action" onclick="nextTutorialStep()" style="padding: 12px;">CONTINUE</button>
-            <button class="btn-skip" onclick="closeTutorial()">SKIP_ALL_INSTRUCTIONS</button>
-        </div>
-    </div>
-
     <div class="hud-top">
-        <div>PROTOCOL_02: INTERVAL_RELATIONS</div>
-        <div id="global-xp">XP: 00000</div>
-        <div style="display:flex; gap:15px; align-items:center;">
-            <span onclick="resetTutorial()" style="cursor:pointer; color:#444; font-size:0.5rem; text-decoration:underline;">RESET_GUIDE</span>
-            <a href="pitch_hub.html" style="color: var(--blue); text-decoration: none;">[ EXIT ]</a>
-        </div>
+        <div>PROTOCOL_02: <span style="color:var(--blue)">INTERVAL_MATRIX</span></div>
+        <div id="global-xp" class="xp-display">XP: 00000</div>
+        <a href="pitch_hub.html" class="exit-link">EXIT</a>
     </div>
 
     <div class="main-stage">
-        <div class="config-grid">
-            <div class="config-box">
-                <label>VIEW_INTERFACE</label>
-                <div style="display:flex; gap:5px;">
-                    <button class="toggle-btn active" id="view-staff-btn" onclick="setView('staff')">STAFF</button>
-                    <button class="toggle-btn" id="view-piano-btn" onclick="setView('piano')">PIANO</button>
-                </div>
-            </div>
-            <div class="config-box">
-                <label>CHOICE_LIMIT</label>
-                <select id="matrix-count" onchange="setupButtons()">
-                    <option value="2">2 OPTIONS</option>
-                    <option value="4" selected>4 OPTIONS</option>
-                    <option value="6">6 OPTIONS</option>
-                    <option value="8">8 OPTIONS</option>
-                    <option value="12">ALL (12)</option>
-                </select>
-            </div>
-            <div class="config-box">
-                <label>TEMPO (PULSE)</label>
-                <input type="range" id="tempoSlider" min="300" max="1500" value="800" step="100" style="width:100%; accent-color: var(--blue);">
-            </div>
-            <div class="config-box">
-                <label>COACH_ASSIST</label>
-                <button class="toggle-btn" id="coach-toggle" onclick="toggleCoach()">OFF</button>
+        
+        <div id="briefing" class="protocol-briefing">
+            <span class="briefing-close" onclick="this.parentElement.style.display='none'">[X]</span>
+            <strong>NINJA_PROTOCOL:</strong> Two frequencies will trigger. Calculate the mathematical distance (Interval) between them. Match the harmonic relation to the grid.
+        </div>
+
+        <div class="matrix-display">
+            <div class="node-container">
+                <div class="node" id="node-1"></div>
+                <div class="node" id="node-2"></div>
             </div>
         </div>
 
-        <div class="viz-terminal">
-            <div id="solution-reveal">SOLVING...</div>
-            <div id="staff-display" style="width:100%; text-align:center;">
-                <svg class="staff-svg" viewBox="0 0 400 160">
-                    <text x="10" y="105" class="clef-text">𝄞</text>
-                    <line x1="50" y1="60" x2="350" y2="60" class="staff-line" />
-                    <line x1="50" y1="75" x2="350" y2="75" class="staff-line" />
-                    <line x1="50" y1="90" x2="350" y2="90" class="staff-line" />
-                    <line x1="50" y1="105" x2="350" y2="105" class="staff-line" />
-                    <line x1="50" y1="120" x2="350" y2="120" class="staff-line" />
-                    <line id="ledger-up" x1="235" y1="45" x2="265" y2="45" class="ledger-line" />
-                    <line id="ledger-down" x1="135" y1="135" x2="165" y2="135" class="ledger-line" />
-                    <ellipse id="note1" cx="150" cy="90" rx="9" ry="7" class="note-head" />
-                    <ellipse id="note2" cx="250" cy="90" rx="9" ry="7" class="note-head" />
-                </svg>
+        <div class="choices-grid" id="choices-container">
             </div>
-            <div id="piano-display" class="piano-view hidden"></div>
-        </div>
 
-        <div id="choices-container" class="choices-grid"></div>
+        <div class="hint-text" id="action-hint">WAITING FOR GEOMETRIC DATA</div>
 
-        <div style="display:flex; flex-direction:column; gap:10px; width:100%;">
-            <button class="btn-action" onclick="generateInterval()">NEW_PULSE_SIGNAL</button>
-            <button class="btn-secondary" onclick="playCurrentInterval()">REPEAT_PULSE</button>
-        </div>
-
-        <div class="history-panel" id="history-log">
-            <div style="color:var(--blue); margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom:5px;">SESSION_HISTORY</div>
-            <div id="history-list"></div>
+        <div class="action-btns">
+            <button class="btn-main" onclick="generateNewInterval()">NEW RELATION</button>
+            <button class="btn-sub" onclick="playInterval()">REPEAT</button>
         </div>
     </div>
 
     <script>
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const INTERVALS = [
-            {n: "Minor 2nd", s: 1}, {n: "Major 2nd", s: 2}, {n: "Minor 3rd", s: 3},
-            {n: "Major 3rd", s: 4}, {n: "Perfect 4th", s: 5}, {n: "Tritone", s: 6},
-            {n: "Perfect 5th", s: 7}, {n: "Minor 6th", s: 8}, {n: "Major 6th", s: 9},
-            {n: "Minor 7th", s: 10}, {n: "Major 7th", s: 11}, {n: "Octave", s: 12}
+            { name: "Minor 2nd", semitones: 1 },
+            { name: "Major 2nd", semitones: 2 },
+            { name: "Minor 3rd", semitones: 3 },
+            { name: "Major 3rd", semitones: 4 },
+            { name: "Perfect 4th", semitones: 5 },
+            { name: "Tritone", semitones: 6 },
+            { name: "Perfect 5th", semitones: 7 },
+            { name: "Minor 6th", semitones: 8 },
+            { name: "Major 6th", semitones: 9 },
+            { name: "Minor 7th", semitones: 10 },
+            { name: "Major 7th", semitones: 11 },
+            { name: "Octave", semitones: 12 }
         ];
 
-        let baseMidi, targetMidi, currentIntervalData, coachMode = false, currentView = 'staff', tutorialStep = 0;
+        let rootMidi, targetMidi, currentInterval;
 
-        function runTutorial() {
-            if (!localStorage.getItem('tutorialSeen')) {
-                document.getElementById('tutorial-overlay').style.display = 'flex';
-                tutorialStep = 0;
-            }
+        function refreshXP() {
+            const xp = localStorage.getItem('totalXP') || '0';
+            document.getElementById('global-xp').innerText = `XP: ${xp.toString().padStart(5, '0')}`;
         }
 
-        function closeTutorial() {
-            document.getElementById('tutorial-overlay').style.display = 'none';
-            localStorage.setItem('tutorialSeen', 'true');
-        }
-
-        function resetTutorial() {
-            localStorage.removeItem('tutorialSeen');
-            location.reload();
-        }
-
-        function nextTutorialStep() {
-            const msgs = [
-                "Switch between STAFF and PIANO view in the Config Grid. Enable COACH_ASSIST if you need visual help.",
-                "The VIZ_TERMINAL remains stealthy. The interval name only reveals itself once you solve it.",
-                "Adjust TEMPO and CHOICE_LIMIT to increase difficulty. Begin training."
-            ];
-            if (tutorialStep < msgs.length) {
-                document.getElementById('tutorial-msg').innerText = msgs[tutorialStep];
-                tutorialStep++;
-            } else {
-                closeTutorial();
-            }
-        }
-
-        function initPiano() {
-            const bed = document.getElementById('piano-display');
-            bed.innerHTML = '';
-            for(let i=0; i<25; i++) {
-                const midiVal = 60 + i;
-                const k = document.createElement('div');
-                k.className = [1,3,6,8,10].includes(midiVal%12) ? 'key black' : 'key';
-                k.id = `piano-key-${midiVal}`;
-                bed.appendChild(k);
-            }
-            refreshXP();
-            runTutorial();
-        }
-
-        function setView(view) {
-            currentView = view;
-            document.getElementById('view-staff-btn').classList.toggle('active', view === 'staff');
-            document.getElementById('view-piano-btn').classList.toggle('active', view === 'piano');
-            document.getElementById('staff-display').classList.toggle('hidden', view !== 'staff');
-            document.getElementById('piano-display').classList.toggle('hidden', view !== 'piano');
-            if(view === 'piano') initPiano();
-        }
-
-        function toggleCoach() {
-            coachMode = !coachMode;
-            document.getElementById('coach-toggle').innerText = coachMode ? "ON" : "OFF";
-            document.getElementById('coach-toggle').classList.toggle('active', coachMode);
-        }
-
-        function getStaffY(midi) {
-            const stepMap = [0, 0.5, 1, 1.5, 2, 3, 3.5, 4, 4.5, 5, 5.5, 6]; 
-            let relative = midi - 60;
-            let octaves = Math.floor(relative / 12);
-            let semi = relative % 12;
-            let steps = (octaves * 7) + stepMap[semi];
-            return 135 - (steps * 7.5); 
-        }
-
-        function generateInterval() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            document.getElementById('solution-reveal').style.opacity = "0";
-            baseMidi = 60 + Math.floor(Math.random() * 5);
-            currentIntervalData = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
-            targetMidi = baseMidi + currentIntervalData.s;
-            playCurrentInterval();
+        function generateNewInterval() {
+            rootMidi = 60 + Math.floor(Math.random() * 12);
+            currentInterval = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
+            targetMidi = rootMidi + currentInterval.semitones;
+            
+            document.getElementById('action-hint').innerText = "RELATION ACTIVE: IDENTIFY HARMONIC SPACE";
+            playInterval();
             setupButtons();
         }
 
-        function playCurrentInterval() {
-            if (!baseMidi) return;
-            const tempo = parseInt(document.getElementById('tempoSlider').value);
-            const y1 = getStaffY(baseMidi);
-            const y2 = getStaffY(targetMidi);
-            document.getElementById('note1').setAttribute('cy', y1);
-            document.getElementById('note2').setAttribute('cy', y2);
-            document.getElementById('ledger-up').classList.toggle('visible', y2 <= 45);
-            document.getElementById('ledger-down').classList.toggle('visible', y1 >= 135);
-
-            playTone(baseMidi);
-            if(coachMode) triggerVisual(baseMidi, 'note1');
-            setTimeout(() => {
-                playTone(targetMidi);
-                if(coachMode) triggerVisual(targetMidi, 'note2');
-            }, tempo);
+        function playInterval() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            playNote(rootMidi, 0, "node-1");
+            playNote(targetMidi, 0.6, "node-2");
         }
 
-        function playTone(midi) {
+        function playNote(midi, delay, nodeId) {
             const freq = 440 * Math.pow(2, (midi - 69) / 12);
             const osc = audioCtx.createOscillator();
             const g = audioCtx.createGain();
+            
             osc.connect(g); g.connect(audioCtx.destination);
-            g.gain.setValueAtTime(0.2, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+            g.gain.setValueAtTime(0, audioCtx.currentTime + delay);
+            g.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + delay + 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + 1.2);
+            
             osc.frequency.value = freq;
-            osc.start(); osc.stop(audioCtx.currentTime + 0.8);
-        }
+            osc.start(audioCtx.currentTime + delay);
+            osc.stop(audioCtx.currentTime + delay + 1.2);
 
-        function triggerVisual(midi, staffId) {
-            const note = document.getElementById(staffId);
-            note.classList.add('active');
-            setTimeout(() => note.classList.remove('active'), 600);
-            const key = document.getElementById(`piano-key-${midi}`);
-            if(key) { key.classList.add('active'); setTimeout(() => key.classList.remove('active'), 600); }
+            setTimeout(() => {
+                document.getElementById(nodeId).classList.add('active');
+                setTimeout(() => document.getElementById(nodeId).classList.remove('active'), 800);
+            }, delay * 1000);
         }
 
         function setupButtons() {
             const container = document.getElementById('choices-container');
             container.innerHTML = '';
-            if(!currentIntervalData) return;
-            const count = parseInt(document.getElementById('matrix-count').value);
-            let options = [currentIntervalData];
-            while(options.length < count) {
+            
+            // Randomize 4 choices including the correct one
+            let choices = [currentInterval];
+            while(choices.length < 4) {
                 let r = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
-                if(!options.find(o => o.n === r.n)) options.push(r);
+                if(!choices.find(c => c.name === r.name)) choices.push(r);
             }
-            options.sort((a,b) => a.s - b.s).forEach(opt => {
+            
+            choices.sort(() => Math.random() - 0.5).forEach(intv => {
                 const b = document.createElement('button');
                 b.className = 'choice-btn';
-                b.innerText = opt.n;
-                b.onclick = () => handleChoice(opt, b);
+                b.innerText = intv.name;
+                b.onclick = () => checkAnswer(intv, b);
                 container.appendChild(b);
             });
         }
 
-        function handleChoice(opt, btn) {
-            const correct = opt.n === currentIntervalData.n;
-            const historyList = document.getElementById('history-list');
-            const item = document.createElement('div');
-            item.className = `history-item ${correct ? 'pass' : 'fail'}`;
-            item.innerHTML = `<span>${currentIntervalData.n}</span><span>${correct ? 'MATCH' : 'MISSED'}</span>`;
-            historyList.prepend(item);
-            if(correct) {
-                btn.classList.add('success');
+        function checkAnswer(intv, btn) {
+            if(intv.name === currentInterval.name) {
+                btn.style.backgroundColor = "var(--green)";
+                btn.style.color = "#000";
+                document.getElementById('action-hint').innerText = "HARMONY SYNCED // +75 XP ACQUIRED";
                 addXP(75);
-                const sol = document.getElementById('solution-reveal');
-                sol.innerText = `IDENTIFIED: ${opt.n} (+${opt.s})`;
-                sol.style.opacity = "1";
-                setTimeout(generateInterval, 1200);
-            } else { btn.classList.add('fail'); }
+                setTimeout(generateNewInterval, 800);
+            } else {
+                btn.style.backgroundColor = "var(--red)";
+                document.getElementById('action-hint').innerText = "INTERVAL MISMATCH // RE-CALCULATE semitones";
+                setTimeout(() => btn.style.backgroundColor = "", 400);
+            }
         }
 
         function addXP(amt) {
@@ -353,11 +217,10 @@
             refreshXP();
         }
 
-        function refreshXP() {
-            document.getElementById('global-xp').innerText = `XP: ${localStorage.getItem('totalXP') || '00000'}`;
-        }
-
-        window.onload = () => { initPiano(); generateInterval(); };
+        window.onload = () => {
+            refreshXP();
+            // Initial call removed to allow user to start via button
+        };
     </script>
 </body>
 </html>
