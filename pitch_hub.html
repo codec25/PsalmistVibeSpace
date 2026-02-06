@@ -35,7 +35,6 @@
             margin-bottom: 30px;
         }
         
-        /* New Back Button Container */
         .hud-left { display: flex; align-items: center; gap: 20px; }
         
         .btn-back {
@@ -113,13 +112,6 @@
         .card-title { font-size: 1.1rem; font-weight: 700; letter-spacing: 1px; margin-bottom: 6px; }
         .card-desc { font-size: 0.75rem; color: #888; line-height: 1.4; }
 
-        .card.vault { 
-            grid-column: 1 / -1; 
-            border-color: rgba(255, 204, 0, 0.4); 
-            background: linear-gradient(90deg, rgba(255,204,0,0.05) 0%, rgba(15,20,30,0.7) 100%); 
-        }
-        .card.vault .card-icon { color: var(--gold); border-color: rgba(255,204,0,0.3); }
-
         .card.battle { 
             grid-column: 1 / -1; 
             border-color: rgba(255, 75, 43, 0.4); 
@@ -155,16 +147,6 @@
 </div>
 
 <div class="main-container">
-    <a href="theory.html" class="card vault">
-        <div class="card-icon">◈</div>
-        <div class="card-content">
-            <div class="card-tag">Intelligence Core</div>
-            <div class="card-title">THEORY_VAULT</div>
-            <div id="grade-status" class="card-desc">Current Grade: 01 // UNLOCKED</div>
-        </div>
-        <div class="chevron">❯</div>
-    </a>
-
     <a href="pitch_recognition.html" class="card">
         <div class="card-icon">◎</div>
         <div class="card-content">
@@ -195,6 +177,15 @@
         <div class="chevron">❯</div>
     </a>
 
+    <div class="card" style="opacity: 0.3; pointer-events: none; border-style: dashed;">
+        <div class="card-icon">?</div>
+        <div class="card-content">
+            <div class="card-tag">Locked</div>
+            <div class="card-title">UNKNOWN_PROTOCOL</div>
+            <div class="card-desc">Expansion data required.</div>
+        </div>
+    </div>
+
     <a href="battle_engine.html" class="card battle">
         <div class="card-icon">⚔</div>
         <div class="card-content">
@@ -211,13 +202,9 @@
 <script>
     function updateHUD() {
         const xp = parseInt(localStorage.getItem('totalXP')) || 0;
-        const grade = parseInt(localStorage.getItem('currentLevel')) || 1;
 
         document.getElementById('global-xp').innerText = `XP: ${xp.toString().padStart(6, '0')}`;
         
-        const gradeStr = grade.toString().padStart(2, '0');
-        document.getElementById('grade-status').innerText = `Current Grade: ${gradeStr} // ${grade >= 12 ? 'MASTERED' : 'IN_PROGRESS'}`;
-
         let rank = "INITIATE";
         if (xp >= 50000) rank = "MASTER";
         else if (xp >= 15000) rank = "KNIGHT";
