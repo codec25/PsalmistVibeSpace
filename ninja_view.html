@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NINJA_VIEW // Field Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #010204; --panel: rgba(7, 10, 17, 0.95); 
+            --green: #00ff88; --border: #1e2544; --text: #aab4cc; --red: #ff4b2b; --gold: #ffcc00;
+        }
+
+        body { 
+            margin: 0; background: var(--bg); color: var(--text); font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: linear-gradient(180deg, #050810 0%, #010204 100%);
+            padding: 30px; overflow-x: hidden;
+        }
+
+        .header {
+            width: 100%; max-width: 900px; border-bottom: 1px solid var(--border);
+            padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .grid {
+            display: grid; grid-template-columns: 1fr 350px; gap: 20px;
+            width: 100%; max-width: 900px;
+        }
+
+        .card {
+            background: var(--panel); border: 1px solid var(--border);
+            padding: 25px; border-radius: 15px; position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: 0.3s;
+        }
+
+        .status-tag {
+            font-size: 0.55rem; color: var(--green); border: 1px solid var(--green);
+            padding: 4px 8px; border-radius: 4px; display: inline-block; margin-bottom: 15px;
+        }
+
+        h3 { font-size: 0.8rem; letter-spacing: 2px; color: #fff; margin: 0 0 15px 0; text-transform: uppercase; }
+
+        #mission-text { font-size: 1.1rem; color: var(--green); margin-bottom: 10px; font-weight: 900; letter-spacing: 1px; }
+
+        .scroll-list { height: 300px; overflow-y: auto; padding-right: 5px; }
+        .scroll-link {
+            padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid #111;
+            margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+            font-size: 0.7rem; display: block; text-decoration: none; color: inherit;
+        }
+        .scroll-link:hover { border-color: var(--green); background: rgba(0, 255, 136, 0.05); color: #fff; }
+
+        .btn {
+            width: 100%; padding: 15px; background: transparent; border: 1px solid var(--green);
+            color: var(--green); font-family: 'Orbitron'; cursor: pointer; border-radius: 8px;
+            font-weight: 900; margin-top: 15px; transition: 0.3s; text-transform: uppercase;
+        }
+        .btn:hover { background: var(--green); color: #000; box-shadow: 0 0 20px rgba(0, 255, 136, 0.4); }
+
+        .code-preview {
+            background: #000; padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace;
+            font-size: 0.8rem; color: #7788aa; white-space: pre-wrap; margin-top: 10px;
+            border: 1px solid #111; max-height: 400px; overflow-y: auto;
+        }
+
+        /* BROADCAST OVERLAY */
+        #broadcast-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999;
+            display: none; align-items: center; justify-content: center; padding: 40px;
+            backdrop-filter: blur(10px);
+        }
+        .broadcast-box {
+            border: 2px solid var(--green); padding: 40px; background: #050810; 
+            max-width: 600px; width: 100%; box-shadow: 0 0 50px rgba(0, 255, 136, 0.2); 
+            text-align: center; border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="broadcast-overlay">
+        <div class="broadcast-box" id="b-box">
+            <h1 id="b-type" style="color:var(--green); letter-spacing:10px; margin-top:0; font-size: 1rem;">SYSTEM_MESSAGE</h1>
+            <p id="b-text" style="font-size:1.1rem; line-height:1.6; color:#fff; font-family:monospace; margin: 25px 0;"></p>
+            <button class="btn" onclick="acknowledgeBroadcast()">ACKNOWLEDGE_RECEIPT</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <div style="letter-spacing: 4px; font-weight: 900; color: #fff;">NINJA_FIELD_TERMINAL</div>
+        <div id="ninja-id" style="font-size: 0.7rem; color: var(--green);">[CONNECTING...]</div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="status-tag">ACTIVE_MISSION</div>
+            <h3>Current Objective</h3>
+            <div id="mission-text">PHANTOM_IDLE</div>
+            <p id="mission-type" style="font-size: 0.6rem; color: #556688; margin-bottom: 30px;">Waiting for Sensei to deploy mission parameters...</p>
+            
+            <button class="btn" onclick="completeMission()">REPORT_MISSION_SUCCESS</button>
+        </div>
+
+        <div class="card">
+            <div class="status-tag">LIBRARY_ACCESS</div>
+            <h3>Authorized Scrolls</h3>
+            <div class="scroll-list" id="scroll-list">
+                </div>
+        </div>
+    </div>
+
+    <div id="code-modal" class="card" style="width: 100%; max-width: 900px; margin-top: 20px; display: none;">
+        <h3 id="viewing-name">TECHNIQUE_DATA</h3>
+        <div class="code-preview" id="code-content"></div>
+        <button class="btn" style="border-color: #444; color: #444;" onclick="closeCode()">CLOSE_DATA_STREAM</button>
+    </div>
+
+    <script>
+        const ninjaName = localStorage.getItem('ninjaUser') || "GUEST_NINJA";
+        document.getElementById('ninja-id').innerText = `USER::${ninjaName}`;
+
+        // 1. Mission Sync Logic
+        function syncMission() {
+            const currentMission = localStorage.getItem('active_mission_name') || "PHANTOM_IDLE";
+            const currentType = localStorage.getItem('active_mission_type') || "WAITING_FOR_ORDERS";
+            
+            document.getElementById('mission-text').innerText = currentMission;
+            document.getElementById('mission-type').innerText = `CATEGORY: ${currentType}`;
+        }
+
+        // 2. Scroll Library Logic
+        function loadScrolls() {
+            const list = document.getElementById('scroll-list');
+            const snips = JSON.parse(localStorage.getItem('vault_snippets')) || [];
+            
+            if (snips.length === 0) {
+                list.innerHTML = "<div style='font-size:0.6rem; color:#444;'>NO_SCROLLS_IN_ARCHIVE</div>";
+                return;
+            }
+
+            list.innerHTML = "";
+            snips.forEach((s) => {
+                const item = document.createElement('div');
+                item.className = "scroll-link";
+                item.innerText = s.name;
+                item.onclick = () => viewCode(s.name, s.code);
+                list.appendChild(item);
+            });
+        }
+
+        function viewCode(name, code) {
+            document.getElementById('code-modal').style.display = "block";
+            document.getElementById('viewing-name').innerText = `DECRYPTED: ${name}`;
+            document.getElementById('code-content').innerText = code;
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function closeCode() {
+            document.getElementById('code-modal').style.display = "none";
+        }
+
+        // 3. Success Reporting
+        function completeMission() {
+            const mission = document.getElementById('mission-text').innerText;
+            if (mission === "PHANTOM_IDLE") {
+                alert("ERROR: No active mission detected.");
+                return;
+            }
+
+            let vault = JSON.parse(localStorage.getItem('vault_users')) || {AUDIT_LOG: []};
+            vault.AUDIT_LOG.unshift({
+                time: new Date().toLocaleString(),
+                user: ninjaName,
+                status: `MISSION_SUCCESS: ${mission}`
+            });
+            localStorage.setItem('vault_users', JSON.stringify(vault));
+            
+            alert("SUCCESS: Progress report transmitted to IT_ADMIN.");
+        }
+
+        // 4. NEURAL BROADCAST LISTENER (IT Messages)
+        function listenForBroadcast() {
+            const data = localStorage.getItem('system_broadcast');
+            if(!data) return;
+
+            const broadcast = JSON.parse(data);
+            const lastSeen = localStorage.getItem('last_seen_broadcast');
+
+            if(lastSeen !== broadcast.timestamp.toString()) {
+                const overlay = document.getElementById('broadcast-overlay');
+                const bText = document.getElementById('b-text');
+                const bType = document.getElementById('b-type');
+                const bBox = document.getElementById('b-box');
+
+                bText.innerText = broadcast.message;
+                
+                if(broadcast.type === 'CRITICAL') {
+                    bType.innerText = 'CRITICAL_OVERRIDE';
+                    bType.style.color = 'var(--red)';
+                    bBox.style.borderColor = 'var(--red)';
+                } else {
+                    bType.innerText = 'SYSTEM_MESSAGE';
+                    bType.style.color = 'var(--green)';
+                    bBox.style.borderColor = 'var(--green)';
+                }
+
+                overlay.style.display = 'flex';
+                localStorage.setItem('last_seen_broadcast', broadcast.timestamp);
+            }
+        }
+
+        function acknowledgeBroadcast() {
+            document.getElementById('broadcast-overlay').style.display = 'none';
+        }
+
+        // Continuous Syncing
+        setInterval(syncMission, 5000);
+        setInterval(listenForBroadcast, 2000);
+        
+        // Initial Load
+        syncMission();
+        loadScrolls();
+    </script>
+</body>
+</html>
