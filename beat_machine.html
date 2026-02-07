@@ -55,6 +55,7 @@
         }
         .btn-main:active { transform: scale(0.98); }
         #play-btn.active { background: var(--green); }
+        .btn-red { background: var(--red); color: white; }
 
         .sequencer-container { 
             width: 100%; max-width: 1100px; background: var(--panel); 
@@ -62,12 +63,11 @@
             overflow-x: auto;
         }
 
-        .track-row { display: grid; grid-template-columns: 150px 1fr; gap: 20px; align-items: center; margin-bottom: 12px; min-width: 850px; }
-        .track-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .track-row { display: grid; grid-template-columns: 150px 1fr; gap: 20px; align-items: center; margin-bottom: 12px; min-width: 1400px; }
         .track-name { font-size: 0.65rem; font-weight: 700; color: var(--green); cursor:pointer; }
         .load-btn { font-size: 0.45rem; color: var(--gold); border: 1px solid var(--gold); padding: 2px 5px; border-radius: 3px; cursor: pointer; }
 
-        .step-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 6px; }
+        .step-grid { display: grid; grid-template-columns: repeat(32, 1fr); gap: 6px; }
         .step { 
             aspect-ratio: 1/1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
             border-radius: 4px; cursor: pointer; min-height: 35px; transition: 0.1s;
@@ -75,7 +75,6 @@
         .step.active { background: var(--green); box-shadow: 0 0 10px var(--green); border: none; }
         .step.playing { border: 2px solid var(--gold); }
 
-        /* Initial Briefing Overlay */
         #mission-briefing {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -83,13 +82,6 @@
         .brief-card {
             max-width: 500px; background: var(--panel); border: 1px solid var(--green);
             padding: 30px; border-radius: 16px; text-align: center;
-        }
-
-        .milestone-banner { 
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
-            background: var(--green); color: #000; padding: 10px 30px; 
-            border-radius: 50px; font-weight: 900; font-size: 0.7rem; 
-            z-index: 9999; box-shadow: 0 0 30px var(--green); 
         }
     </style>
 </head>
@@ -99,10 +91,10 @@
         <div class="brief-card">
             <h2 style="color: var(--green); font-size: 1rem; letter-spacing: 2px;">PSALMIST // BEAT_MACHINE</h2>
             <p style="font-size: 0.75rem; text-align: left; color: #ccc; line-height: 1.6; margin: 20px 0;">
-                • Program the 16-step grid to trigger rhythmic pulses.<br>
-                • Click a Track Name (e.g., KICK) to cycle preset patterns.<br>
-                • Your neural session time is tracked in the HUD.<br>
-                • Load custom .wav files to customize your kit.
+                • Program the 32-step grid to trigger rhythmic pulses.<br>
+                • [SPACE] to Toggle Play/Stop.<br>
+                • [C] to Clear Grid.<br>
+                • Click a Track Name to cycle preset patterns.
             </p>
             <button class="btn-main" style="background: var(--green);" onclick="closeBriefing()">INITIALIZE_DRUMS</button>
         </div>
@@ -132,9 +124,13 @@
             <button class="btn-main" id="play-btn" onclick="togglePlay()">START_ENGINE</button>
         </div>
         <div class="ctrl-box">
+            <label>CONSTRUCTION</label>
+            <button class="btn-main btn-red" onclick="clearGrid()">CLEAR_GRID [C]</button>
+        </div>
+        <div class="ctrl-box">
             <label>RECORDING</label>
             <button class="btn-main" onclick="toggleRecording()" id="rec-btn">REC_BEAT</button>
-            <a id="download-link" style="display:none;margin-top:8px;font-size:0.55rem;color:var(--gold);text-align:center;display:block;" download="beat_machine_export.wav">DOWNLOAD_WAV</a>
+            <a id="download-link" style="display:none;margin-top:8px;font-size:0.55rem;color:var(--gold);text-align:center;" download="beat_machine_export.wav">DOWNLOAD_WAV</a>
         </div>
     </div>
 
@@ -150,18 +146,36 @@
         
         const trackNames = ["KICK", "SNARE", "HI_HAT", "CONGA", "OPEN_HAT"];
         let sampleBuffers = [null, null, null, null, null];
-        let grid = Array(5).fill().map(() => Array(16).fill(false));
+        let grid = Array(5).fill().map(() => Array(32).fill(false));
         let isPlaying = false, currentStep = 0, nextNoteTime = 0, tempo = 120;
         let sessionSeconds = 0;
         let mediaRecorder = null;
         let recordedChunks = [];
 
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+            if (e.key.toLowerCase() === 'c') { clearGrid(); }
+        });
+
         const patternPresets = {
-            KICK: [[1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0], [1,0,0,1, 0,0,1,0, 1,0,0,1, 0,0,1,0]],
-            SNARE: [[0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0], [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0]],
-            HI_HAT: [[1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1], [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0]],
-            CONGA: [[0,0,1,0, 0,1,0,0, 0,0,1,1, 0,0,0,0]],
-            OPEN_HAT: [[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1]]
+            KICK: [
+                [1,0,0,0, 0,0,1,0, 1,0,0,0, 0,0,1,0, 1,0,0,0, 0,0,1,0, 1,0,0,0, 0,0,1,0],
+                [1,0,0,1, 0,0,1,0, 1,0,0,1, 0,1,0,0, 1,0,0,1, 0,0,1,0, 1,0,0,1, 0,1,0,0]
+            ],
+            SNARE: [
+                [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+                [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0]
+            ],
+            HI_HAT: [
+                Array(32).fill(1),
+                [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0]
+            ],
+            CONGA: [
+                [0,0,1,0, 0,1,0,0, 0,0,1,1, 0,0,0,0, 0,0,1,0, 0,1,0,0, 0,0,1,1, 0,0,0,0]
+            ],
+            OPEN_HAT: [
+                [0,0,0,0, 0,0,0,1, 0,0,0,0, 0,0,0,1, 0,0,0,0, 0,0,0,1, 0,0,0,0, 0,0,0,1]
+            ]
         };
         let patternIndex = [0,0,0,0,0];
 
@@ -183,10 +197,14 @@
                     <div class="step-grid" id="g-${i}"></div>
                 `;
                 const g = row.querySelector(`#g-${i}`);
-                for(let s=0; s<16; s++) {
+                for(let s=0; s<32; s++) {
                     const b = document.createElement('div');
                     b.className = 'step';
-                    b.onclick = () => { if(audioCtx.state==='suspended') audioCtx.resume(); grid[i][s]=!grid[i][s]; b.classList.toggle('active'); };
+                    b.onclick = () => { 
+                        if(audioCtx.state==='suspended') audioCtx.resume(); 
+                        grid[i][s]=!grid[i][s]; 
+                        b.classList.toggle('active'); 
+                    };
                     g.appendChild(b);
                 }
                 seq.appendChild(row);
@@ -204,35 +222,79 @@
             document.getElementById(`n-${idx}`).style.color = "var(--blue)";
         }
 
-        // Synth Drums if no samples loaded
+        /* ===== PROFESSIONAL DRUM SYNTHS ===== */
+
         function createKick() {
+            const len = audioCtx.sampleRate * 0.6;
+            const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+            const d = buf.getChannelData(0);
+            let phase = 0;
+            for(let i=0;i<len;i++){
+                const t = i / audioCtx.sampleRate;
+                const freq = 140 * Math.exp(-t * 18);
+                phase += 2 * Math.PI * freq / audioCtx.sampleRate;
+                const env = Math.exp(-t * 10);
+                d[i] = Math.sin(phase) * env;
+            }
+            return buf;
+        }
+
+        function createSnare() {
+            const len = audioCtx.sampleRate * 0.25;
+            const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+            const d = buf.getChannelData(0);
+            for(let i=0;i<len;i++){
+                const t = i / audioCtx.sampleRate;
+                const noise = (Math.random()*2-1) * Math.exp(-t * 18);
+                const tone = Math.sin(2*Math.PI*180*t) * Math.exp(-t*25);
+                d[i] = noise * 0.8 + tone * 0.3;
+            }
+            return buf;
+        }
+
+        function createClosedHat() {
+            const len = audioCtx.sampleRate * 0.06;
+            const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+            const d = buf.getChannelData(0);
+            for(let i=0;i<len;i++){
+                const t = i / audioCtx.sampleRate;
+                d[i] = (Math.random()*2-1) * Math.exp(-t * 80);
+            }
+            return buf;
+        }
+
+        function createOpenHat() {
+            const len = audioCtx.sampleRate * 0.35;
+            const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+            const d = buf.getChannelData(0);
+            for(let i=0;i<len;i++){
+                const t = i / audioCtx.sampleRate;
+                d[i] = (Math.random()*2-1) * Math.exp(-t * 12);
+            }
+            return buf;
+        }
+
+        function createConga() {
             const len = audioCtx.sampleRate * 0.4;
             const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
             const d = buf.getChannelData(0);
-            for(let i=0; i<len; i++) { const t = i/audioCtx.sampleRate; d[i] = Math.sin(150 * Math.exp(-t*15)) * Math.exp(-t*10); }
-            return buf;
-        }
-        function createSnare() {
-            const len = audioCtx.sampleRate * 0.2;
-            const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
-            const d = buf.getChannelData(0);
-            for(let i=0; i<len; i++) { const t = i/audioCtx.sampleRate; d[i] = (Math.random()*2-1) * Math.exp(-t*15); }
-            return buf;
-        }
-        function createHat() {
-            const len = audioCtx.sampleRate * 0.05;
-            const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
-            const d = buf.getChannelData(0);
-            for(let i=0; i<len; i++) { const t = i/audioCtx.sampleRate; d[i] = (Math.random()*2-1) * Math.exp(-t*50); }
+            let phase = 0;
+            for(let i=0;i<len;i++){
+                const t = i / audioCtx.sampleRate;
+                const freq = 420 * Math.exp(-t * 6);
+                phase += 2 * Math.PI * freq / audioCtx.sampleRate;
+                const env = Math.exp(-t * 8);
+                d[i] = Math.sin(phase) * env;
+            }
             return buf;
         }
 
         function loadDefaultDrums() {
             sampleBuffers[0] = createKick();
             sampleBuffers[1] = createSnare();
-            sampleBuffers[2] = createHat();
-            sampleBuffers[3] = createKick(); // placeholder
-            sampleBuffers[4] = createHat(); // placeholder
+            sampleBuffers[2] = createClosedHat();
+            sampleBuffers[3] = createConga();
+            sampleBuffers[4] = createOpenHat();
         }
 
         function triggerSound(idx, time) {
@@ -250,10 +312,12 @@
 
         function scheduler() {
             while (nextNoteTime < audioCtx.currentTime + 0.1) {
-                for(let i=0; i<5; i++) { if(grid[i][currentStep]) triggerSound(i, nextNoteTime); }
+                for(let i=0; i<5; i++) { 
+                    if(grid[i][currentStep]) triggerSound(i, nextNoteTime); 
+                }
                 updateVisual(currentStep);
-                nextNoteTime += (60 / tempo / 4);
-                currentStep = (currentStep + 1) % 16;
+                nextNoteTime += (60 / tempo / 8);
+                currentStep = (currentStep + 1) % 32;
             }
             if (isPlaying) setTimeout(scheduler, 25);
         }
@@ -273,6 +337,11 @@
             document.getElementById('play-btn').classList.toggle('active', isPlaying);
             document.getElementById('play-btn-nav').innerText = isPlaying ? "STOP" : "PLAY";
             if (isPlaying) { currentStep = 0; nextNoteTime = audioCtx.currentTime; scheduler(); }
+        }
+
+        function clearGrid() {
+            grid = Array(5).fill().map(() => Array(32).fill(false));
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
         }
 
         function updateTempo(v) { tempo = v; document.getElementById('bpm-val').innerText = v + " BPM"; }
