@@ -7,94 +7,165 @@
     <style>
         :root { 
             --bg: #010204; --blue: #4facfe; --gold: #ffcc00; 
-            --purple: #a18cd1; --green: #00ff88; --border: #1e2544;
+            --purple: #a18cd1; --green: #00ff88; --border: #1e2544; --red: #ff4b2b;
         }
 
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif;
-            height: 100vh; display: flex; flex-direction: column; align-items: center;
+            height: 100vh; display: flex; flex-direction: column;
             background-image: radial-gradient(circle at 50% 50%, #0a1324 0%, #010204 100%);
             overflow: hidden;
         }
 
+        /* --- HEADER & TICKER --- */
         .header-fx {
-            width: 100%; padding: 30px; text-align: center; border-bottom: 2px solid var(--border);
-            background: rgba(0,0,0,0.5); box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            width: 100%; padding: 20px; text-align: center; border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+        }
+        h1 { margin: 0; letter-spacing: 10px; font-size: 1.8rem; color: var(--blue); text-shadow: 0 0 15px var(--blue); }
+
+        #broadcast-ticker {
+            background: rgba(255, 75, 43, 0.1); color: var(--red); padding: 5px;
+            font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px;
+            border-bottom: 1px solid var(--red); display: none; text-align: center;
         }
 
-        h1 { margin: 0; letter-spacing: 15px; font-size: 2.5rem; color: var(--blue); text-shadow: 0 0 20px var(--blue); }
+        /* --- MAIN LAYOUT --- */
+        .main-display { display: grid; grid-template-columns: 1fr 350px; flex-grow: 1; padding: 20px; gap: 20px; }
 
+        /* Tournament Section */
         .bracket-arena {
             display: flex; justify-content: space-around; align-items: center;
-            width: 95%; height: 70vh; margin-top: 50px; position: relative;
+            background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px solid var(--border);
+            padding: 20px;
         }
-
         .round { display: flex; flex-direction: column; justify-content: space-around; height: 100%; }
-
         .slot {
-            width: 250px; background: rgba(15, 20, 30, 0.8); border: 2px solid var(--border);
-            padding: 20px; text-align: center; border-radius: 10px; font-size: 1.2rem;
-            position: relative; transition: all 0.5s ease;
+            width: 220px; background: rgba(7, 10, 17, 0.9); border: 1px solid var(--border);
+            padding: 15px; text-align: center; border-radius: 8px; font-size: 1rem;
+            position: relative; transition: all 0.5s ease; margin: 10px 0;
         }
+        .slot.filled { border-color: var(--blue); box-shadow: 0 0 15px rgba(79, 172, 254, 0.2); color: white; }
+        .slot.final { border-color: var(--gold); transform: scale(1.1); box-shadow: 0 0 30px rgba(255, 204, 0, 0.3); }
+        .label { font-size: 0.5rem; color: #444; position: absolute; top: -8px; left: 10px; background: var(--bg); padding: 0 5px; }
 
-        .slot.filled { border-color: var(--blue); box-shadow: 0 0 15px rgba(79, 172, 254, 0.3); }
-        .slot.semi { border-color: var(--purple); }
-        .slot.final { border-color: var(--gold); transform: scale(1.2); box-shadow: 0 0 30px rgba(255, 204, 0, 0.4); }
+        /* Leaderboard Section */
+        .leaderboard-panel {
+            background: rgba(10, 15, 25, 0.8); border: 1px solid var(--border);
+            border-radius: 20px; padding: 20px; display: flex; flex-direction: column;
+        }
+        .board-title { font-size: 0.8rem; color: var(--green); letter-spacing: 3px; margin-bottom: 20px; border-bottom: 1px solid #111; padding-bottom: 10px; }
+        
+        .ninja-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px; border-bottom: 1px solid #111; font-size: 0.8rem;
+        }
+        .ninja-row:last-child { border: none; }
+        .xp-bar-bg { width: 100%; height: 4px; background: #111; margin-top: 5px; border-radius: 2px; }
+        .xp-bar-fill { height: 100%; background: var(--green); box-shadow: 0 0 10px var(--green); transition: width 1s ease; }
 
-        .label { font-size: 0.6rem; color: #555; position: absolute; top: -15px; left: 10px; background: var(--bg); padding: 0 5px; }
-
-        /* Animation for changes */
-        @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
-        .updated { animation: pulse 1s infinite alternate; }
+        .rank { color: var(--gold); font-weight: 900; margin-right: 10px; }
     </style>
 </head>
 <body>
 
+    <div id="broadcast-ticker">SYSTEM_ALERT: [MESSAGE_HERE]</div>
+
     <div class="header-fx">
-        <h1>TOURNAMENT_OVERWATCH</h1>
-        <div style="color:var(--green); font-size:0.8rem; margin-top:10px;">LIVE_BROADCAST_FEED // STATUS: ACTIVE</div>
+        <h1>SPECTATOR_OVERWATCH_v5</h1>
+        <div style="color:var(--green); font-size:0.6rem; margin-top:5px; letter-spacing: 2px;">LIVE_DATA_STREAM // STATUS: ENCRYPTED</div>
     </div>
 
-    <div class="bracket-arena">
-        <div class="round">
-            <div class="slot" id="view-q1"><span class="label">MATCH_01</span>EMPTY</div>
-            <div class="slot" id="view-q2"><span class="label">MATCH_02</span>EMPTY</div>
-            <div class="slot" id="view-q3"><span class="label">MATCH_03</span>EMPTY</div>
-            <div class="slot" id="view-q4"><span class="label">MATCH_04</span>EMPTY</div>
+    <div class="main-display">
+        <div class="bracket-arena">
+            <div class="round">
+                <div class="slot" id="view-q1"><span class="label">MATCH_01</span>EMPTY</div>
+                <div class="slot" id="view-q2"><span class="label">MATCH_02</span>EMPTY</div>
+                <div class="slot" id="view-q3"><span class="label">MATCH_03</span>EMPTY</div>
+                <div class="slot" id="view-q4"><span class="label">MATCH_04</span>EMPTY</div>
+            </div>
+
+            <div class="round">
+                <div class="slot" id="view-s1" style="border-color: var(--purple);"><span class="label">SEMI_FINAL_A</span>TBD</div>
+                <div class="slot" id="view-s2" style="border-color: var(--purple);"><span class="label">SEMI_FINAL_B</span>TBD</div>
+            </div>
+
+            <div class="round">
+                <div class="slot final" id="view-f1"><span class="label">CHAMPION_RANK</span>TBD</div>
+            </div>
         </div>
 
-        <div class="round">
-            <div class="slot semi" id="view-s1"><span class="label">SEMI_FINAL_A</span>TBD</div>
-            <div class="slot semi" id="view-s2"><span class="label">SEMI_FINAL_B</span>TBD</div>
-        </div>
-
-        <div class="round">
-            <div class="slot final" id="view-f1"><span class="label">CHAMPION</span>TBD</div>
+        <div class="leaderboard-panel">
+            <div class="board-title">TOP_RANKED_NINJAS</div>
+            <div id="leaderboard-content">
+                </div>
         </div>
     </div>
 
     <script>
+        // --- 1. SYNC BRACKET ---
         function syncBracket() {
-            const data = JSON.parse(localStorage.getItem('tournament_bracket'));
-            if (!data) return;
-
+            const data = JSON.parse(localStorage.getItem('tournament_bracket')) || {};
             const mapping = { q1:'view-q1', q2:'view-q2', q3:'view-q3', q4:'view-q4', s1:'view-s1', s2:'view-s2', f1:'view-f1' };
 
             Object.keys(mapping).forEach(id => {
                 const element = document.getElementById(mapping[id]);
-                const labelText = element.querySelector('.label').outerHTML;
-                const newName = data[id] || (id.startsWith('q') ? "EMPTY" : "TBD");
+                const label = element.querySelector('.label').outerHTML;
+                const name = data[id] || (id.startsWith('q') ? "EMPTY" : "TBD");
                 
-                if (element.innerText.replace(element.querySelector('.label').innerText, "").trim() !== newName) {
-                    element.innerHTML = labelText + newName;
-                    element.classList.add('filled');
+                if (element.innerText.replace("MATCH_0", "").replace("SEMI_FINAL_", "").replace("CHAMPION_RANK", "").trim() !== name) {
+                    element.innerHTML = label + name;
+                    if(name !== "EMPTY" && name !== "TBD") element.classList.add('filled');
                 }
             });
         }
 
-        // Poll for updates every 2 seconds
-        setInterval(syncBracket, 2000);
-        window.onload = syncBracket;
+        // --- 2. SYNC LEADERBOARD ---
+        function syncLeaderboard() {
+            const roster = JSON.parse(localStorage.getItem('ninja_roster')) || [];
+            // Sort by XP descending
+            const top5 = roster.sort((a, b) => b.xp - a.xp).slice(0, 6);
+            
+            const container = document.getElementById('leaderboard-content');
+            container.innerHTML = "";
+
+            top5.forEach((ninja, index) => {
+                const xpPercent = Math.min((ninja.xp / 1000) * 100, 100); // Assuming 1000 is level cap
+                container.innerHTML += `
+                    <div class="ninja-row">
+                        <div style="flex-grow:1;">
+                            <div><span class="rank">#${index + 1}</span> ${ninja.id}</div>
+                            <div class="xp-bar-bg"><div class="xp-bar-fill" style="width:${xpPercent}%"></div></div>
+                        </div>
+                        <div style="margin-left:15px; color:var(--green); font-weight:bold;">${ninja.xp}XP</div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- 3. SYNC BROADCASTS ---
+        function syncBroadcasts() {
+            const broadcast = JSON.parse(localStorage.getItem('system_broadcast'));
+            const ticker = document.getElementById('broadcast-ticker');
+            
+            if (broadcast && (Date.now() - broadcast.timestamp < 30000)) { // Show for 30 seconds
+                ticker.innerText = `[${broadcast.type}] ${broadcast.sender}: ${broadcast.message}`;
+                ticker.style.display = 'block';
+                if(broadcast.type === 'CRITICAL') ticker.style.background = 'rgba(255,0,0,0.4)';
+            } else {
+                ticker.style.display = 'none';
+            }
+        }
+
+        // --- MASTER REFRESH ---
+        function refresh() {
+            syncBracket();
+            syncLeaderboard();
+            syncBroadcasts();
+        }
+
+        setInterval(refresh, 2000);
+        window.onload = refresh;
     </script>
 </body>
 </html>
