@@ -21,16 +21,18 @@
             width: 100%;
             max-width: 1000px;
             display: flex;
-            justify-content: flex-end;
-            padding: 20px 0;
-            margin-bottom: 20px;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
         }
+
+        .nav-links { display: flex; gap: 10px; }
 
         .btn-return {
             background: none;
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            padding: 10px 25px;
+            border: 1px solid var(--border);
+            color: #666;
+            padding: 10px 20px;
             border-radius: 8px;
             text-decoration: none;
             font-size: 0.65rem;
@@ -41,9 +43,19 @@
         }
 
         .btn-return:hover {
+            color: var(--gold);
+            border-color: var(--gold);
             background: rgba(255, 204, 0, 0.1);
-            box-shadow: 0 0 15px rgba(255, 204, 0, 0.2);
-            transform: translateY(-2px);
+        }
+
+        .btn-mimic {
+            border-color: var(--blue);
+            color: var(--blue);
+        }
+
+        .btn-mimic:hover {
+            background: rgba(79, 172, 254, 0.1);
+            box-shadow: 0 0 15px rgba(79, 172, 254, 0.2);
         }
 
         .battle-arena { 
@@ -100,7 +112,10 @@
 <body>
 
     <nav class="nav-header">
-        <a href="pitch_hub.html" class="btn-return">Return to Hub</a>
+        <a href="pitch_hub.html" class="btn-return">⇽ Return to Hub</a>
+        <div class="nav-links">
+            <a href="mimic_protocol.html" class="btn-return btn-mimic">Switch to Mimic ⇾</a>
+        </div>
     </nav>
 
     <div id="missionHeader" style="color:var(--gold); margin-bottom: 20px; letter-spacing: 2px; font-size: 0.8rem;">
@@ -217,7 +232,8 @@
                 if (playerProgress >= 100) endGame(true);
                 else setTimeout(() => { btnEl.classList.remove('flash-green'); }, 400);
             } else {
-                rivalProgress += 25;
+                // Increased damage for Rival AI (Difficulty Spike)
+                rivalProgress += 34; 
                 btnEl.classList.add('flash-red');
                 updateBars();
                 if (rivalProgress >= 100) endGame(false);
