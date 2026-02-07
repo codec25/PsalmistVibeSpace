@@ -29,6 +29,7 @@
             padding: env(safe-area-inset-top) 20px 40px 20px;
         }
 
+        /* --- Header HUD --- */
         header {
             width: 100%; max-width: 1100px; padding: 25px 0;
             display: flex; justify-content: space-between; align-items: center;
@@ -46,6 +47,7 @@
         }
         .btn-logout:hover { background: var(--red); color: #fff; }
 
+        /* --- Mission Tracker --- */
         #mission-tracker {
             display: none; width: 100%; max-width: 1100px; 
             background: linear-gradient(90deg, rgba(161, 140, 209, 0.15), rgba(15, 20, 30, 0.8));
@@ -58,12 +60,14 @@
         .progress-container { width: 100%; height: 10px; background: #000; border-radius: 5px; margin-top: 15px; border: 1px solid var(--border); overflow: hidden; }
         #progress-bar { height: 100%; width: 0%; background: var(--purple); transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px var(--purple); }
 
+        /* --- Broadcast Bar --- */
         #announcement-bar {
             display: none; width: 100%; max-width: 1100px; background: rgba(255, 204, 0, 0.1); 
             border: 1px solid var(--gold); color: var(--gold); padding: 12px; border-radius: 12px; 
             margin-bottom: 20px; font-size: 0.65rem; text-align: center; letter-spacing: 1px;
         }
 
+        /* --- Grid Layout --- */
         .content-stack { width: 100%; max-width: 1100px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
         .card {
             background: var(--panel); backdrop-filter: blur(15px); border: 1px solid var(--border);
@@ -73,6 +77,7 @@
         .card:hover { transform: translateY(-5px); border-color: var(--blue); background: rgba(79, 172, 254, 0.05); }
         .card-icon { width: 60px; height: 60px; border-radius: 16px; background: rgba(255,255,255,0.03); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; border: 1px solid var(--border); }
         
+        /* --- Discreet Intelligence System --- */
         #intel-trigger {
             position: fixed; bottom: 20px; right: 20px; width: 40px; height: 40px;
             background: rgba(0,0,0,0.8); border: 1px solid var(--border); border-radius: 50%;
@@ -90,6 +95,7 @@
         .intel-header { color: var(--gold); font-weight: 900; margin-bottom: 8px; letter-spacing: 1px; display: block; }
         .intel-item { margin-bottom: 10px; display: block; border-left: 2px solid var(--blue); padding-left: 8px; }
 
+        /* --- NEURAL BROADCAST OVERLAY --- */
         #broadcast-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999;
             display: none; align-items: center; justify-content: center; padding: 40px;
@@ -150,6 +156,7 @@
                 <div class="card-desc">Pitch recognition and interval matrix.</div>
             </div>
         </a>
+
         <a href="piano_lab.html" class="card">
             <div class="card-icon" style="color:var(--blue)">🎹</div>
             <div class="card-content">
@@ -157,6 +164,7 @@
                 <div class="card-desc">Visual chord mastery and scales.</div>
             </div>
         </a>
+
         <a href="rhythm_hub.html" class="card">
             <div class="card-icon" style="color:var(--green)">⚡</div>
             <div class="card-content">
@@ -164,6 +172,7 @@
                 <div class="card-desc">Beat precision and tempo strike.</div>
             </div>
         </a>
+
         <a href="studio.html" class="card">
             <div class="card-icon" style="color:var(--blue)">🎙️</div>
             <div class="card-content">
@@ -171,6 +180,7 @@
                 <div class="card-desc">Advanced production & ear training dojo.</div>
             </div>
         </a>
+
         <a href="theory_vault.html" class="card" id="theory-link">
             <div class="card-icon" style="color:var(--purple)">📓</div>
             <div class="card-content">
@@ -193,25 +203,31 @@
     <script>
         const ninjaName = localStorage.getItem('ninjaUser') || "GUEST_NINJA";
 
-        // --- 1. IT SECURITY & LIVE FEED SYNC ---
+        // --- 1. CORE SECURITY & IT HANDSHAKE (The Pulse) ---
         function checkSecurityHandshake() {
-            // Global Lockdown
+            // Global System Lock
             if (localStorage.getItem('global_system_lock') === 'true') {
                 document.body.innerHTML = `<div style="background:#000; color:#ff4b2b; height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>SYSTEM_LOCKED</h1><p>THE ARCHITECT HAS SUSPENDED ALL SECTORS.</p></div>`;
                 window.stop();
             }
-            // IT Manager Freeze Check
+
+            // Remote Freeze Check
             if (localStorage.getItem(`freeze_${ninjaName}`) === 'true') {
                 document.body.innerHTML = `<div style="background:#000; color:var(--red); height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>TERMINAL_LOCKED</h1><p>RESTRICTED BY IT_MANAGEMENT</p></div>`;
                 window.stop();
             }
-            // Neural Pulse (Register as Online for IT Panel)
+
+            // Neural Pulse (Register Online Status for IT Manager)
             let rosters = JSON.parse(localStorage.getItem('psalmist_teachers')) || {};
-            rosters[ninjaName] = { lastActive: new Date().toLocaleTimeString(), status: "ONLINE" };
+            rosters[ninjaName] = { 
+                lastActive: new Date().toLocaleTimeString(), 
+                status: "ONLINE",
+                role: localStorage.getItem('userRole') || "NINJA"
+            };
             localStorage.setItem('psalmist_teachers', JSON.stringify(rosters));
         }
 
-        // --- 2. SFX LISTENER ---
+        // --- 2. SFX TRIGGER LISTENER ---
         function listenForSFX() {
             const sfx = localStorage.getItem('sfx_trigger');
             if (sfx) {
@@ -223,37 +239,49 @@
             }
         }
 
-        // --- 3. CORE HUB INITIALIZATION ---
+        // --- 3. PAGE INITIALIZATION ---
         window.onload = () => {
             checkSecurityHandshake();
             const isGuest = localStorage.getItem('isGuest') === 'true';
 
-            // XP & Level Logic (Synced with Dash Format)
+            // XP Sync (Unique per user)
             const currentXP = parseInt(localStorage.getItem(`xp_${ninjaName}`)) || 0;
             const level = Math.floor(currentXP / 2500) + 1;
 
             // Blacklist Check
             const vault = JSON.parse(localStorage.getItem('vault_users')) || {};
             if (vault.BLACKLIST && vault.BLACKLIST.includes(ninjaName.toUpperCase())) {
+                alert("ACCESS_DENIED: YOUR ID IS BLACKLISTED.");
                 logout();
                 return;
             }
 
             document.getElementById('display-name').innerText = ninjaName.toUpperCase();
+            
             const lockedStatus = localStorage.getItem(`status_${ninjaName}`) || "LEVEL 01 ACADEMY";
             const sessionLabel = isGuest ? "GUEST_SESSION" : "OFFICIAL_MEMBER";
             document.getElementById('display-rank').innerText = `${lockedStatus} // ${sessionLabel} // LVL ${level} // XP: ${currentXP}`;
 
-            // Mission Tracker Sync
+            // Sync Academy Announcement
+            const msg = localStorage.getItem('academy_announcement');
+            if (msg && msg.trim() !== "") {
+                document.getElementById('announcement-bar').style.display = 'block';
+                document.getElementById('announcement-text').innerText = msg;
+            }
+
+            // Sync Active Mission
             const mission = JSON.parse(localStorage.getItem('active_mission'));
             if (mission && mission.active) {
                 document.getElementById('mission-tracker').style.display = 'block';
                 document.getElementById('m-name').innerText = mission.name.toUpperCase();
                 document.getElementById('m-desc').innerText = `Objective: Reach ${mission.goal} XP in ${mission.type}`;
+                
                 let progress = Math.min((currentXP / mission.goal) * 100, 100);
                 document.getElementById('m-percent').innerText = Math.floor(progress) + "%";
                 document.getElementById('progress-bar').style.width = progress + "%";
+
                 if (progress >= 100) {
+                    document.getElementById('m-percent').innerText = "COMPLETE";
                     document.getElementById('m-percent').style.color = "var(--green)";
                     document.getElementById('progress-bar').style.background = "var(--green)";
                 }
@@ -264,16 +292,28 @@
         function listenForBroadcast() {
             const data = localStorage.getItem('system_broadcast');
             if(!data) return;
+
             const broadcast = JSON.parse(data);
             const lastSeen = localStorage.getItem('last_seen_broadcast_hub');
 
             if(lastSeen !== broadcast.timestamp.toString()) {
                 const overlay = document.getElementById('broadcast-overlay');
-                document.getElementById('b-text').innerText = broadcast.message;
+                const bText = document.getElementById('b-text');
                 const bType = document.getElementById('b-type');
-                bType.innerText = broadcast.type === 'ALERT' ? 'CRITICAL_OVERRIDE' : 'SYSTEM_MESSAGE';
-                bType.style.color = broadcast.type === 'ALERT' ? 'var(--red)' : 'var(--green)';
-                document.getElementById('b-box').style.borderColor = bType.style.color;
+                const bBox = document.getElementById('b-box');
+
+                bText.innerText = broadcast.message;
+                
+                if(broadcast.type === 'ALERT') {
+                    bType.innerText = 'CRITICAL_OVERRIDE';
+                    bType.style.color = 'var(--red)';
+                    bBox.style.borderColor = 'var(--red)';
+                } else {
+                    bType.innerText = 'SYSTEM_MESSAGE';
+                    bType.style.color = 'var(--green)';
+                    bBox.style.borderColor = 'var(--green)';
+                }
+
                 overlay.style.display = 'flex';
                 localStorage.setItem('last_seen_broadcast_hub', broadcast.timestamp);
             }
@@ -284,11 +324,15 @@
         }
 
         function logout() {
-            localStorage.clear(); // Complete wipe for security
+            // Don't clear EVERYTHING so we don't wipe the whole classroom DB, 
+            // just the session data.
+            localStorage.removeItem('ninjaUser');
+            localStorage.removeItem('isGuest');
+            localStorage.removeItem('userRole');
             window.location.href = 'index.html';
         }
 
-        // Run Cycles
+        // --- RUN CONTINUOUS SYNC CYCLES ---
         setInterval(listenForBroadcast, 2000);
         setInterval(checkSecurityHandshake, 3000);
         setInterval(listenForSFX, 1000);
