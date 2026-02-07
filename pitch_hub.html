@@ -180,8 +180,29 @@
 <footer>&copy; 2026 PSALMIST NINJA STUDIOS</footer>
 
 <script>
+    const ninjaName = localStorage.getItem('ninjaUser') || "GUEST_NINJA";
+
+    function checkSecurityHandshake() {
+        // Global Lock
+        if (localStorage.getItem('global_system_lock') === 'true') {
+            document.body.innerHTML = `<div style="background:#000; color:#ff4b2b; height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>SYSTEM_LOCKED</h1></div>`;
+            window.stop();
+        }
+        // Remote Freeze
+        if (localStorage.getItem(`freeze_${ninjaName}`) === 'true') {
+            document.body.innerHTML = `<div style="background:#000; color:var(--red); height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>TERMINAL_LOCKED</h1></div>`;
+            window.stop();
+        }
+        // Neural Pulse for IT Manager
+        let rosters = JSON.parse(localStorage.getItem('psalmist_teachers')) || {};
+        rosters[ninjaName] = { lastActive: new Date().toLocaleTimeString(), status: "IN_PITCH_HUB" };
+        localStorage.setItem('psalmist_teachers', JSON.stringify(rosters));
+    }
+
     function updateHUD() {
-        const xp = parseInt(localStorage.getItem('totalXP')) || 0;
+        checkSecurityHandshake();
+        // Updated to use the personalized xp_ key
+        const xp = parseInt(localStorage.getItem(`xp_${ninjaName}`)) || 0;
         document.getElementById('global-xp').innerText = `XP: ${xp.toString().padStart(6, '0')}`;
         
         let rank = "INITIATE";
@@ -194,6 +215,8 @@
 
     window.onload = updateHUD;
     window.addEventListener('storage', updateHUD);
+    // Continuous Security Pulse
+    setInterval(checkSecurityHandshake, 3000);
 </script>
 
 </body>
