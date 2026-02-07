@@ -90,14 +90,20 @@
             padding: 40px; border-radius: 20px; text-align: center; z-index: 2000;
             display: none;
         }
+
+        .tracker-sub-data { display: flex; justify-content: center; gap: 30px; margin-top: 10px; }
+        .vibrato-meter, .sustain-meter {
+            font-size: 0.55rem; color: var(--gold); letter-spacing: 2px;
+            font-weight: 900; opacity: 0.8;
+        }
     </style>
 </head>
 <body>
 
 <div id="xp-popup">
-    <div style="color:var(--gold); font-size: 0.8rem; letter-spacing: 4px; margin-bottom: 10px;">NEURAL_SYNC_SUCCESS</div>
+    <div id="xp-header" style="color:var(--gold); font-size: 0.8rem; letter-spacing: 4px; margin-bottom: 10px;">NEURAL_SYNC_SUCCESS</div>
     <div id="xp-amount" style="font-size: 4rem; font-weight: 900; color: #fff; margin-bottom: 10px;">+50 XP</div>
-    <div style="color:var(--blue); font-size: 0.6rem; letter-spacing: 2px;">PITCH ACCURACY REWARD</div>
+    <div style="color:var(--blue); font-size: 0.6rem; letter-spacing: 2px;">PERFORMANCE REWARD</div>
 </div>
 
 <div class="hud-header">
@@ -114,6 +120,12 @@
 <div class="center-hub">
     <div id="note-display">--</div>
     <div id="freq-display">0.00 Hz</div>
+    
+    <div class="tracker-sub-data">
+        <div id="vibrato-display" class="vibrato-meter">VIBRATO: 0 C</div>
+        <div id="sustain-display" class="sustain-meter">SUSTAIN: 0.0s</div>
+    </div>
+
     <div style="display: flex; gap: 10px; justify-content: center;">
         <button class="btn-audio" onclick="playTargetTone()">PLAY_TARGET</button>
         <button id="record-btn" class="btn-audio" onclick="toggleRecording()">REC_SESSION</button>
@@ -147,6 +159,14 @@
     let minFreq = Infinity, maxFreq = 0;
     let lastPitch = 440;
     let eliteStreak = 0;
+    
+    // Sustain Logic
+    let sustainStartTime = null;
+    let sustainActive = false;
+
+    // Vibrato Tracking
+    let pitchHistory = [];
+    const historyLimit = 60; 
 
     // Recording Logic
     let mediaRecorder;
@@ -184,11 +204,8 @@
                 analyser.fftSize = 4096;
                 source.connect(analyser);
                 
-                // Initialize Recorder
                 mediaRecorder = new MediaRecorder(micStream);
-                mediaRecorder.ondataavailable = event => {
-                    audioChunks.push(event.data);
-                };
+                mediaRecorder.ondataavailable = event => { audioChunks.push(event.data); };
                 mediaRecorder.onstop = () => {
                     audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                     document.getElementById('playback-btn').style.display = 'block';
@@ -240,18 +257,18 @@
         osc.stop(audioCtx.currentTime + 1.6);
     }
 
-    function grantXP(amount) {
+    function grantXP(amount, type = "SYNC") {
         const ninjaName = localStorage.getItem('ninjaUser') || "GUEST";
         const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
         if(!roster[ninjaName]) roster[ninjaName] = { xp: 0, level: 1, skills: { recognition: 0 } };
-        
         roster[ninjaName].xp += amount;
         localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
-
+        
         const popup = document.getElementById('xp-popup');
+        document.getElementById('xp-header').innerText = type === "LEGENDARY" ? "LEGENDARY_SUSTAIN" : "NEURAL_SYNC_SUCCESS";
         document.getElementById('xp-amount').innerText = `+${amount} XP`;
         popup.style.display = 'block';
-        setTimeout(() => { popup.style.display = 'none'; }, 2000);
+        setTimeout(() => { popup.style.display = 'none'; }, 2500);
     }
 
     function update() {
@@ -261,6 +278,18 @@
 
         if (pitch !== -1) {
             lastPitch = pitch;
+            
+            // Vibrato Logic
+            pitchHistory.push(pitch);
+            if (pitchHistory.length > historyLimit) pitchHistory.shift();
+            
+            if (pitchHistory.length >= 20) {
+                const max = Math.max(...pitchHistory);
+                const min = Math.min(...pitchHistory);
+                const depthCents = 1200 * Math.log2(max/min);
+                document.getElementById('vibrato-display').innerText = `VIBRATO: ${depthCents.toFixed(1)} C`;
+            }
+
             const midi = Math.round(12 * Math.log2(pitch / 440) + 69);
             const noteName = notes[midi % 12];
             const octave = Math.floor(midi / 12) - 1;
@@ -274,17 +303,32 @@
             const needle = document.getElementById('tuner-needle');
             needle.style.left = Math.max(5, Math.min(95, needlePos)) + "%";
 
-            // XP Logic: Check for Elite Accuracy
+            // Elite Detection & Sustain Tracker
             if (Math.abs(diffCents) < 5) {
                 needle.style.background = "var(--green)";
                 eliteStreak++;
-                if (eliteStreak === 100) { // Sustained elite pitch
-                    grantXP(50);
-                    eliteStreak = 0;
+                
+                if (!sustainActive) {
+                    sustainStartTime = Date.now();
+                    sustainActive = true;
                 }
+                let duration = (Date.now() - sustainStartTime) / 1000;
+                document.getElementById('sustain-display').innerText = `SUSTAIN: ${duration.toFixed(1)}s`;
+                document.getElementById('sustain-display').style.color = "var(--green)";
+
+                if (duration >= 10 && sustainActive) {
+                    grantXP(250, "LEGENDARY");
+                    sustainActive = false; // Reset so they can't farm it instantly
+                    sustainStartTime = Date.now();
+                }
+
+                if (eliteStreak === 100) { grantXP(50); eliteStreak = 0; }
             } else {
                 needle.style.background = "var(--blue)";
                 eliteStreak = 0;
+                sustainActive = false;
+                document.getElementById('sustain-display').innerText = `SUSTAIN: 0.0s`;
+                document.getElementById('sustain-display').style.color = "var(--gold)";
             }
 
             if (currentMode === 'range') {
