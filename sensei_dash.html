@@ -3,147 +3,278 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SENSEI_DASH // Mission Control</title>
+    <title>SENSEI_COMMAND_v5 // Psalmist Vibes</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg: #010204; --panel: rgba(10, 14, 23, 0.9); 
+            --bg: #010204; --panel: rgba(7, 10, 17, 0.98); 
             --blue: #4facfe; --gold: #ffcc00; --border: #1e2544; 
-            --green: #00ff88; --red: #ff4b2b; --it-watch: #555;
+            --green: #00ff88; --red: #ff4b2b; --purple: #a18cd1;
         }
 
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
             display: flex; flex-direction: column; align-items: center; min-height: 100vh;
             background-image: radial-gradient(circle at 50% 50%, #0a1324 0%, #010204 100%);
-            padding: 40px 20px;
+            padding: 20px; overflow-x: hidden;
         }
 
-        .dashboard-header {
-            width: 100%; max-width: 1100px; display: flex; justify-content: space-between;
-            align-items: center; margin-bottom: 40px; border-bottom: 1px solid var(--border);
-            padding-bottom: 20px;
+        .dash-container { width: 100%; max-width: 1400px; }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 30px;
         }
 
-        /* Surveillance Status Light */
-        .it-status {
-            font-size: 0.6rem; display: flex; align-items: center; gap: 8px;
-            background: rgba(0,0,0,0.5); padding: 5px 12px; border-radius: 20px;
-            border: 1px solid #333;
-        }
-        .status-light { width: 8px; height: 8px; border-radius: 50%; background: var(--it-watch); box-shadow: 0 0 5px var(--it-watch); }
-        .watching { background: var(--red) !important; box-shadow: 0 0 10px var(--red) !important; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.3; } }
+        .it-status { display: flex; align-items: center; gap: 10px; font-size: 0.6rem; color: #555; }
+        .light { width: 10px; height: 10px; border-radius: 50%; background: #222; transition: 0.3s; }
+        .light.watching { background: var(--red); box-shadow: 0 0 10px var(--red); }
 
-        .vault-grid {
-            display: grid; grid-template-columns: 1fr 400px; gap: 30px;
-            width: 100%; max-width: 1100px;
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .panel { 
+            background: var(--panel); border: 1px solid var(--border); 
+            padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        .vault-card {
-            background: var(--panel); border: 1px solid var(--border);
-            border-radius: 20px; padding: 30px; backdrop-filter: blur(10px);
-            margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
+        h3 { font-size: 0.7rem; color: var(--blue); letter-spacing: 3px; margin-top: 0; text-transform: uppercase; border-bottom: 1px solid #111; padding-bottom: 10px; }
 
-        .section-title {
-            font-size: 0.7rem; color: var(--gold); letter-spacing: 3px;
-            margin-bottom: 20px; text-transform: uppercase; border-left: 3px solid var(--gold);
-            padding-left: 15px;
+        input, select, textarea {
+            width: 100%; background: #000; border: 1px solid var(--border); 
+            color: #fff; padding: 10px; font-family: 'Orbitron'; font-size: 0.7rem; margin-bottom: 10px; border-radius: 8px;
         }
 
         .btn {
-            padding: 12px; border: none; border-radius: 8px; font-family: 'Orbitron';
-            font-weight: 900; cursor: pointer; transition: 0.3s; text-transform: uppercase;
-            letter-spacing: 1px; font-size: 0.65rem;
+            width: 100%; padding: 12px; background: transparent; border: 1px solid var(--blue);
+            color: var(--blue); font-family: 'Orbitron'; cursor: pointer; border-radius: 8px;
+            font-size: 0.6rem; transition: 0.3s; font-weight: 900; letter-spacing: 1px;
         }
-        
-        .btn-archive { background: var(--blue); color: #000; width: 100%; margin-bottom: 10px; }
-        .btn-logout { background: transparent; border: 1px solid var(--red); color: var(--red); }
-        
-        input, select, textarea {
-            width: 100%; padding: 12px; background: #000; border: 1px solid var(--border);
-            color: #fff; border-radius: 8px; font-family: 'Orbitron'; margin-bottom: 15px;
-        }
+        .btn:hover { background: var(--blue); color: #000; }
+        .btn-red { border-color: var(--red); color: var(--red); }
+        .btn-gold { border-color: var(--gold); color: var(--gold); }
+        .btn-green { border-color: var(--green); color: var(--green); }
 
-        .ninja-item {
-            background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px;
-            margin-bottom: 15px; border: 1px solid var(--border);
-        }
+        .bracket-slot { width: 150px; background: #000; border: 1px solid var(--border); color: #fff; font-size: 0.6rem; padding: 8px; margin-bottom: 5px; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-    <script>
-        const currentTeacher = sessionStorage.getItem('currentTeacher');
-        if (!currentTeacher) window.location.href = 'index.html';
+<script>
+    // --- 1. IT SECURITY & IDENTITY ---
+    const SENSEI_ID = localStorage.getItem('ninjaUser') || "UNKNOWN_SENSEI";
 
-        // Check if IT has locked this teacher
-        const db = JSON.parse(localStorage.getItem('vault_users')) || {};
-        if (db.LOCKED_TEACHERS && db.LOCKED_TEACHERS.includes(currentTeacher)) {
-            alert("ACCESS_REVOKED: This sector has been sealed by IT_ADMIN.");
-            sessionStorage.clear();
-            window.location.href = 'index.html';
+    function checkITSecurity() {
+        // Freeze Check
+        if (localStorage.getItem(`freeze_${SENSEI_ID}`) === 'true') {
+            document.body.innerHTML = `<div style="background:#000; color:var(--red); height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>TERMINAL_FROZEN</h1><p>ACCESS REVOKED BY IT_MANAGEMENT</p></div>`;
+            window.stop();
         }
-    </script>
+        // Surveillance Check
+        const isWatched = localStorage.getItem('it_active') === 'true';
+        document.getElementById('it-light').className = isWatched ? 'light watching' : 'light';
+        document.getElementById('it-text').innerText = isWatched ? "IT_SURVEILLANCE: ACTIVE_SCAN" : "IT_SURVEILLANCE: PASSIVE";
+    }
 
-    <header class="dashboard-header">
+    function reportToIT(status) {
+        let db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
+        db.AUDIT_LOG.unshift({ time: new Date().toLocaleString(), user: SENSEI_ID, status: status });
+        localStorage.setItem('vault_users', JSON.stringify(db));
+    }
+
+    setInterval(checkITSecurity, 2000);
+</script>
+
+<div class="dash-container">
+    <header>
         <div>
-            <div class="it-status">
-                <div id="it-light" class="status-light"></div>
-                <span id="it-text">IT_SURVEILLANCE: PASSIVE</span>
-            </div>
-            <h1 id="welcome-text" style="margin:10px 0 0 0; letter-spacing: 5px;">SENSEI_DASH</h1>
+            <h1 style="font-size: 1.2rem; letter-spacing: 5px; margin:0;">SENSEI_COMMAND_DASH</h1>
+            <div class="it-status"><div id="it-light" class="light"></div><span id="it-text">IT_SURVEILLANCE: PASSIVE</span></div>
         </div>
-        <div style="display:flex; gap:10px;">
-            <button class="btn btn-archive" style="width:auto;" onclick="window.location.href='scroll_archive.html'">OPEN_SCROLL_ARCHIVE</button>
-            <button class="btn btn-logout" onclick="logout()">DISCONNECT</button>
-        </div>
+        <button class="btn btn-red" style="width:auto; padding: 10px 20px;" onclick="location.href='index.html'">LOGOUT</button>
     </header>
 
-    <div class="vault-grid">
-        <div class="vault-card">
-            <div class="section-title">Mission Control</div>
-            <label style="font-size:0.6rem; color:var(--blue);">CURRENT_OBJECTIVE</label>
-            <input type="text" id="mission-name" placeholder="Operation: Phantom Script">
-            <select id="mission-type">
-                <option value="CODE">CODE_KATA</option>
-                <option value="LOGIC">LOGIC_GATE_TRAINING</option>
+    <div class="grid">
+        <div class="panel">
+            <h3>DEPLOY_MISSION</h3>
+            <input type="text" id="m-name" placeholder="MISSION_CODENAME">
+            <input type="number" id="m-goal" placeholder="XP_GOAL">
+            <select id="m-type">
+                <option value="PITCH_HUB">PITCH_HUB</option>
+                <option value="PIANO_LAB">PIANO_LAB</option>
+                <option value="RHYTHM_HUB">RHYTHM_HUB</option>
             </select>
-            <button class="btn" style="background:var(--green); color:#000; width:100%;" onclick="alert('Mission Deployed')">DEPLOY_TO_NINJAS</button>
+            <button class="btn btn-blue" onclick="deployMission()">TRANSMIT_ORDERS</button>
+            <button class="btn btn-red" style="margin-top:5px;" onclick="cancelMission()">ABORT_MISSION</button>
         </div>
 
-        <div class="vault-card">
-            <div class="section-title">Ninja Roster</div>
-            <div id="roster-list" style="max-height: 400px; overflow-y: auto;">
+        <div class="panel">
+            <h3>XP_LEADERBOARD & REWARDS</h3>
+            <div id="leaderboard-list" style="height: 250px; overflow-y: auto; background: #000; padding: 10px; border-radius: 8px;"></div>
+            <div id="total-xp-pool" style="font-size:0.5rem; color:#444; margin-top:10px;">TOTAL_XP: 0</div>
+        </div>
+
+        <div class="panel">
+            <h3>ACADEMY_CONTROL</h3>
+            <textarea id="announcement-input" placeholder="POST BROADCAST..."></textarea>
+            <button class="btn btn-green" onclick="postAnnouncement()">POST_TO_HUB</button>
+            <button class="btn btn-gold" style="margin-top:10px;" onclick="fireSFX('horn')">TRIGGER_CLASS_BELL 🔔</button>
+        </div>
+
+        <div class="panel" style="grid-column: span 2;">
+            <h3>DOJO_DUEL_ARENA</h3>
+            <div style="display:flex; justify-content:space-around; align-items:center; background:#000; padding:15px; border-radius:10px;">
+                <div style="text-align:center;">
+                    <select id="select-n1" onchange="updateDuel()"></select>
+                    <div id="stat-n1" style="font-size:1.5rem; color:var(--blue);">0 XP</div>
                 </div>
-            <hr style="border:0; border-top:1px solid #1e2544; margin: 20px 0;">
-            <input type="text" id="new-ninja" placeholder="NEW_NINJA_ID">
-            <button class="btn" style="background:#fff; color:#000; width:100%;" onclick="addNinja()">AUTHORIZE_NEW_ACCESS</button>
+                <div style="font-size:1.2rem; color:var(--red); font-weight:900;">VS</div>
+                <div style="text-align:center;">
+                    <select id="select-n2" onchange="updateDuel()"></select>
+                    <div id="stat-n2" style="font-size:1.5rem; color:var(--gold);">0 XP</div>
+                </div>
+            </div>
+            <button class="btn btn-purple" style="margin-top:10px; border-color:var(--purple); color:var(--purple);" onclick="announceWinner()">ANNOUNCE_VICTOR</button>
+        </div>
+
+        <div class="panel">
+            <h3>BATTLE_TIMER</h3>
+            <div style="display:flex; gap:5px; margin-bottom:10px;">
+                <input type="number" id="timer-input" value="60" style="margin:0;">
+                <button class="btn btn-green" style="width:auto;" onclick="startTimer()">START</button>
+            </div>
+            <div id="dash-timer-preview" style="text-align:center; font-size:1.2rem; color:var(--gold); margin-bottom:10px;">00:00</div>
+            <button class="btn btn-red" onclick="fireSFX('battle')">MANUAL_CRASH_SFX</button>
+        </div>
+
+        <div class="panel" style="grid-column: span 3;">
+            <h3>TOURNAMENT_ELIMINATION</h3>
+            <div style="display:flex; justify-content:space-between; padding:20px; background:#000; border-radius:10px;">
+                <div class="bracket-round">
+                    <input type="text" class="bracket-slot" id="q1" placeholder="Q1">
+                    <input type="text" class="bracket-slot" id="q2" placeholder="Q2"><div style="height:15px;"></div>
+                    <input type="text" class="bracket-slot" id="q3" placeholder="Q3">
+                    <input type="text" class="bracket-slot" id="q4" placeholder="Q4">
+                </div>
+                <div class="bracket-round">
+                    <input type="text" class="bracket-slot" id="s1" placeholder="SEMI_1" style="border-color:var(--purple);"><div style="height:40px;"></div>
+                    <input type="text" class="bracket-slot" id="s2" placeholder="SEMI_2" style="border-color:var(--purple);">
+                </div>
+                <div class="bracket-round">
+                    <input type="text" class="bracket-slot" id="f1" placeholder="CHAMPION" style="border-color:var(--gold); height:40px; text-align:center;">
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="btn btn-gold" style="width:auto;" onclick="saveBracket()">LOCK_BRACKET</button>
+                <button class="btn btn-blue" style="width:auto;" onclick="window.open('spectator_view.html', '_blank')">OPEN_PROJECTOR_VIEW</button>
+            </div>
         </div>
     </div>
+</div>
 
-    <script>
-        document.getElementById('welcome-text').innerText = currentTeacher + "_CORE";
+<script>
+    // --- CORE LOGIC ---
+    function deployMission() {
+        const m = { name: document.getElementById('m-name').value, goal: document.getElementById('m-goal').value, type: document.getElementById('m-type').value, active: true };
+        localStorage.setItem('active_mission', JSON.stringify(m));
+        reportToIT(`MISSION_DEPLOYED: ${m.name}`);
+        alert("TRANSMITTED");
+    }
 
-        // Surveillance simulation (Logic: if IT_ADMIN recently logged in)
-        if(localStorage.getItem('it_active') === 'true') {
-            document.getElementById('it-light').classList.add('watching');
-            document.getElementById('it-text').innerText = "IT_SURVEILLANCE: ACTIVE_SCAN";
-        }
+    function cancelMission() { 
+        localStorage.removeItem('active_mission'); 
+        reportToIT("MISSION_ABORTED");
+    }
 
-        function logout() {
-            sessionStorage.removeItem('currentTeacher');
-            window.location.href = 'index.html';
-        }
+    function postAnnouncement() {
+        const msg = document.getElementById('announcement-input').value;
+        localStorage.setItem('system_broadcast', JSON.stringify({ message: msg, type: 'INFO', timestamp: Date.now() }));
+        reportToIT(`BROADCAST: ${msg.substring(0,20)}...`);
+    }
 
-        // Logic for Ninja management remains similar but saves to your main vault_users db
-        function addNinja() {
-            const name = document.getElementById('new-ninja').value.toUpperCase();
-            if(!name) return;
-            // logic to add ninja to local storage...
-            alert("Ninja " + name + " added to your scroll.");
-        }
-    </script>
+    function refreshLeaderboard() {
+        const list = document.getElementById('leaderboard-list');
+        const ninjas = JSON.parse(localStorage.getItem('ninja_roster')) || [];
+        let totalXP = 0;
+        let data = ninjas.map(n => {
+            const xp = parseInt(localStorage.getItem(`xp_${n}`)) || 0;
+            totalXP += xp;
+            return { name: n, xp: xp };
+        }).sort((a,b) => b.xp - a.xp);
+
+        list.innerHTML = "";
+        data.forEach((n, i) => {
+            list.innerHTML += `
+                <div style="padding:8px; border-bottom:1px solid #111; font-size:0.6rem;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>#${i+1} ${n.name} ${n.xp >= 10000 ? '🎖️' : ''}</span>
+                        <span>${n.xp} XP</span>
+                    </div>
+                    <div style="display:flex; gap:5px; margin-top:5px;">
+                        <button class="btn" style="padding:2px; font-size:0.5rem;" onclick="grantXP('${n.name}', 500)">+500</button>
+                        <button class="btn btn-red" style="padding:2px; font-size:0.5rem;" onclick="grantXP('${n.name}', -500)">-500</button>
+                    </div>
+                </div>`;
+        });
+        document.getElementById('total-xp-pool').innerText = `TOTAL_ACADEMY_XP: ${totalXP}`;
+    }
+
+    function grantXP(name, amt) {
+        let cur = parseInt(localStorage.getItem(`xp_${name}`)) || 0;
+        localStorage.setItem(`xp_${name}`, Math.max(0, cur + amt));
+        reportToIT(`XP_MODIFIED: ${name} (${amt > 0 ? '+' : ''}${amt})`);
+        refreshLeaderboard();
+    }
+
+    function updateDuel() {
+        const n1 = document.getElementById('select-n1').value;
+        const n2 = document.getElementById('select-n2').value;
+        document.getElementById('stat-n1').innerText = (localStorage.getItem(`xp_${n1}`) || 0) + " XP";
+        document.getElementById('stat-n2').innerText = (localStorage.getItem(`xp_${n2}`) || 0) + " XP";
+    }
+
+    function announceWinner() {
+        const n1 = document.getElementById('select-n1').value;
+        const n2 = document.getElementById('select-n2').value;
+        const xp1 = parseInt(localStorage.getItem(`xp_${n1}`)) || 0;
+        const xp2 = parseInt(localStorage.getItem(`xp_${n2}`)) || 0;
+        const win = xp1 > xp2 ? n1 : n2;
+        localStorage.setItem('system_broadcast', JSON.stringify({ message: `DUEL_VICTOR: ${win}!`, type: 'ALERT', timestamp: Date.now() }));
+    }
+
+    function fireSFX(type) { localStorage.setItem('sfx_trigger', type); }
+
+    function saveBracket() {
+        const b = {}; ['q1','q2','q3','q4','s1','s2','f1'].forEach(id => b[id] = document.getElementById(id).value);
+        localStorage.setItem('tournament_bracket', JSON.stringify(b));
+    }
+
+    let tInt;
+    function startTimer() {
+        let s = parseInt(document.getElementById('timer-input').value);
+        tInt = setInterval(() => {
+            s--;
+            let str = Math.floor(s/60).toString().padStart(2,'0') + ":" + (s%60).toString().padStart(2,'0');
+            localStorage.setItem('active_timer', JSON.stringify({ active: true, timeString: str, seconds: s }));
+            document.getElementById('dash-timer-preview').innerText = str;
+            if (s<=0) { clearInterval(tInt); fireSFX('battle'); }
+        }, 1000);
+    }
+
+    window.onload = () => {
+        refreshLeaderboard();
+        const ninjas = JSON.parse(localStorage.getItem('ninja_roster')) || [];
+        const s1 = document.getElementById('select-n1'), s2 = document.getElementById('select-n2');
+        ninjas.forEach(n => { 
+            s1.innerHTML += `<option value="${n}">${n}</option>`; 
+            s2.innerHTML += `<option value="${n}">${n}</option>`; 
+        });
+        const b = JSON.parse(localStorage.getItem('tournament_bracket'));
+        if(b) Object.keys(b).forEach(id => document.getElementById(id).value = b[id]);
+        
+        // Register Teacher to Global Roster
+        let teachers = JSON.parse(localStorage.getItem('psalmist_teachers')) || {};
+        teachers[SENSEI_ID] = { status: "ONLINE", lastPing: Date.now() };
+        localStorage.setItem('psalmist_teachers', JSON.stringify(teachers));
+    };
+</script>
 </body>
 </html>
