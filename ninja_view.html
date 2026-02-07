@@ -120,16 +120,43 @@
         const ninjaName = localStorage.getItem('ninjaUser') || "GUEST_NINJA";
         document.getElementById('ninja-id').innerText = `USER::${ninjaName}`;
 
-        // 1. Mission Sync Logic
-        function syncMission() {
-            const currentMission = localStorage.getItem('active_mission_name') || "PHANTOM_IDLE";
-            const currentType = localStorage.getItem('active_mission_type') || "WAITING_FOR_ORDERS";
-            
-            document.getElementById('mission-text').innerText = currentMission;
-            document.getElementById('mission-type').innerText = `CATEGORY: ${currentType}`;
+        // --- 1. IT SECURITY & LIVE FEED HANDSHAKE ---
+        function checkSecurityHandshake() {
+            // Global System Lock check
+            if (localStorage.getItem('global_system_lock') === 'true') {
+                document.body.innerHTML = `<div style="background:#000; color:#ff4b2b; height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>SYSTEM_LOCKED</h1><p>THE ARCHITECT HAS SUSPENDED ALL SECTORS.</p></div>`;
+                window.stop();
+            }
+
+            // Remote Freeze Check (IT Manager Sync)
+            if (localStorage.getItem(`freeze_${ninjaName}`) === 'true') {
+                document.body.innerHTML = `<div style="background:#000; color:var(--red); height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>TERMINAL_LOCKED</h1><p>RESTRICTED BY IT_MANAGEMENT</p></div>`;
+                window.stop();
+            }
+
+            // Neural Pulse (Register as Online for IT Panel)
+            let rosters = JSON.parse(localStorage.getItem('psalmist_teachers')) || {};
+            rosters[ninjaName] = { 
+                lastActive: new Date().toLocaleTimeString(), 
+                status: "ONLINE" 
+            };
+            localStorage.setItem('psalmist_teachers', JSON.stringify(rosters));
         }
 
-        // 2. Scroll Library Logic
+        // --- 2. MISSION SYNC LOGIC ---
+        function syncMission() {
+            const rawMission = localStorage.getItem('active_mission');
+            if (rawMission) {
+                const m = JSON.parse(rawMission);
+                document.getElementById('mission-text').innerText = m.name;
+                document.getElementById('mission-type').innerText = `CATEGORY: ${m.type} | GOAL: ${m.goal} XP`;
+            } else {
+                document.getElementById('mission-text').innerText = "PHANTOM_IDLE";
+                document.getElementById('mission-type').innerText = "Waiting for Sensei to deploy mission parameters...";
+            }
+        }
+
+        // --- 3. SCROLL LIBRARY LOGIC ---
         function loadScrolls() {
             const list = document.getElementById('scroll-list');
             const snips = JSON.parse(localStorage.getItem('vault_snippets')) || [];
@@ -160,7 +187,7 @@
             document.getElementById('code-modal').style.display = "none";
         }
 
-        // 3. Success Reporting
+        // --- 4. SUCCESS REPORTING (Syncs to IT Audit Log) ---
         function completeMission() {
             const mission = document.getElementById('mission-text').innerText;
             if (mission === "PHANTOM_IDLE") {
@@ -170,7 +197,7 @@
 
             let vault = JSON.parse(localStorage.getItem('vault_users')) || {AUDIT_LOG: []};
             vault.AUDIT_LOG.unshift({
-                time: new Date().toLocaleString(),
+                time: new Date().toLocaleTimeString(),
                 user: ninjaName,
                 status: `MISSION_SUCCESS: ${mission}`
             });
@@ -179,7 +206,7 @@
             alert("SUCCESS: Progress report transmitted to IT_ADMIN.");
         }
 
-        // 4. NEURAL BROADCAST LISTENER (IT Messages)
+        // --- 5. NEURAL BROADCAST LISTENER ---
         function listenForBroadcast() {
             const data = localStorage.getItem('system_broadcast');
             if(!data) return;
@@ -195,7 +222,7 @@
 
                 bText.innerText = broadcast.message;
                 
-                if(broadcast.type === 'CRITICAL') {
+                if(broadcast.type === 'ALERT') { // Changed to match dash broadcast type
                     bType.innerText = 'CRITICAL_OVERRIDE';
                     bType.style.color = 'var(--red)';
                     bBox.style.borderColor = 'var(--red)';
@@ -214,13 +241,15 @@
             document.getElementById('broadcast-overlay').style.display = 'none';
         }
 
-        // Continuous Syncing
-        setInterval(syncMission, 5000);
+        // --- CONTINUOUS SYNC CYCLES ---
+        setInterval(syncMission, 3000);
         setInterval(listenForBroadcast, 2000);
+        setInterval(checkSecurityHandshake, 3000);
         
         // Initial Load
         syncMission();
         loadScrolls();
+        checkSecurityHandshake();
     </script>
 </body>
 </html>
