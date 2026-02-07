@@ -104,6 +104,19 @@
 </head>
 <body>
 
+    <script>
+        // --- GLOBAL LOCK CHECK ---
+        if (localStorage.getItem('global_system_lock') === 'true') {
+            document.body.innerHTML = `
+                <div style="background:#000; color:#ff4b2b; height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron,sans-serif; text-align:center; padding:20px; position:fixed; top:0; left:0; z-index:9999;">
+                    <h1 style="letter-spacing:10px; font-size:3rem; margin:0;">SYSTEM_LOCKED</h1>
+                    <p style="color:#888; font-size:0.8rem; letter-spacing:3px;">THE ARCHITECT HAS SUSPENDED ALL SECTORS FOR MAINTENANCE.</p>
+                </div>
+            `;
+            window.stop();
+        }
+    </script>
+
     <header>
         <div class="user-info">
             <h2 id="display-name">MUSIC NINJA</h2>
@@ -186,9 +199,21 @@
             const user = localStorage.getItem('ninjaUser') || "GUEST NINJA";
             const currentXP = parseInt(localStorage.getItem('totalXP')) || 0;
             const level = Math.floor(currentXP / 2500) + 1;
+            const isGuest = localStorage.getItem('isGuest') === 'true';
+
+            // SECURITY CHECK: Kick out if Sensei locked account while session was active
+            if (!isGuest && localStorage.getItem(`lock_${user}`) === "true") {
+                alert("ACCESS_SUSPENDED: Your account has been locked by a Sensei.");
+                logout();
+                return;
+            }
 
             document.getElementById('display-name').innerText = user.toUpperCase();
-            document.getElementById('display-rank').innerText = `LEVEL ${level.toString().padStart(2, '0')} ACADEMY // Total XP: ${currentXP}`;
+            
+            // HUD feedback
+            const lockedStatus = localStorage.getItem(`status_${user}`) || "LEVEL 01 ACADEMY";
+            const sessionLabel = isGuest ? "GUEST_SESSION" : "OFFICIAL_MEMBER";
+            document.getElementById('display-rank').innerText = `${lockedStatus} // ${sessionLabel} // LVL ${level} // XP: ${currentXP}`;
 
             const msg = localStorage.getItem('academy_announcement');
             if (msg && msg.trim() !== "") {
@@ -215,9 +240,15 @@
         };
 
         function logout() {
-            if (confirm("DISCONNECT FROM HUB?")) {
-                window.location.href = 'index.html';
+            const isGuest = localStorage.getItem('isGuest') === 'true';
+            if (isGuest) {
+                localStorage.removeItem('ninjaUser');
+                localStorage.removeItem('totalXP');
+                localStorage.removeItem('isGuest');
+                localStorage.removeItem('currentLevel');
+                localStorage.removeItem('distinctions');
             }
+            window.location.href = 'index.html';
         }
     </script>
 </body>
