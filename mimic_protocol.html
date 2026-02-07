@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PSALMIST_NINJA // Mimic Battle</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #020406; --panel: rgba(15, 20, 30, 0.95); 
+            --blue: #4facfe; --gold: #ffcc00; --red: #ff4b2b; --green: #00ff88;
+            --border: rgba(79, 172, 254, 0.2);
+        }
+        
+        * { box-sizing: border-box; }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            overflow: hidden; padding: 20px;
+            transform: translateZ(0); 
+        }
+
+        /* Updated Navigation Header */
+        .hud-header { width: 100%; max-width: 900px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; z-index: 10; }
+        
+        .nav-links { display: flex; gap: 10px; }
+        
+        .btn-back { 
+            text-decoration: none; color: #666; font-size: 0.65rem; border: 1px solid var(--border); 
+            padding: 8px 15px; border-radius: 8px; letter-spacing: 2px; background: rgba(0,0,0,0.3);
+            transition: 0.3s;
+        }
+        .btn-back:hover { color: var(--blue); border-color: var(--blue); }
+        .btn-battle { color: var(--green); border-color: var(--green); }
+        .btn-battle:hover { background: rgba(0, 255, 136, 0.1); }
+
+        .streak-container { display: flex; gap: 10px; }
+        .streak-pill { background: rgba(255, 75, 43, 0.1); border: 1px solid var(--red); color: var(--red); padding: 4px 12px; border-radius: 20px; font-size: 0.6rem; opacity: 0; transition: 0.3s; }
+        .streak-pill.visible { opacity: 1; animation: pulse 1s infinite; }
+
+        .center-hub { 
+            margin: 10px 0 30px 0; text-align: center; width: 100%; max-width: 900px; 
+            background: var(--panel); padding: 30px; border-radius: 20px; border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        #target-display { font-size: 5rem; font-weight: 900; color: var(--gold); line-height: 1; margin-bottom: 10px; text-shadow: 0 0 20px rgba(255,204,0,0.3); }
+        #instruction { font-size: 0.8rem; color: var(--blue); letter-spacing: 2px; text-transform: uppercase; }
+
+        .battle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 900px; }
+
+        .player-zone {
+            background: var(--panel); border: 2px solid rgba(255,255,255,0.05);
+            border-radius: 20px; padding: 30px 20px; display: flex; flex-direction: column; align-items: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .player-zone.active { border-color: var(--blue); box-shadow: 0 0 40px rgba(79, 172, 254, 0.3); transform: translateY(-5px); }
+        .player-zone.winner { border-color: var(--green); background: rgba(0, 255, 136, 0.05); }
+
+        .score-box { font-size: 4rem; font-weight: 900; margin: 15px 0; font-variant-numeric: tabular-nums; color: #fff; }
+        
+        .timer-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; margin-top: 20px; overflow: hidden; }
+        .t-fill { height: 100%; width: 0%; transition: width 0.1s linear; }
+
+        .btn-start {
+            background: var(--red); color: white; border: none; padding: 20px 60px;
+            border-radius: 50px; font-family: 'Orbitron'; font-weight: 900; cursor: pointer;
+            transition: 0.3s; margin-top: 40px; letter-spacing: 2px;
+            box-shadow: 0 5px 15px rgba(255, 75, 43, 0.3);
+        }
+        .btn-start:hover { transform: scale(1.05); box-shadow: 0 0 30px var(--red); }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+<div class="hud-header">
+    <div class="nav-links">
+        <a href="pitch_hub.html" class="btn-back">⇽ HUB</a>
+        <a href="battle_engine.html" class="btn-back btn-battle">SWITCH TO BATTLE ENGINE ⇾</a>
+    </div>
+    <div class="streak-container">
+        <div id="p1-streak" class="streak-pill">P1 STREAK: 0</div>
+        <div id="p2-streak" class="streak-pill">P2 STREAK: 0</div>
+    </div>
+</div>
+
+<div class="center-hub">
+    <div id="target-display">?</div>
+    <div id="instruction">INITIALIZING_BATTLE_SYSTEM</div>
+</div>
+
+<div class="battle-grid">
+    <div id="p1-zone" class="player-zone">
+        <div style="font-size:0.7rem; color:var(--blue); letter-spacing:3px;">PILOT_01</div>
+        <div id="p1-score" class="score-box">00</div>
+        <div class="timer-bar"><div id="p1-t-fill" class="t-fill" style="background: var(--blue);"></div></div>
+    </div>
+
+    <div id="p2-zone" class="player-zone">
+        <div style="font-size:0.7rem; color:var(--blue); letter-spacing:3px;">PILOT_02</div>
+        <div id="p2-score" class="score-box">00</div>
+        <div class="timer-bar"><div id="p2-t-fill" class="t-fill" style="background: var(--blue);"></div></div>
+    </div>
+</div>
+
+<button id="start-btn" class="btn-start" onclick="initBattle()">ENGAGE BATTLE</button>
+
+<script>
+    let audioCtx;
+    let analyser, micStream, animationId;
+    let targetFreq = 0;
+    let currentTurn = 0;
+    let p1Best = 0, p2Best = 0;
+    let p1Streak = 0, p2Streak = 0;
+
+    const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+    async function initBattle() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        audioCtx.resume();
+        
+        document.getElementById('start-btn').style.visibility = 'hidden';
+        resetUI();
+        
+        if (!micStream) {
+            try {
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const source = audioCtx.createMediaStreamSource(micStream);
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 2048;
+                source.connect(analyser);
+            } catch (e) {
+                alert("Microphone access is required for Battle Mode.");
+                return;
+            }
+        }
+        startNewRound();
+    }
+
+    function resetUI() {
+        document.getElementById('p1-zone').classList.remove('winner', 'active');
+        document.getElementById('p2-zone').classList.remove('winner', 'active');
+        document.getElementById('p1-score').innerText = "00";
+        document.getElementById('p2-score').innerText = "00";
+        document.getElementById('p1-t-fill').style.width = "0%";
+        document.getElementById('p2-t-fill').style.width = "0%";
+    }
+
+    function startNewRound() {
+        p1Best = 0; p2Best = 0;
+        const midi = Math.floor(Math.random() * 24) + 48; // C3 to C5
+        targetFreq = 440 * Math.pow(2, (midi - 69) / 12);
+        document.getElementById('target-display').innerText = notes[midi % 12];
+        document.getElementById('instruction').innerText = "IDENTIFYING SIGNAL...";
+        
+        playTarget();
+        setTimeout(() => startTurn(1), 2000);
+    }
+
+    function playTarget() {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(targetFreq, audioCtx.currentTime);
+        g.gain.setValueAtTime(0, audioCtx.currentTime);
+        g.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.1);
+        g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.4);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 1.5);
+    }
+
+    function startTurn(player) {
+        currentTurn = player;
+        document.getElementById(`p${player}-zone`).classList.add('active');
+        document.getElementById('instruction').innerText = `PLAYER ${player} // MIMIC NOW`;
+        
+        let time = 100;
+        const interval = setInterval(() => {
+            time -= 1;
+            document.getElementById(`p${player}-t-fill`).style.width = time + "%";
+            if (time <= 0) {
+                clearInterval(interval);
+                currentTurn = 0;
+                document.getElementById(`p${player}-zone`).classList.remove('active');
+                if (player === 1) {
+                    document.getElementById('instruction').innerText = "PREPARE PLAYER 2...";
+                    setTimeout(() => { playTarget(); setTimeout(() => startTurn(2), 1500); }, 1000);
+                } else {
+                    judgeWinner();
+                }
+            }
+        }, 100);
+        
+        if (!animationId) processPitch();
+    }
+
+    function processPitch() {
+        if (currentTurn > 0) {
+            const buffer = new Float32Array(analyser.fftSize);
+            analyser.getFloatTimeDomainData(buffer);
+            const pitch = autoCorrelate(buffer, audioCtx.sampleRate);
+            
+            if (pitch !== -1) {
+                const acc = Math.floor(Math.max(0, 100 - (Math.abs(pitch - targetFreq) / targetFreq * 400)));
+                if (currentTurn === 1 && acc > p1Best) { 
+                    p1Best = acc; 
+                    document.getElementById('p1-score').innerText = p1Best.toString().padStart(2, '0'); 
+                }
+                if (currentTurn === 2 && acc > p2Best) { 
+                    p2Best = acc; 
+                    document.getElementById('p2-score').innerText = p2Best.toString().padStart(2, '0'); 
+                }
+            }
+        }
+        animationId = requestAnimationFrame(processPitch);
+    }
+
+    function judgeWinner() {
+        let msg = "";
+        if (p1Best > p2Best) {
+            document.getElementById('p1-zone').classList.add('winner');
+            p1Streak++; p2Streak = 0;
+            msg = "PLAYER 1 DOMINATES";
+            addXP(1000);
+        } else if (p2Best > p1Best) {
+            document.getElementById('p2-zone').classList.add('winner');
+            p2Streak++; p1Streak = 0;
+            msg = "PLAYER 2 DOMINATES";
+            addXP(1000);
+        } else {
+            msg = "EQUAL RESONANCE // DRAW";
+            p1Streak = 0; p2Streak = 0;
+        }
+        
+        updateStreaks();
+        document.getElementById('instruction').innerText = msg;
+        document.getElementById('start-btn').style.visibility = 'visible';
+        document.getElementById('start-btn').innerText = "RE-ENGAGE";
+    }
+
+    function updateStreaks() {
+        const s1 = document.getElementById('p1-streak');
+        const s2 = document.getElementById('p2-streak');
+        s1.innerText = `P1 STREAK: ${p1Streak}`;
+        s1.style.opacity = p1Streak > 0 ? "1" : "0";
+        s2.innerText = `P2 STREAK: ${p2Streak}`;
+        s2.style.opacity = p2Streak > 0 ? "1" : "0";
+    }
+
+    function addXP(amt) {
+        let xp = parseInt(localStorage.getItem('totalXP')) || 0;
+        localStorage.setItem('totalXP', xp + amt);
+    }
+
+    function autoCorrelate(buffer, sampleRate) {
+        let rms = 0; for (let i=0; i<buffer.length; i++) rms += buffer[i]*buffer[i];
+        if (Math.sqrt(rms/buffer.length) < 0.01) return -1;
+        let r1=0, r2=buffer.length-1, thres=0.2;
+        for (let i=0; i<buffer.length/2; i++) if (Math.abs(buffer[i]) < thres) { r1=i; break; }
+        for (let i=1; i<buffer.length/2; i++) if (Math.abs(buffer[buffer.length-i]) < thres) { r2=buffer.length-i; break; }
+        let buf = buffer.slice(r1,r2);
+        let c = new Array(buf.length).fill(0);
+        for (let i=0; i<buf.length; i++)
+            for (let j=0; j<buf.length-i; j++) c[i] = c[i] + buf[j]*buf[j+i];
+        let d=0; while (c[d]>c[d+1]) d++;
+        let maxval=-1, maxpos=-1;
+        for (let i=d; i<buf.length; i++) { if (c[i] > maxval) { maxval = c[i]; maxpos = i; } }
+        return sampleRate/maxpos;
+    }
+</script>
+</body>
+</html>
