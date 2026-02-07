@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PSALMIST_VIBES // LIVE_SPECTATOR_FEED</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #010204; --blue: #4facfe; --gold: #ffcc00; 
+            --purple: #a18cd1; --green: #00ff88; --border: #1e2544;
+        }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif;
+            height: 100vh; display: flex; flex-direction: column; align-items: center;
+            background-image: radial-gradient(circle at 50% 50%, #0a1324 0%, #010204 100%);
+            overflow: hidden;
+        }
+
+        .header-fx {
+            width: 100%; padding: 30px; text-align: center; border-bottom: 2px solid var(--border);
+            background: rgba(0,0,0,0.5); box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        h1 { margin: 0; letter-spacing: 15px; font-size: 2.5rem; color: var(--blue); text-shadow: 0 0 20px var(--blue); }
+
+        .bracket-arena {
+            display: flex; justify-content: space-around; align-items: center;
+            width: 95%; height: 70vh; margin-top: 50px; position: relative;
+        }
+
+        .round { display: flex; flex-direction: column; justify-content: space-around; height: 100%; }
+
+        .slot {
+            width: 250px; background: rgba(15, 20, 30, 0.8); border: 2px solid var(--border);
+            padding: 20px; text-align: center; border-radius: 10px; font-size: 1.2rem;
+            position: relative; transition: all 0.5s ease;
+        }
+
+        .slot.filled { border-color: var(--blue); box-shadow: 0 0 15px rgba(79, 172, 254, 0.3); }
+        .slot.semi { border-color: var(--purple); }
+        .slot.final { border-color: var(--gold); transform: scale(1.2); box-shadow: 0 0 30px rgba(255, 204, 0, 0.4); }
+
+        .label { font-size: 0.6rem; color: #555; position: absolute; top: -15px; left: 10px; background: var(--bg); padding: 0 5px; }
+
+        /* Animation for changes */
+        @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+        .updated { animation: pulse 1s infinite alternate; }
+    </style>
+</head>
+<body>
+
+    <div class="header-fx">
+        <h1>TOURNAMENT_OVERWATCH</h1>
+        <div style="color:var(--green); font-size:0.8rem; margin-top:10px;">LIVE_BROADCAST_FEED // STATUS: ACTIVE</div>
+    </div>
+
+    <div class="bracket-arena">
+        <div class="round">
+            <div class="slot" id="view-q1"><span class="label">MATCH_01</span>EMPTY</div>
+            <div class="slot" id="view-q2"><span class="label">MATCH_02</span>EMPTY</div>
+            <div class="slot" id="view-q3"><span class="label">MATCH_03</span>EMPTY</div>
+            <div class="slot" id="view-q4"><span class="label">MATCH_04</span>EMPTY</div>
+        </div>
+
+        <div class="round">
+            <div class="slot semi" id="view-s1"><span class="label">SEMI_FINAL_A</span>TBD</div>
+            <div class="slot semi" id="view-s2"><span class="label">SEMI_FINAL_B</span>TBD</div>
+        </div>
+
+        <div class="round">
+            <div class="slot final" id="view-f1"><span class="label">CHAMPION</span>TBD</div>
+        </div>
+    </div>
+
+    <script>
+        function syncBracket() {
+            const data = JSON.parse(localStorage.getItem('tournament_bracket'));
+            if (!data) return;
+
+            const mapping = { q1:'view-q1', q2:'view-q2', q3:'view-q3', q4:'view-q4', s1:'view-s1', s2:'view-s2', f1:'view-f1' };
+
+            Object.keys(mapping).forEach(id => {
+                const element = document.getElementById(mapping[id]);
+                const labelText = element.querySelector('.label').outerHTML;
+                const newName = data[id] || (id.startsWith('q') ? "EMPTY" : "TBD");
+                
+                if (element.innerText.replace(element.querySelector('.label').innerText, "").trim() !== newName) {
+                    element.innerHTML = labelText + newName;
+                    element.classList.add('filled');
+                }
+            });
+        }
+
+        // Poll for updates every 2 seconds
+        setInterval(syncBracket, 2000);
+        window.onload = syncBracket;
+    </script>
+</body>
+</html>

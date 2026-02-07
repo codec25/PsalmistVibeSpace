@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SYSTEM_DIAGNOSTICS // Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #050505; --green: #00ff88; --red: #ff4b2b; --blue: #4facfe; }
+        body { background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; padding: 40px; }
+        .log { background: #000; border: 1px solid #222; padding: 20px; font-family: monospace; font-size: 0.8rem; line-height: 1.6; border-radius: 10px; }
+        .status-pass { color: var(--green); }
+        .status-fail { color: var(--red); }
+        .header { border-bottom: 2px solid #222; padding-bottom: 10px; margin-bottom: 20px; }
+        .pulse { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 style="margin:0;">DIAGNOSTIC_SCAN</h1>
+        <p style="font-size:0.7rem; color:#555;">ACADEMY_INTEGRITY_CHECK_v1.0</p>
+    </div>
+
+    <div class="log" id="diag-log">
+        > INITIALIZING_SYSTEM_SCAN...<br>
+    </div>
+
+    <button onclick="runDiagnostics()" style="margin-top:20px; padding:10px 20px; background:transparent; border:1px solid var(--blue); color:var(--blue); font-family:'Orbitron'; cursor:pointer;">RE-SCAN_CORE</button>
+    <button onclick="window.location.href='it_manager.html'" style="margin-top:20px; padding:10px 20px; background:transparent; border:1px solid #555; color:#555; font-family:'Orbitron'; cursor:pointer;">BACK_TO_OVERWATCH</button>
+
+    <script>
+        function log(msg, type) {
+            const container = document.getElementById('diag-log');
+            const colorClass = type === 'pass' ? 'status-pass' : (type === 'fail' ? 'status-fail' : '');
+            container.innerHTML += `<span class="${colorClass}">> ${msg}</span><br>`;
+        }
+
+        function runDiagnostics() {
+            document.getElementById('diag-log').innerHTML = "> INITIALIZING...<br>";
+            
+            // 1. Check User Vault
+            const vault = JSON.parse(localStorage.getItem('vault_users'));
+            if(vault) log("USER_VAULT: DETECTED", 'pass');
+            else log("USER_VAULT: NOT_FOUND (CRITICAL)", 'fail');
+
+            // 2. Check Ninja Roster
+            const roster = JSON.parse(localStorage.getItem('ninja_roster'));
+            if(roster && roster.length > 0) log(`NINJA_ROSTER: ${roster.length} OPERATIVES_CONNECTED`, 'pass');
+            else log("NINJA_ROSTER: EMPTY", 'fail');
+
+            // 3. Check Broadcast Channel
+            const broadcast = localStorage.getItem('system_broadcast');
+            log("BROADCAST_CHANNEL: ACTIVE", 'pass');
+
+            // 4. Check Tournament Bracket
+            const bracket = localStorage.getItem('tournament_bracket');
+            if(bracket) log("TOURNAMENT_DATA: SYNCED", 'pass');
+            else log("TOURNAMENT_DATA: IDLE", '');
+
+            // 5. Check IT Stealth Mode
+            const ghost = localStorage.getItem('ghost_enabled') === 'true';
+            log(`GHOST_PROTOCOL: ${ghost ? 'ACTIVE_STEALTH' : 'VISIBLE'}`, ghost ? 'pass' : '');
+
+            // 6. Check for Frozen Senseis
+            let frozenCount = 0;
+            for(let i=0; i<localStorage.length; i++){
+                if(localStorage.key(i).startsWith('freeze_') && localStorage.getItem(localStorage.key(i)) === 'true') frozenCount++;
+            }
+            if(frozenCount > 0) log(`SECURITY_ALERTS: ${frozenCount} SENSEI_TERMINALS_LOCKED`, 'fail');
+            else log("SECURITY_ALERTS: NO_STAFF_RESTRICTIONS", 'pass');
+
+            log("<br>--- SCAN_COMPLETE ---", '');
+        }
+
+        window.onload = runDiagnostics;
+    </script>
+</body>
+</html>
