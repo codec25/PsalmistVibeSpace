@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>THEORY_VAULT // Conservatory Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #05070a; --gold: #ffcc00; --blue: #4facfe; 
+            --border: #1e2544; --green: #00ff88; --red: #ff4b2b; --panel: rgba(10, 15, 25, 0.98);
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #05070a 100%);
+        }
+        
+        /* --- HUD & Navigation --- */
+        .header-shield {
+            width: 100%; background: var(--panel); border-bottom: 2px solid var(--border);
+            padding: 15px; position: sticky; top: 0; z-index: 100;
+        }
+        .progress-hud { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+        .bar-bg { flex-grow: 1; height: 6px; background: #111; margin: 0 15px; border-radius: 10px; overflow: hidden; }
+        #progress-fill { height: 100%; width: 0%; background: var(--blue); box-shadow: 0 0 15px var(--blue); transition: 1s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .main-layout { width: 100%; max-width: 900px; padding: 20px; }
+
+        .grade-nav { display: flex; overflow-x: auto; gap: 12px; margin-bottom: 25px; padding-bottom: 5px; scrollbar-width: none; }
+        .grade-nav::-webkit-scrollbar { display: none; }
+        .grade-chip { 
+            flex: 0 0 auto; padding: 12px 20px; background: #0a0e17; border: 1px solid var(--border); 
+            border-radius: 20px; font-size: 0.6rem; color: #444; cursor: pointer; transition: 0.3s;
+        }
+        .grade-chip.active { border-color: var(--blue); color: var(--blue); background: rgba(79, 172, 254, 0.1); }
+        .grade-chip.unlocked { color: #888; border-color: #333; }
+        .grade-chip.distinction { border-color: var(--gold); color: var(--gold); }
+
+        /* --- Manual UI --- */
+        .manual-container {
+            background: #0d1117; border: 1px solid var(--border); border-radius: 12px;
+            padding: 30px; margin-bottom: 25px; position: relative; border-left: 4px solid var(--blue);
+        }
+        .manual-tag { 
+            position: absolute; top: -12px; right: 25px; background: var(--gold); 
+            color: #000; font-size: 0.5rem; font-weight: 900; padding: 4px 12px; border-radius: 4px; letter-spacing: 1px;
+        }
+        .manual-content h2 { color: var(--blue); font-size: 1.1rem; margin: 0 0 15px 0; letter-spacing: 2px; }
+        .manual-body { color: #8b949e; font-size: 0.85rem; line-height: 1.8; text-align: justify; }
+        .technical-spec { color: var(--gold); font-size: 0.65rem; margin-top: 20px; padding-top: 15px; border-top: 1px dashed #30363d; font-weight: 700; }
+
+        /* --- Exam UI --- */
+        .exam-terminal {
+            background: rgba(10, 15, 25, 0.6); border: 1px solid var(--border); border-radius: 12px;
+            padding: 30px; transition: 0.4s;
+        }
+        .exam-terminal.passed { border-color: var(--green); box-shadow: 0 0 20px rgba(0, 255, 136, 0.1); }
+        
+        .option-btn {
+            width: 100%; padding: 20px; margin: 12px 0; background: rgba(255,255,255,0.02);
+            border: 1px solid #1e2544; color: #fff; text-align: left; cursor: pointer; 
+            font-family: 'Orbitron'; font-size: 0.8rem; border-radius: 10px; transition: 0.2s;
+        }
+        .option-btn.correct { border-color: var(--green); color: var(--green); background: rgba(0, 255, 136, 0.1); animation: success-pulse 0.4s; }
+        .option-btn.wrong { border-color: var(--red); color: var(--red); background: rgba(255, 75, 43, 0.1); animation: shake 0.3s; }
+
+        .btn-upgrade {
+            width: 100%; padding: 22px; background: var(--green); border: none; 
+            color: #000; font-family: 'Orbitron'; font-weight: 900; border-radius: 12px; 
+            margin-top: 20px; cursor: pointer; display: none; font-size: 0.9rem;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        /* --- Navigation Footer --- */
+        .nav-footer {
+            width: 100%; max-width: 900px; padding: 20px; display: flex; justify-content: center;
+        }
+        .btn-hub {
+            background: none; border: 1px solid var(--blue); color: var(--blue);
+            padding: 15px 30px; font-family: 'Orbitron'; font-size: 0.7rem; font-weight: 700;
+            border-radius: 12px; cursor: pointer; transition: 0.3s; letter-spacing: 2px;
+            text-decoration: none; display: inline-block;
+        }
+        .btn-hub:hover { background: var(--blue); color: #000; box-shadow: 0 0 15px var(--blue); }
+
+        @keyframes success-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    </style>
+</head>
+<body>
+
+<div class="header-shield">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-weight: 900; font-size: 0.75rem; color: var(--blue); letter-spacing: 2px;">THEORY_VAULT // CORE</span>
+    </div>
+    <div class="progress-hud">
+        <span id="rank-display" style="font-size: 0.55rem; color: var(--gold); font-weight: 700;">RANK: NOVICE</span>
+        <div class="bar-bg"><div id="progress-fill"></div></div>
+        <span id="percent-display" style="font-size: 0.55rem; color: var(--blue);">0%</span>
+    </div>
+</div>
+
+<div class="main-layout">
+    <div class="grade-nav" id="grade-nav"></div>
+
+    <div class="manual-container">
+        <div class="manual-tag">DISTINGUISHED_MANUAL</div>
+        <div class="manual-content">
+            <h2 id="m-title">LOADING_DATA...</h2>
+            <div id="m-body" class="manual-body"></div>
+            <div id="m-spec" class="technical-spec"></div>
+        </div>
+    </div>
+
+    <div class="exam-terminal" id="exam-terminal">
+        <div style="font-size: 0.6rem; color: var(--blue); letter-spacing: 4px; margin-bottom: 25px;">VALIDATION_EXAM // TERMINAL</div>
+        <div id="q-text" style="font-size: 0.9rem; margin-bottom: 25px; line-height: 1.5; font-weight: 700;"></div>
+        <div id="options-grid"></div>
+        <button id="upgrade-btn" class="btn-upgrade" onclick="advanceLevel()">UPGRADE_CLEARANCE_NOW</button>
+    </div>
+</div>
+
+<div class="nav-footer">
+    <a href="hub.html" class="btn-hub">RETURN TO HUB</a>
+</div>
+
+<script>
+    const SYLLABUS = [
+        { g: 1, title: "THE_TACTUS", manual: "The Tactus is the fundamental, perceived pulse. It represents the temporal ground of a musical composition. Internalizing a consistent Tactus is the first step of conservatory rhythmic training.", spec: "TECH: ISO-PULSE / 4/4 TIME-DOMAIN", q: "Which element provides the constant, underlying heartbeat of a composition?", a: ["Syncopation", "The Tactus"], c: 1 },
+        { g: 2, title: "BINARY_DIVISION", manual: "Binary subdivision is the symmetrical splitting of the pulse into two equal units (Eighth-notes). This provides the 'Straight' rhythm feel. Precision in the 1:2 ratio is required for ensemble synchronization.", spec: "TECH: 1:2 RATIO / SYMMETRICAL SUBDIVISION", q: "Splitting a single pulse into two equal parts is called:", a: ["Ternary", "Binary"], c: 1 },
+        { g: 3, title: "TERNARY_LOGIC", manual: "Ternary division (Triplets) splits the pulse into three equal parts. This creates a kinetic, rolling energy. It is the mathematical foundation of Swing, Shuffle, and compound meters.", spec: "TECH: 1:3 RATIO / SHUFFLE-DOMAIN", q: "A Triplet allows how many notes to occupy the space of one pulse?", a: ["2 notes", "3 notes"], c: 1 },
+        { g: 4, title: "ANACRUSIS_MOMENTUM", manual: "The Anacrusis (Pickup) is a note or sequence that precedes the first strong beat of a bar. It establishes phrase-direction and builds kinetic momentum leading toward the primary downbeat.", spec: "TECH: PRE-BAR ATTACK / PHASE-START ENERGY", q: "What is the primary function of an Anacrusis?", a: ["To lead into the first downbeat", "To conclude a piece"], c: 0 },
+        { g: 5, title: "SYNCOPATION_THEORY", manual: "Syncopation is the displacement of rhythmic accents from strong beats to weak beats. This creates a 'pull' against the Tactus, resulting in the tension-release cycle known as 'Groove'.", spec: "TECH: WEAK-BEAT ACCENTUATION / OFF-PULSE TENSION", q: "Syncopation functions by placing emphasis on:", a: ["Strong Beats", "Off-Beats / Weak Beats"], c: 1 },
+        { g: 6, title: "HEMIOLA_POLYRHYTHM", manual: "A Hemiola occurs when two groups of three notes are replaced by three groups of two notes, or vice versa. This effectively creates a '3 against 2' feel, a sophisticated rhythmic device often found in Baroque and Latin music.", spec: "TECH: 3:2 CROSS-RHYTHM / RATIO SHIFT", q: "What rhythmic ratio defines a standard Hemiola?", a: ["4 against 3", "3 against 2"], c: 1 }
+    ];
+
+    let userLevel = parseInt(localStorage.getItem('currentLevel')) || 1;
+    let viewingGrade = userLevel;
+    let distinctionGrades = JSON.parse(localStorage.getItem('distinctions')) || [];
+
+    function init() {
+        renderNav();
+        loadModule(viewingGrade);
+        updateHUD();
+    }
+
+    function updateHUD() {
+        const progress = ((userLevel - 1) / SYLLABUS.length) * 100;
+        document.getElementById('progress-fill').style.width = progress + '%';
+        document.getElementById('percent-display').innerText = Math.round(progress) + '%';
+        const ranks = ["NOVICE", "APPRENTICE", "SCHOLAR", "MASTERY", "EXPERT", "DISTINGUISHED"];
+        document.getElementById('rank-display').innerText = "RANK: " + (ranks[userLevel-1] || "MASTERY");
+    }
+
+    function renderNav() {
+        const nav = document.getElementById('grade-nav');
+        nav.innerHTML = SYLLABUS.map(s => {
+            const isLocked = s.g > userLevel;
+            const isDistinction = distinctionGrades.includes(s.g);
+            let stateClass = s.g === viewingGrade ? 'active' : (isLocked ? '' : 'unlocked');
+            if (isDistinction) stateClass += ' distinction';
+            return `<div class="grade-chip ${stateClass}" onclick="loadModule(${s.g})">${isLocked ? '🔒' : 'G' + s.g}</div>`;
+        }).join('');
+    }
+
+    function loadModule(g) {
+        if (g > userLevel) return;
+        viewingGrade = g;
+        renderNav();
+        const data = SYLLABUS.find(s => s.g === g);
+        document.getElementById('m-title').innerText = data.title;
+        document.getElementById('m-body').innerText = data.manual;
+        document.getElementById('m-spec').innerText = data.spec;
+        document.getElementById('upgrade-btn').style.display = 'none';
+        document.getElementById('exam-terminal').classList.remove('passed');
+        
+        document.getElementById('q-text').innerText = data.q;
+        const grid = document.getElementById('options-grid');
+        grid.innerHTML = '';
+        let firstTry = true;
+
+        data.a.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => {
+                if (idx === data.c) {
+                    btn.classList.add('correct');
+                    document.getElementById('exam-terminal').classList.add('passed');
+                    if (firstTry && viewingGrade === userLevel && !distinctionGrades.includes(g)) {
+                        distinctionGrades.push(g);
+                        localStorage.setItem('distinctions', JSON.stringify(distinctionGrades));
+                    }
+                    if (viewingGrade === userLevel) document.getElementById('upgrade-btn').style.display = 'block';
+                } else {
+                    btn.classList.add('wrong');
+                    firstTry = false;
+                    setTimeout(() => btn.classList.remove('wrong'), 400);
+                }
+            };
+            grid.appendChild(btn);
+        });
+    }
+
+    function advanceLevel() {
+        if (userLevel < SYLLABUS.length) {
+            userLevel++;
+            localStorage.setItem('currentLevel', userLevel);
+            viewingGrade = userLevel;
+            init();
+        } else {
+            alert("SYSTEM_LIMIT: ALL CONSERVATORY MODULES VALIDATED.");
+        }
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>
