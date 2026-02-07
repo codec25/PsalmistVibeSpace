@@ -19,7 +19,7 @@
             padding: 40px;
         }
 
-        .manager-container { width: 100%; max-width: 1100px; }
+        .manager-container { width: 100%; max-width: 1200px; }
 
         header {
             display: flex; justify-content: space-between; align-items: center;
@@ -35,7 +35,6 @@
 
         h3 { font-size: 0.7rem; color: var(--blue); letter-spacing: 3px; margin-top: 0; text-transform: uppercase; border-bottom: 1px solid #111; padding-bottom: 10px; margin-bottom: 15px;}
 
-        /* Log Terminal */
         .terminal {
             height: 350px; overflow-y: auto; background: #000; border: 1px solid #111;
             padding: 15px; font-family: 'Courier New', monospace; font-size: 0.7rem;
@@ -55,13 +54,14 @@
         .btn:hover { background: var(--blue); color: #000; box-shadow: 0 0 15px var(--blue); }
         .btn-red { border-color: var(--red); color: var(--red); }
         .btn-red:hover { background: var(--red); color: #fff; box-shadow: 0 0 15px var(--red); }
+        .btn-green { border-color: var(--green); color: var(--green); }
+        .btn-green:hover { background: var(--green); color: #000; box-shadow: 0 0 15px var(--green); }
 
         input, textarea {
             width: 100%; background: #000; border: 1px solid var(--border); 
-            color: #fff; padding: 10px; font-family: 'Orbitron'; font-size: 0.65rem; border-radius: 5px;
+            color: #fff; padding: 10px; font-family: 'Orbitron'; font-size: 0.65rem; border-radius: 5px; margin-bottom: 10px;
         }
 
-        /* Ghost Mode Toggle */
         .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; inset: 0; background-color: #111; transition: .4s; border-radius: 34px; border: 1px solid var(--blue); }
@@ -70,6 +70,7 @@
         input:checked + .slider:before { transform: translateX(18px); background-color: var(--green); }
 
         .stat-line { display: flex; justify-content: space-between; font-size: 0.65rem; margin-bottom: 8px; color: #7788aa; }
+        .user-list-item { display: flex; justify-content: space-between; padding: 5px; border-bottom: 1px solid #111; font-size: 0.6rem; }
     </style>
 </head>
 <body>
@@ -84,6 +85,16 @@
         </header>
 
         <div class="grid">
+            <div class="panel">
+                <h3>SENSEI_PROVISIONING</h3>
+                <input type="text" id="teach-id" placeholder="NEW_SENSEI_ID">
+                <input type="password" id="teach-pass" placeholder="SET_SENSEI_PASS">
+                <button class="btn btn-green" style="width:100%" onclick="addTeacher()">PROVISION_TEACHER</button>
+                
+                <h3 style="margin-top:20px; font-size:0.5rem;">ACTIVE_SENSEI_ACCOUNTS</h3>
+                <div id="teacher-list" style="max-height: 150px; overflow-y:auto; background:#000; border:1px solid #111; padding:5px;"></div>
+            </div>
+
             <div class="panel" style="grid-column: span 2;">
                 <h3>LIVE_AUDIT_LOG</h3>
                 <div class="terminal" id="audit-log"></div>
@@ -119,39 +130,80 @@
                         <span class="slider"></span>
                     </label>
                 </div>
-            </div>
-
-            <div class="panel">
-                <h3>ADMIN_TOOLS</h3>
-                <button class="btn" style="width:100%;" onclick="window.location.href='it_recovery.html'">GOTO_RECOVERY</button>
-                <button class="btn" style="width:100%; border-color:var(--gold); color:var(--gold);" onclick="exportData()">EXPORT_VAULT_BACKUP</button>
+                <button class="btn" style="width:100%; margin-top:15px;" onclick="exportData()">EXPORT_VAULT_BACKUP</button>
             </div>
         </div>
     </div>
 
     <script>
+        // --- TEACHER MANAGEMENT ---
+        function addTeacher() {
+            const id = document.getElementById('teach-id').value.trim().toUpperCase();
+            const pass = document.getElementById('teach-pass').value.trim();
+            if(!id || !pass) return alert("REQUIRED: ID + PASS");
+
+            let db = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+            if(!db.teachers) db.teachers = {};
+
+            db.teachers[id] = pass;
+            db.AUDIT_LOG = db.AUDIT_LOG || [];
+            db.AUDIT_LOG.unshift({time: new Date().toLocaleTimeString(), user: "IT_ADMIN", status: `PROVISIONED_TEACHER: ${id}`});
+            
+            localStorage.setItem('vault_users', JSON.stringify(db));
+            document.getElementById('teach-id').value = "";
+            document.getElementById('teach-pass').value = "";
+            renderTeachers();
+            renderLogs();
+        }
+
+        function removeTeacher(id) {
+            if(confirm(`DE-PROVISION ${id}?`)) {
+                let db = JSON.parse(localStorage.getItem('vault_users'));
+                delete db.teachers[id];
+                localStorage.setItem('vault_users', JSON.stringify(db));
+                renderTeachers();
+            }
+        }
+
+        function renderTeachers() {
+            const list = document.getElementById('teacher-list');
+            const db = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+            const teachers = db.teachers || {};
+            
+            list.innerHTML = Object.keys(teachers).length === 0 ? "<span style='color:#333'>NO_TEACHERS</span>" : "";
+            for (let id in teachers) {
+                list.innerHTML += `
+                    <div class="user-list-item">
+                        <span>${id}</span>
+                        <span style="color:var(--red); cursor:pointer;" onclick="removeTeacher('${id}')">[REVOKE]</span>
+                    </div>`;
+            }
+        }
+
         // --- LOGS & STATS ---
         function renderLogs() {
             const logContainer = document.getElementById('audit-log');
             const db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
             
-            logContainer.innerHTML = db.AUDIT_LOG.length === 0 ? "> NO_DATA" : "";
-            db.AUDIT_LOG.forEach(entry => {
-                const isFail = entry.status.includes("FAILED") || entry.status.includes("BAN");
-                logContainer.innerHTML += `
-                    <div class="log-entry">
-                        <span class="log-time">[${entry.time}]</span>
-                        <span class="log-user">${entry.user}</span>: 
-                        <span class="${isFail ? 'log-fail' : ''}">${entry.status}</span>
-                    </div>`;
-            });
+            logContainer.innerHTML = !db.AUDIT_LOG || db.AUDIT_LOG.length === 0 ? "> NO_DATA" : "";
+            if(db.AUDIT_LOG) {
+                db.AUDIT_LOG.forEach(entry => {
+                    const isFail = entry.status.includes("FAILED") || entry.status.includes("BAN") || entry.status.includes("CRITICAL");
+                    logContainer.innerHTML += `
+                        <div class="log-entry">
+                            <span class="log-time">[${entry.time}]</span>
+                            <span class="log-user">${entry.user}</span>: 
+                            <span class="${isFail ? 'log-fail' : ''}">${entry.status}</span>
+                        </div>`;
+                });
+            }
 
-            const ninjaCount = (JSON.parse(localStorage.getItem('ninja_roster')) || []).length;
-            const scrollCount = (JSON.parse(localStorage.getItem('vault_snippets')) || []).length;
+            const ninjaCount = Object.keys(JSON.parse(localStorage.getItem('ninja_roster_full')) || {}).length;
+            const teacherCount = Object.keys(db.teachers || {}).length;
             document.getElementById('stats-content').innerHTML = `
+                <div class="stat-line"><span>ACTIVE_SENSEIS:</span><span>${teacherCount}</span></div>
                 <div class="stat-line"><span>ACTIVE_NINJAS:</span><span>${ninjaCount}</span></div>
-                <div class="stat-line"><span>SAVED_SCROLLS:</span><span>${scrollCount}</span></div>
-                <div class="stat-line"><span>UPLINK_STATUS:</span><span style="color:var(--green)">STABLE</span></div>
+                <div class="stat-line"><span>UPLINK_STATUS:</span><span style="color:var(--green)">SECURE</span></div>
             `;
         }
 
@@ -172,7 +224,7 @@
             localStorage.setItem('system_broadcast', JSON.stringify(data));
             
             let db = JSON.parse(localStorage.getItem('vault_users'));
-            db.AUDIT_LOG.unshift({time: new Date().toLocaleString(), user: "IT_ADMIN", status: `BROADCAST: ${msg}`});
+            db.AUDIT_LOG.unshift({time: new Date().toLocaleTimeString(), user: "IT_ADMIN", status: `BROADCAST: ${msg}`});
             localStorage.setItem('vault_users', JSON.stringify(db));
             alert("TRANSMITTED");
             document.getElementById('broadcast-msg').value = "";
@@ -202,7 +254,7 @@
             if(!db.BLACKLIST) db.BLACKLIST = [];
             if(!db.BLACKLIST.includes(id)) {
                 db.BLACKLIST.push(id);
-                db.AUDIT_LOG.unshift({time: new Date().toLocaleString(), user: "SYSTEM", status: `BANNED_ID: ${id}`});
+                db.AUDIT_LOG.unshift({time: new Date().toLocaleTimeString(), user: "SYSTEM", status: `BANNED_ID: ${id}`});
             }
             localStorage.setItem('vault_users', JSON.stringify(db));
             document.getElementById('ban-id').value = "";
@@ -220,7 +272,7 @@
         function toggleGhostMode() {
             const active = document.getElementById('ghost-toggle').checked;
             localStorage.setItem('ghost_enabled', active);
-            localStorage.setItem('it_active', !active); // it_active is what Sensei sees
+            localStorage.setItem('it_active', !active); 
             document.getElementById('ghost-indicator').innerText = active ? "STEALTH_STATUS: STEALTH_ACTIVE" : "STEALTH_STATUS: VISIBLE";
             document.getElementById('ghost-indicator').style.color = active ? "var(--green)" : "#555";
         }
@@ -237,6 +289,7 @@
         window.onload = () => {
             renderLogs();
             renderBlacklist();
+            renderTeachers();
             if(localStorage.getItem('ghost_enabled') === 'true') {
                 document.getElementById('ghost-toggle').checked = true;
                 toggleGhostMode();
