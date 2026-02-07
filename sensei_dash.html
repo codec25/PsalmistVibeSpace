@@ -47,47 +47,21 @@
             width: 100%; padding: 12px; background: transparent; border: 1px solid var(--blue);
             color: var(--blue); font-family: 'Orbitron'; cursor: pointer; border-radius: 8px;
             font-size: 0.6rem; transition: 0.3s; font-weight: 900; letter-spacing: 1px;
+            text-transform: uppercase;
         }
         .btn:hover { background: var(--blue); color: #000; }
         .btn-red { border-color: var(--red); color: var(--red); }
+        .btn-red:hover { background: var(--red); color: #fff; }
         .btn-gold { border-color: var(--gold); color: var(--gold); }
+        .btn-gold:hover { background: var(--gold); color: #000; }
         .btn-green { border-color: var(--green); color: var(--green); }
+        .btn-green:hover { background: var(--green); color: #000; }
 
         .bracket-round { display: flex; flex-direction: column; justify-content: center; }
         .bracket-slot { width: 150px; background: #000; border: 1px solid var(--border); color: #fff; font-size: 0.6rem; padding: 8px; margin-bottom: 5px; border-radius: 4px; }
     </style>
 </head>
 <body>
-
-<script>
-    // --- 1. CORE IDENTITY & IT SECURITY ---
-    const SENSEI_ID = localStorage.getItem('ninjaUser') || "MASTER_SENSEI";
-
-    function checkITSecurity() {
-        // Freeze Check
-        if (localStorage.getItem(`freeze_${SENSEI_ID}`) === 'true') {
-            document.body.innerHTML = `
-                <div style="background:#000; color:var(--red); height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;">
-                    <h1>TERMINAL_FROZEN</h1>
-                    <p>ACCESS REVOKED BY IT_MANAGEMENT</p>
-                    <button class="btn" style="width:200px;" onclick="location.href='index.html'">EXIT</button>
-                </div>`;
-            window.stop();
-        }
-        // Surveillance Light Update
-        const isWatched = localStorage.getItem('it_active') === 'true';
-        document.getElementById('it-light').className = isWatched ? 'light watching' : 'light';
-        document.getElementById('it-text').innerText = isWatched ? "IT_SURVEILLANCE: ACTIVE_SCAN" : "IT_SURVEILLANCE: PASSIVE";
-    }
-
-    function reportToIT(status) {
-        let db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
-        db.AUDIT_LOG.unshift({ time: new Date().toLocaleString(), user: SENSEI_ID, status: status });
-        localStorage.setItem('vault_users', JSON.stringify(db));
-    }
-
-    setInterval(checkITSecurity, 2000);
-</script>
 
 <div class="dash-container">
     <header>
@@ -108,32 +82,39 @@
                 <option value="PIANO_LAB">PIANO_LAB</option>
                 <option value="RHYTHM_HUB">RHYTHM_HUB</option>
             </select>
-            <button class="btn" onclick="deployMission()">TRANSMIT_ORDERS</button>
+            <button class="btn btn-blue" onclick="deployMission()">TRANSMIT_ORDERS</button>
             <button class="btn btn-red" style="margin-top:5px;" onclick="cancelMission()">ABORT_MISSION</button>
         </div>
 
         <div class="panel">
             <h3>XP_LEADERBOARD & REWARDS</h3>
-            <div id="leaderboard-list" style="height: 250px; overflow-y: auto; background: #000; padding: 10px; border-radius: 8px;"></div>
+            <div id="leaderboard-list" style="height: 250px; overflow-y: auto; background: #000; padding: 10px; border-radius: 8px; border: 1px solid #111;"></div>
             <div id="total-xp-pool" style="font-size:0.5rem; color:#444; margin-top:10px;">TOTAL_XP: 0</div>
         </div>
 
         <div class="panel">
-            <h3>ACADEMY_CONTROL</h3>
-            <textarea id="announcement-input" placeholder="POST BROADCAST..."></textarea>
-            <button class="btn btn-green" onclick="postAnnouncement()">POST_TO_HUB</button>
-            <button class="btn btn-gold" style="margin-top:10px;" onclick="fireSFX('horn')">TRIGGER_CLASS_BELL 🔔</button>
+            <h3>NINJA_ENROLLMENT</h3>
+            <p style="font-size:0.5rem; color:var(--gold); margin-bottom:10px;">CREATE STUDENT LOGIN CREDENTIALS</p>
+            <input type="text" id="new-ninja-id" placeholder="ASSIGN_STUDENT_ID">
+            <input type="password" id="new-ninja-pass" placeholder="SET_STUDENT_PASSWORD">
+            <button class="btn btn-green" onclick="enrollNinja()">CREATE_ACCOUNT</button>
+            
+            <hr style="border:0; border-top:1px solid #111; margin: 20px 0;">
+            
+            <h3>BROADCAST</h3>
+            <textarea id="announcement-input" placeholder="POST TO STUDENT HUB..."></textarea>
+            <button class="btn btn-blue" onclick="postAnnouncement()">POST_MESSAGE</button>
         </div>
 
         <div class="panel" style="grid-column: span 2;">
             <h3>DOJO_DUEL_ARENA</h3>
             <div style="display:flex; justify-content:space-around; align-items:center; background:#000; padding:15px; border-radius:10px;">
-                <div style="text-align:center;">
+                <div style="text-align:center; width: 40%;">
                     <select id="select-n1" onchange="updateDuel()"></select>
                     <div id="stat-n1" style="font-size:1.5rem; color:var(--blue);">0 XP</div>
                 </div>
                 <div style="font-size:1.2rem; color:var(--red); font-weight:900;">VS</div>
-                <div style="text-align:center;">
+                <div style="text-align:center; width: 40%;">
                     <select id="select-n2" onchange="updateDuel()"></select>
                     <div id="stat-n2" style="font-size:1.5rem; color:var(--gold);">0 XP</div>
                 </div>
@@ -148,7 +129,10 @@
                 <button class="btn btn-green" style="width:auto;" onclick="startTimer()">START</button>
             </div>
             <div id="dash-timer-preview" style="text-align:center; font-size:1.2rem; color:var(--gold); margin-bottom:10px;">00:00</div>
-            <button class="btn btn-red" onclick="fireSFX('battle')">MANUAL_CRASH_SFX</button>
+            <div style="display:flex; gap:5px;">
+                <button class="btn btn-gold" onclick="fireSFX('horn')">BELL 🔔</button>
+                <button class="btn btn-red" onclick="fireSFX('battle')">CRASH 💥</button>
+            </div>
         </div>
 
         <div class="panel" style="grid-column: span 3;">
@@ -173,46 +157,98 @@
             <div style="display:flex; gap:10px; margin-top:10px;">
                 <button class="btn btn-gold" style="width:auto;" onclick="saveBracket()">SAVE_BRACKET</button>
                 <button class="btn btn-blue" style="width:auto;" onclick="window.open('spectator_view.html', '_blank')">OPEN_SPECTATOR_VIEW</button>
-                <button class="btn btn-red" style="width:auto;" onclick="resetBracket()">RESET</button>
+                <button class="btn btn-red" style="width:auto;" onclick="resetBracket()">RESET_BRACKET</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // --- 2. MISSION & ANNOUNCEMENT LOGIC ---
-    function deployMission() {
-        const name = document.getElementById('m-name').value;
-        const goal = document.getElementById('m-goal').value;
-        const type = document.getElementById('m-type').value;
-        if(!name || !goal) return alert("INPUT_REQUIRED");
+    const SENSEI_ID = localStorage.getItem('ninjaUser') || "MASTER_SENSEI";
+    let tInt;
 
-        const m = { name, goal, type, active: true };
-        localStorage.setItem('active_mission', JSON.stringify(m));
-        reportToIT(`MISSION_DEPLOYED: ${name}`);
-        alert("TRANSMITTED_TO_NINJA_HUBS");
+    // --- SECURITY & AUDIT ---
+    function checkITSecurity() {
+        if (localStorage.getItem(`freeze_${SENSEI_ID}`) === 'true') {
+            document.body.innerHTML = `<div style="background:#000; color:var(--red); height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron;"><h1>TERMINAL_FROZEN</h1><p>ACCESS REVOKED</p></div>`;
+            window.stop();
+        }
+        const isWatched = localStorage.getItem('it_active') === 'true';
+        document.getElementById('it-light').className = isWatched ? 'light watching' : 'light';
+        document.getElementById('it-text').innerText = isWatched ? "IT_SURVEILLANCE: ACTIVE" : "IT_SURVEILLANCE: PASSIVE";
     }
 
-    function cancelMission() {
-        localStorage.removeItem('active_mission');
-        reportToIT("MISSION_ABORTED");
-        alert("MISSION_OFFLINE");
+    function reportToIT(status) {
+        let db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
+        db.AUDIT_LOG.unshift({ time: new Date().toLocaleTimeString(), user: SENSEI_ID, status: status });
+        localStorage.setItem('vault_users', JSON.stringify(db));
     }
 
-    function postAnnouncement() {
-        const msg = document.getElementById('announcement-input').value;
-        if(!msg) return;
-        localStorage.setItem('system_broadcast', JSON.stringify({ message: msg, type: 'INFO', timestamp: Date.now() }));
-        reportToIT(`GLOBAL_BROADCAST: ${msg.substring(0,20)}...`);
-        document.getElementById('announcement-input').value = "";
+    // --- ENROLLMENT (STUDENT ACCOUNT CREATION) ---
+    function enrollNinja() {
+        const idInput = document.getElementById('new-ninja-id');
+        const passInput = document.getElementById('new-ninja-pass');
+        const id = idInput.value.trim().toUpperCase();
+        const pass = passInput.value.trim();
+
+        if (!id || !pass) return alert("ID AND PASSWORD REQUIRED");
+
+        // ninja_roster_full stores { "ID": "PASSWORD" } for login
+        let fullRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        // ninja_roster is the simple list for the leaderboard
+        let rosterList = JSON.parse(localStorage.getItem('ninja_roster')) || [];
+
+        if (!fullRoster[id]) {
+            // Save login credentials
+            fullRoster[id] = pass;
+            localStorage.setItem('ninja_roster_full', JSON.stringify(fullRoster));
+            
+            // Save to leaderboard list
+            rosterList.push(id);
+            localStorage.setItem('ninja_roster', JSON.stringify(rosterList));
+            
+            // Initialize XP
+            if (!localStorage.getItem(`xp_${id}`)) localStorage.setItem(`xp_${id}`, 0);
+            
+            reportToIT(`ACCOUNT_CREATED: ${id}`);
+            idInput.value = "";
+            passInput.value = "";
+            refreshLeaderboard();
+            populateDuelSelects();
+            alert("STUDENT ACCOUNT CREATED SUCCESSFULLY");
+        } else {
+            alert("ID ALREADY TAKEN BY ANOTHER STUDENT");
+        }
     }
 
-    // --- 3. XP & LEADERBOARD LOGIC ---
+    function expelNinja(name) {
+        if(confirm(`PERMANENTLY DELETE ACCOUNT FOR ${name}?`)) {
+            // Remove from login credentials
+            let fullRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            delete fullRoster[name];
+            localStorage.setItem('ninja_roster_full', JSON.stringify(fullRoster));
+
+            // Remove from leaderboard list
+            let rosterList = JSON.parse(localStorage.getItem('ninja_roster')) || [];
+            localStorage.setItem('ninja_roster', JSON.stringify(rosterList.filter(n => n !== name)));
+            
+            reportToIT(`ACCOUNT_TERMINATED: ${name}`);
+            refreshLeaderboard();
+            populateDuelSelects();
+        }
+    }
+
+    // --- LEADERBOARD & XP ---
     function refreshLeaderboard() {
         const list = document.getElementById('leaderboard-list');
         const ninjas = JSON.parse(localStorage.getItem('ninja_roster')) || [];
         let totalXP = 0;
         
+        if (ninjas.length === 0) {
+            list.innerHTML = "<div style='color:#333; text-align:center; padding-top:100px; font-size:0.6rem;'>NO_STUDENTS_ENROLLED</div>";
+            return;
+        }
+
         let data = ninjas.map(n => {
             const xp = parseInt(localStorage.getItem(`xp_${n}`)) || 0;
             totalXP += xp;
@@ -222,14 +258,15 @@
         list.innerHTML = "";
         data.forEach((n, i) => {
             list.innerHTML += `
-                <div style="padding:8px; border-bottom:1px solid #111; font-size:0.6rem;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span>#${i+1} ${n.name} ${n.xp >= 10000 ? '🎖️' : ''}</span>
-                        <span>${n.xp} XP</span>
+                <div style="padding:10px; border-bottom:1px solid #111; font-size:0.6rem;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>#${i+1} ${n.name}</span>
+                        <span style="color:var(--green);">${n.xp} XP</span>
                     </div>
-                    <div style="display:flex; gap:5px; margin-top:5px;">
-                        <button class="btn" style="padding:2px; font-size:0.5rem;" onclick="grantXP('${n.name}', 500)">+500</button>
-                        <button class="btn btn-red" style="padding:2px; font-size:0.5rem;" onclick="grantXP('${n.name}', -500)">-500</button>
+                    <div style="display:flex; gap:5px; margin-top:8px;">
+                        <button class="btn" style="padding:4px; font-size:0.4rem;" onclick="grantXP('${n.name}', 500)">+500</button>
+                        <button class="btn btn-red" style="padding:4px; font-size:0.4rem;" onclick="grantXP('${n.name}', -500)">-500</button>
+                        <button class="btn" style="padding:4px; font-size:0.4rem; width:30px; border-color:#333;" onclick="expelNinja('${n.name}')">×</button>
                     </div>
                 </div>`;
         });
@@ -239,24 +276,27 @@
     function grantXP(name, amt) {
         let cur = parseInt(localStorage.getItem(`xp_${name}`)) || 0;
         localStorage.setItem(`xp_${name}`, Math.max(0, cur + amt));
-        reportToIT(`XP_MODIFIED: ${name} (${amt > 0 ? '+' : ''}${amt})`);
         refreshLeaderboard();
+        updateDuel();
     }
 
-    // --- 4. DUEL ARENA & TIMER ---
+    // --- DUEL & TIMER ---
+    function populateDuelSelects() {
+        const ninjas = JSON.parse(localStorage.getItem('ninja_roster')) || [];
+        const s1 = document.getElementById('select-n1'), s2 = document.getElementById('select-n2');
+        s1.innerHTML = ""; s2.innerHTML = "";
+        ninjas.forEach(n => {
+            s1.innerHTML += `<option value="${n}">${n}</option>`;
+            s2.innerHTML += `<option value="${n}">${n}</option>`;
+        });
+        updateDuel();
+    }
+
     function updateDuel() {
         const n1 = document.getElementById('select-n1').value;
         const n2 = document.getElementById('select-n2').value;
-        document.getElementById('stat-n1').innerText = (localStorage.getItem(`xp_${n1}`) || 0) + " XP";
-        document.getElementById('stat-n2').innerText = (localStorage.getItem(`xp_${n2}`) || 0) + " XP";
-    }
-
-    function announceWinner() {
-        const n1 = document.getElementById('select-n1').value;
-        const n2 = document.getElementById('select-n2').value;
-        const win = parseInt(localStorage.getItem(`xp_${n1}`)) > parseInt(localStorage.getItem(`xp_${n2}`)) ? n1 : n2;
-        localStorage.setItem('system_broadcast', JSON.stringify({ message: `DUEL_VICTOR: ${win}!`, type: 'ALERT', timestamp: Date.now() }));
-        reportToIT(`DUEL_VICTOR_ANNOUNCED: ${win}`);
+        if(n1) document.getElementById('stat-n1').innerText = (localStorage.getItem(`xp_${n1}`) || 0) + " XP";
+        if(n2) document.getElementById('stat-n2').innerText = (localStorage.getItem(`xp_${n2}`) || 0) + " XP";
     }
 
     function startTimer() {
@@ -265,22 +305,42 @@
         tInt = setInterval(() => {
             s--;
             let str = Math.floor(s/60).toString().padStart(2,'0') + ":" + (s%60).toString().padStart(2,'0');
-            localStorage.setItem('active_timer', JSON.stringify({ active: true, timeString: str, seconds: s }));
+            localStorage.setItem('active_timer', JSON.stringify({ active: true, timeString: str }));
             document.getElementById('dash-timer-preview').innerText = str;
             if (s<=0) { clearInterval(tInt); fireSFX('battle'); localStorage.setItem('active_timer', JSON.stringify({ active: false })); }
         }, 1000);
     }
-    let tInt;
 
-    function fireSFX(type) { localStorage.setItem('sfx_trigger', type); }
+    function fireSFX(type) { 
+        localStorage.setItem('sfx_trigger', type); 
+        setTimeout(() => localStorage.removeItem('sfx_trigger'), 1000);
+    }
 
-    // --- 5. TOURNAMENT SYNC ---
+    // --- MISSIONS & ANNOUNCEMENTS ---
+    function deployMission() {
+        const name = document.getElementById('m-name').value;
+        const goal = document.getElementById('m-goal').value;
+        if(!name || !goal) return alert("INPUT_REQUIRED");
+        localStorage.setItem('active_mission', JSON.stringify({ name, goal, type: document.getElementById('m-type').value, active: true }));
+        alert("MISSION_LIVE");
+    }
+
+    function cancelMission() { localStorage.removeItem('active_mission'); alert("MISSION_OFFLINE"); }
+
+    function postAnnouncement() {
+        const msg = document.getElementById('announcement-input').value;
+        if(!msg) return;
+        localStorage.setItem('system_broadcast', JSON.stringify({ message: msg, type: 'INFO', timestamp: Date.now() }));
+        document.getElementById('announcement-input').value = "";
+        alert("BROADCAST_SENT");
+    }
+
+    // --- TOURNAMENT ---
     function saveBracket() {
-        const b = {}; 
+        const b = {};
         ['q1','q2','q3','q4','s1','s2','f1'].forEach(id => b[id] = document.getElementById(id).value);
         localStorage.setItem('tournament_bracket', JSON.stringify(b));
-        reportToIT("TOURNAMENT_BRACKET_UPDATED");
-        alert("BRACKET_SAVED_TO_SPECTATOR_VIEW");
+        alert("BRACKET_SAVED");
     }
 
     function resetBracket() {
@@ -290,23 +350,13 @@
         }
     }
 
-    // --- INIT ---
+    // --- INITIALIZE ---
     window.onload = () => {
         refreshLeaderboard();
-        const ninjas = JSON.parse(localStorage.getItem('ninja_roster')) || [];
-        const s1 = document.getElementById('select-n1'), s2 = document.getElementById('select-n2');
-        ninjas.forEach(n => { 
-            s1.innerHTML += `<option value="${n}">${n}</option>`; 
-            s2.innerHTML += `<option value="${n}">${n}</option>`; 
-        });
+        populateDuelSelects();
         const b = JSON.parse(localStorage.getItem('tournament_bracket'));
         if(b) Object.keys(b).forEach(id => document.getElementById(id).value = b[id]);
-        
-        // Register Teacher
-        let teachers = JSON.parse(localStorage.getItem('psalmist_teachers')) || {};
-        teachers[SENSEI_ID] = { status: "ONLINE", lastPing: Date.now() };
-        localStorage.setItem('psalmist_teachers', JSON.stringify(teachers));
-        reportToIT("SENSEI_DASHBOARD_OPENED");
+        setInterval(checkITSecurity, 2000);
     };
 </script>
 </body>
