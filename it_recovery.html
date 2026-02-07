@@ -6,50 +6,106 @@
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
     <style>
         body { background: #050000; color: #ff0000; font-family: 'Fira Code', monospace; padding: 40px; }
-        .panel { border: 1px solid #ff0000; padding: 25px; background: #000; margin-bottom: 20px; }
-        h1 { font-family: 'Orbitron'; color: white; border-bottom: 2px solid #ff0000; }
-        table { width: 100%; text-align: left; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 10px; border-bottom: 1px solid #220000; }
-        .btn-danger { background: #ff0000; color: #000; border: none; padding: 10px 20px; font-weight: 900; cursor: pointer; }
+        .panel { border: 1px solid #ff0000; padding: 25px; background: #000; margin-bottom: 20px; box-shadow: 0 0 20px rgba(255,0,0,0.2); }
+        h1 { font-family: 'Orbitron'; color: white; border-bottom: 2px solid #ff0000; letter-spacing: 5px; }
+        h3 { color: #ff0000; text-transform: uppercase; font-size: 0.9rem; }
+        table { width: 100%; text-align: left; border-collapse: collapse; margin-top: 20px; font-size: 0.8rem; }
+        th { color: #550000; border-bottom: 2px solid #550000; padding: 10px; }
+        td { padding: 10px; border-bottom: 1px solid #220000; color: #ff4444; }
+        
+        input { background: #110000; border: 1px solid #ff0000; color: white; padding: 10px; font-family: 'Fira Code'; }
+        
+        .btn-danger { background: #ff0000; color: #000; border: none; padding: 12px 20px; font-weight: 900; cursor: pointer; font-family: 'Orbitron'; transition: 0.3s; }
+        .btn-danger:hover { background: white; color: red; }
+        .btn-nuke { background: transparent; color: #ff0000; border: 1px solid #ff0000; padding: 12px 20px; cursor: pointer; font-family: 'Orbitron'; }
+        .btn-nuke:hover { background: #ff0000; color: black; }
+        
+        .warning-box { color: gold; border: 1px dashed gold; padding: 15px; margin-bottom: 20px; font-size: 0.7rem; }
     </style>
 </head>
 <body>
     <h1>ROOT_SYSTEM_OVERRIDE</h1>
     
+    <div class="warning-box">
+        WARNING: YOU ARE ACCESSING THE CORE RECOVERY LAYER. ACTIONS TAKEN HERE CANNOT BE UNDONE.
+    </div>
+
     <div class="panel">
-        <h3>SECURITY_AUDIT_LOG (IT Actions)</h3>
+        <h3>DEEP_AUDIT_LOG (SYSTEM HISTORY)</h3>
         <table id="audit-table">
             <thead>
-                <tr><th>TIMESTAMP</th><th>ACTION</th><th>TARGET</th></tr>
+                <tr><th>TIME</th><th>USER</th><th>STATUS_REPORT</th></tr>
             </thead>
             <tbody id="audit-body"></tbody>
         </table>
     </div>
 
     <div class="panel">
-        <h3>IT_CREDENTIAL_OVERRIDE</h3>
-        <input type="password" id="new-it-pass" placeholder="NEW_IT_PASSWORD" style="padding:10px; width:300px;">
+        <h3>CREDENTIAL_OVERRIDE</h3>
+        <p style="font-size: 0.7rem;">Emergency update for IT Specialist Credentials.</p>
+        <input type="text" id="new-it-id" placeholder="NEW_IT_ID" style="width: 200px;">
+        <input type="password" id="new-it-pass" placeholder="NEW_IT_PASSWORD" style="width: 200px;">
         <button class="btn-danger" onclick="overrideIT()">OVERWRITE_IT_KEY</button>
     </div>
 
-    <button class="btn-danger" style="background:white;" onclick="window.location.href='index.html'">EXIT_ROOT_SESS</button>
+    <div class="panel" style="border-color: #555;">
+        <h3>SYSTEM_PURGE</h3>
+        <button class="btn-nuke" onclick="nukeSystem()">NUKE_ALL_DATA</button>
+        <p style="font-size: 0.6rem; color: #444; margin-top: 10px;">PURGES ALL NINJAS, SENSEIS, AND XP DATA FROM LOCALSTORAGE.</p>
+    </div>
+
+    <button class="btn-danger" style="background:white; color: black;" onclick="window.location.href='index.html'">EXIT_ROOT_SESS</button>
 
     <script>
         window.onload = () => {
-            const db = JSON.parse(localStorage.getItem('vault_users'));
-            const body = document.getElementById('audit-body');
-            if(db && db.AUDIT_LOG) {
-                db.AUDIT_LOG.reverse().forEach(log => {
-                    body.innerHTML += `<tr><td>${log.timestamp}</td><td>${log.action}</td><td>${log.target}</td></tr>`;
-                });
-            }
+            renderAudit();
         };
 
+        function renderAudit() {
+            const db = JSON.parse(localStorage.getItem('vault_users'));
+            const body = document.getElementById('audit-body');
+            body.innerHTML = "";
+            
+            if(db && db.AUDIT_LOG) {
+                // Showing last 20 actions
+                db.AUDIT_LOG.slice(0, 20).forEach(log => {
+                    body.innerHTML += `
+                        <tr>
+                            <td>${log.time || 'N/A'}</td>
+                            <td>${log.user || 'UNKNOWN'}</td>
+                            <td>${log.status || 'NO_STATUS'}</td>
+                        </tr>`;
+                });
+            } else {
+                body.innerHTML = "<tr><td colspan='3'>NO_LOG_DATA_FOUND</td></tr>";
+            }
+        }
+
         function overrideIT() {
-            let db = JSON.parse(localStorage.getItem('vault_users'));
-            db.IT_PASS = document.getElementById('new-it-pass').value;
+            const newID = document.getElementById('new-it-id').value.trim();
+            const newPass = document.getElementById('new-it-pass').value.trim();
+            
+            if(!newID || !newPass) return alert("CRITICAL: BOTH FIELDS REQUIRED");
+
+            // This changes the ID/Pass that the index.html backdoor looks for
+            // Note: Since index.html has a hardcoded Admin, we are essentially 
+            // updating the vault's memory of the IT user here.
+            let db = JSON.parse(localStorage.getItem('vault_users')) || {};
+            db.IT_MASTER_ID = newID;
+            db.IT_MASTER_PASS = newPass;
+            
             localStorage.setItem('vault_users', JSON.stringify(db));
-            alert("SUCCESS: IT_SPECIALIST_PASSWORD_UPDATED");
+            alert("SUCCESS: IT_ADMIN_CREDENTIALS_REWIRED");
+        }
+
+        function nukeSystem() {
+            if(confirm("DANGER: This will delete EVERY account and EVERY point of XP. Continue?")) {
+                if(confirm("FINAL WARNING: DATA RECOVERY IS IMPOSSIBLE.")) {
+                    localStorage.clear();
+                    alert("SYSTEM PURGED. REBOOTING...");
+                    window.location.href = 'index.html';
+                }
+            }
         }
     </script>
 </body>
