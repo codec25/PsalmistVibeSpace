@@ -7,13 +7,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg: #010204; 
-            --panel: rgba(7, 10, 17, 0.98); 
-            --blue: #4facfe; 
-            --gold: #ffcc00; 
-            --border: #1e2544; 
-            --green: #00ff88; 
-            --red: #ff4b2b; 
+            --bg: #010204; --panel: rgba(7, 10, 17, 0.98); 
+            --blue: #4facfe; --gold: #ffcc00; --border: #1e2544; 
+            --green: #00ff88; --red: #ff4b2b; 
         }
 
         * { box-sizing: border-box; outline: none; }
@@ -25,46 +21,25 @@
             overflow: hidden;
         }
 
-        /* --- Musical Background Aesthetics --- */
-        .staff-line { position: fixed; left: 0; width: 100%; height: 1px; background: rgba(255,255,255,0.03); z-index: -1; pointer-events: none; }
-        
-        .floating-note {
-            position: absolute; color: rgba(0, 255, 136, 0.1); font-size: 2rem;
-            animation: floatUp 10s linear infinite; pointer-events: none; z-index: -1;
-        }
-
-        @keyframes floatUp {
-            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-            50% { opacity: 0.2; }
-            100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
-        }
-
-        .portal-card {
+        .portal-frame {
             width: 420px; padding: 60px 40px; background: var(--panel);
             border: 1px solid var(--border); border-radius: 40px;
             box-shadow: 0 0 60px rgba(0,0,0,0.9), inset 0 0 30px rgba(0, 255, 136, 0.05);
-            text-align: center; position: relative; transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            backdrop-filter: blur(15px);
+            text-align: center; position: relative; z-index: 10;
+            backdrop-filter: blur(15px); transition: all 0.5s ease;
         }
 
         .musical-header { font-size: 1.5rem; color: var(--gold); margin-bottom: 10px; letter-spacing: 15px; opacity: 0.8; }
-
-        .portal-card::before {
-            content: "PSALMIST VIBES"; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
-            background: var(--bg); padding: 5px 20px; color: var(--gold); font-size: 0.7rem; 
-            letter-spacing: 5px; border: 1px solid var(--border); border-radius: 10px;
-        }
-
         h2 { font-size: 1.1rem; letter-spacing: 8px; margin-bottom: 40px; color: var(--green); transition: 0.4s; }
 
-        .input-group { margin-bottom: 20px; }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; font-size: 0.55rem; color: #444; margin-bottom: 8px; letter-spacing: 1px; }
         
         input {
             width: 100%; padding: 18px; background: rgba(0,0,0,0.8); border: 1px solid var(--border);
-            color: #fff; border-radius: 15px; font-family: 'Orbitron'; text-align: center;
+            color: var(--green); border-radius: 15px; font-family: 'Orbitron'; text-align: center;
             font-size: 0.85rem; transition: 0.3s;
         }
-
         input:focus { border-color: var(--green); box-shadow: 0 0 15px rgba(0, 255, 136, 0.2); }
 
         .btn {
@@ -73,7 +48,7 @@
             letter-spacing: 4px; margin-top: 15px;
         }
 
-        .btn-main { background: var(--green); color: #000; box-shadow: 0 4px 15px rgba(0, 255, 136, 0.2); }
+        .btn-main { background: var(--green); color: #000; }
         .btn-main:hover { background: #fff; transform: scale(1.02); }
 
         .sub-links { margin-top: 30px; display: flex; flex-direction: column; gap: 15px; }
@@ -83,26 +58,36 @@
             letter-spacing: 2px; transition: 0.3s; text-transform: uppercase;
         }
         .link:hover { color: var(--gold); }
-        .link.sensei-toggle { color: #2a3a5a; font-weight: bold; padding: 10px; border: 1px solid #111; border-radius: 10px; }
+        .link.sensei-toggle { color: #2a3a5a; font-weight: bold; padding: 10px; border: 1px solid #111; border-radius: 10px; display: inline-block; }
         .link.sensei-toggle:hover { color: var(--blue); border-color: var(--blue); }
 
-        #err-log { color: var(--red); font-size: 0.65rem; margin-top: 20px; display: none; font-weight: bold; }
+        #err-log { color: var(--red); font-size: 0.65rem; margin-top: 20px; display: none; font-weight: bold; text-shadow: 0 0 5px var(--red); }
+
+        .floating-note {
+            position: absolute; font-size: 1.5rem; color: rgba(0, 255, 136, 0.1);
+            pointer-events: none; animation: floatUp 10s infinite linear; z-index: -1;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            50% { opacity: 0.2; }
+            100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="staff-line" style="top: 20%"></div><div class="staff-line" style="top: 40%"></div>
-    <div class="staff-line" style="top: 60%"></div><div class="staff-line" style="top: 80%"></div>
-
-    <div class="portal-card" id="card">
+    <div class="portal-frame" id="card">
         <div class="musical-header">♩ ♪ ♫ ♬</div>
         <h2 id="portal-title">NINJA_PORTAL</h2>
         
         <div class="input-group">
-            <input type="text" id="u-id" placeholder="NINJA_ID_CODE" autocomplete="off">
+            <label>IDENTITY_CODE</label>
+            <input type="text" id="u-id" placeholder="ENTER_ID" autocomplete="off">
         </div>
         <div class="input-group">
-            <input type="password" id="u-pass" placeholder="SECURITY_KEY">
+            <label>SECURITY_KEY</label>
+            <input type="password" id="u-pass" placeholder="••••••••">
         </div>
 
         <button class="btn btn-main" id="main-btn" onclick="executeAuth()">INITIALIZE</button>
@@ -112,112 +97,92 @@
             <a class="link sensei-toggle" id="mode-toggle" onclick="toggleSenseiMode()">ARE YOU A SENSEI?</a>
         </div>
 
-        <div id="err-log">FREQUENCY_MISMATCH: ACCESS_DENIED</div>
+        <div id="err-log">INVALID_CREDENTIALS // ACCESS_DENIED</div>
     </div>
 
     <script>
         let isSenseiMode = false;
 
-        // --- 1. MUSICAL AUDIO ENGINE ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playNote(freq) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
-        }
-
-        // --- 2. GLOBAL LISTENERS ---
-        document.addEventListener('keydown', (e) => {
-            // Play note on typing
-            if (e.target.tagName === 'INPUT') playNote(220 + (Math.random() * 440));
-            
-            // Trigger Initialize on Enter
+        // --- 1. IT MASTER HANDLER (Checks Live Vault Key) ---
+        window.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') executeAuth();
-
-            // Secret IT Handshake (Ctrl + Shift + I)
             if (e.ctrlKey && e.shiftKey && e.key === 'I') {
                 e.preventDefault();
-                window.location.href = 'it_manager.html';
+                const vault = JSON.parse(localStorage.getItem('vault_users')) || { IT_PASS: "ADMIN_ROOT" };
+                const input = prompt("ENTER_IT_MASTER_KEY:");
+                if (input === vault.IT_PASS) {
+                    const ghost = localStorage.getItem('ghost_enabled') === 'true';
+                    if (!ghost) localStorage.setItem('it_active', 'true');
+                    window.location.href = 'it_manager.html';
+                } else {
+                    logAudit("GUEST", "CRITICAL: UNAUTHORIZED_IT_ENTRY_ATTEMPT");
+                    alert("ACCESS_DENIED");
+                }
             }
         });
 
-        // --- 3. MODE TOGGLE (Ninja vs Sensei) ---
         function toggleSenseiMode() {
             isSenseiMode = !isSenseiMode;
-            const card = document.getElementById('card');
             const title = document.getElementById('portal-title');
             const btn = document.getElementById('main-btn');
             const toggle = document.getElementById('mode-toggle');
-
-            if (isSenseiMode) {
-                title.innerText = "SENSEI_VAULT";
-                title.style.color = "var(--blue)";
-                btn.style.background = "var(--blue)";
-                btn.innerText = "DECRYPT_SENSEI";
-                toggle.innerText = "RETURN_TO_NINJA_PORTAL";
-                card.style.borderColor = "var(--blue)";
-            } else {
-                title.innerText = "NINJA_PORTAL";
-                title.style.color = "var(--green)";
-                btn.style.background = "var(--green)";
-                btn.innerText = "INITIALIZE";
-                toggle.innerText = "ARE YOU A SENSEI?";
-                card.style.borderColor = "var(--border)";
-            }
+            
+            title.innerText = isSenseiMode ? "SENSEI_VAULT" : "NINJA_PORTAL";
+            title.style.color = isSenseiMode ? "var(--blue)" : "var(--green)";
+            btn.style.background = isSenseiMode ? "var(--blue)" : "var(--green)";
+            btn.innerText = isSenseiMode ? "DECRYPT_SENSEI" : "INITIALIZE";
+            toggle.innerText = isSenseiMode ? "RETURN_TO_NINJA_PORTAL" : "ARE YOU A SENSEI?";
+            document.getElementById('card').style.borderColor = isSenseiMode ? "var(--blue)" : "var(--border)";
         }
 
-        // --- 4. AUTHENTICATION LOGIC ---
+        function logAudit(user, status) {
+            let db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
+            db.AUDIT_LOG.unshift({ time: new Date().toLocaleTimeString(), user: user, status: status });
+            localStorage.setItem('vault_users', JSON.stringify(db));
+        }
+
         function executeAuth() {
             const id = document.getElementById('u-id').value.trim().toUpperCase();
             const pass = document.getElementById('u-pass').value.trim();
-            
-            // Master Admin Backdoor
-            if (id === "ROOT" && pass === "GOD_MODE_99") {
-                window.location.href = 'it_recovery.html';
+            const vault = JSON.parse(localStorage.getItem('vault_users')) || {};
+
+            if (vault.BLACKLIST && vault.BLACKLIST.includes(id)) {
+                alert("ID_TERMINATED_BY_IT_ADMIN");
                 return;
             }
 
             if (isSenseiMode) {
-                const db = JSON.parse(localStorage.getItem('psalmist_teachers')) || {};
-                if (db[id] && db[id].password === pass) {
-                    sessionStorage.setItem('currentTeacher', id);
-                    window.location.href = 'teacher_dashboard.html';
+                // Sensei Universal Pass (or you can map specific names)
+                if (pass === "SENSEI_2026") {
+                    localStorage.setItem('ninjaUser', id);
+                    logAudit(id, "SENSEI_LOGIN_SUCCESS");
+                    window.location.href = 'sensei_dash.html';
                 } else { showError(); }
             } else {
-                const storedPass = localStorage.getItem(`pass_${id}`);
-                const isLocked = localStorage.getItem(`lock_${id}`) === "true";
-
-                if (isLocked) {
-                    alert("ACCOUNT_LOCKED_BY_SENSEI");
-                    return;
-                }
-
-                if (storedPass === pass && pass !== "") {
+                const roster = JSON.parse(localStorage.getItem('ninja_roster')) || [];
+                // Simple Check: Is the Ninja in the roster?
+                if (roster.includes(id)) {
                     localStorage.setItem('ninjaUser', id);
+                    logAudit(id, "NINJA_LOGIN_SUCCESS");
                     window.location.href = 'hub.html';
                 } else { showError(); }
             }
         }
 
         function launchGuest() {
-            const guestID = "GUEST_" + Math.floor(Math.random() * 999);
-            localStorage.setItem('ninjaUser', guestID);
-            localStorage.setItem('isGuest', 'true');
+            const gID = "GUEST_" + Math.floor(Math.random() * 999);
+            localStorage.setItem('ninjaUser', gID);
+            logAudit(gID, "GUEST_ACCESS_GRANTED");
             window.location.href = 'hub.html';
         }
 
         function showError() {
-            const err = document.getElementById('err-log');
-            err.style.display = "block";
-            setTimeout(() => { err.style.display = "none"; }, 3000);
+            document.getElementById('err-log').style.display = "block";
+            logAudit("UNKNOWN", "FAILED_LOGIN_ATTEMPT");
+            setTimeout(() => { document.getElementById('err-log').style.display = "none"; }, 3000);
         }
 
-        // --- 5. VISUAL EFFECTS ---
+        // --- AMBIANCE ---
         setInterval(() => {
             const notes = ['♩', '♪', '♫', '♬'];
             const n = document.createElement('div');
