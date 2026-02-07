@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT_MANAGER // Central Oversight</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #010204; --panel: rgba(7, 10, 17, 0.98); 
+            --blue: #4facfe; --gold: #ffcc00; --border: #1e2544; 
+            --green: #00ff88; --red: #ff4b2b; 
+        }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 50%, #0a1324 0%, #010204 100%);
+            padding: 40px;
+        }
+
+        .manager-container { width: 100%; max-width: 1100px; }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 30px;
+        }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+        .panel { 
+            background: var(--panel); border: 1px solid var(--border); 
+            padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        h3 { font-size: 0.7rem; color: var(--blue); letter-spacing: 3px; margin-top: 0; text-transform: uppercase; border-bottom: 1px solid #111; padding-bottom: 10px; margin-bottom: 15px;}
+
+        /* Log Terminal */
+        .terminal {
+            height: 350px; overflow-y: auto; background: #000; border: 1px solid #111;
+            padding: 15px; font-family: 'Courier New', monospace; font-size: 0.7rem;
+            line-height: 1.5; color: var(--green); margin-bottom: 15px;
+        }
+
+        .log-entry { margin-bottom: 8px; border-bottom: 1px solid #111; padding-bottom: 5px; }
+        .log-time { color: #555; margin-right: 10px; }
+        .log-user { color: var(--gold); font-weight: bold; }
+        .log-fail { color: var(--red); }
+
+        .btn {
+            padding: 12px 15px; background: transparent; border: 1px solid var(--blue);
+            color: var(--blue); font-family: 'Orbitron'; cursor: pointer; border-radius: 8px;
+            font-size: 0.6rem; transition: 0.3s; margin-top: 10px; font-weight: 900;
+        }
+        .btn:hover { background: var(--blue); color: #000; box-shadow: 0 0 15px var(--blue); }
+        .btn-red { border-color: var(--red); color: var(--red); }
+        .btn-red:hover { background: var(--red); color: #fff; box-shadow: 0 0 15px var(--red); }
+
+        input, textarea {
+            width: 100%; background: #000; border: 1px solid var(--border); 
+            color: #fff; padding: 10px; font-family: 'Orbitron'; font-size: 0.65rem; border-radius: 5px;
+        }
+
+        /* Ghost Mode Toggle */
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #111; transition: .4s; border-radius: 34px; border: 1px solid var(--blue); }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 4px; bottom: 3px; background-color: var(--blue); transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #001a33; border-color: var(--green); }
+        input:checked + .slider:before { transform: translateX(18px); background-color: var(--green); }
+
+        .stat-line { display: flex; justify-content: space-between; font-size: 0.65rem; margin-bottom: 8px; color: #7788aa; }
+    </style>
+</head>
+<body>
+
+    <div class="manager-container">
+        <header>
+            <div>
+                <h1 style="font-size: 1.2rem; letter-spacing: 5px; margin:0;">SYSTEM_OVERWATCH_v5</h1>
+                <div id="ghost-indicator" style="font-size: 0.6rem; color: #555; margin-top:5px;">STEALTH_STATUS: VISIBLE</div>
+            </div>
+            <button class="btn btn-red" onclick="window.location.href='index.html'">TERMINATE_SESSION</button>
+        </header>
+
+        <div class="grid">
+            <div class="panel" style="grid-column: span 2;">
+                <h3>LIVE_AUDIT_LOG</h3>
+                <div class="terminal" id="audit-log"></div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn" onclick="renderLogs()">REFRESH_FEED</button>
+                    <button class="btn btn-red" onclick="clearLogs()">WIPE_HISTORY</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>NEURAL_BROADCAST</h3>
+                <textarea id="broadcast-msg" placeholder="MESSAGE_CONTENT..."></textarea>
+                <button class="btn" style="width:100%; border-color:var(--gold); color:var(--gold);" onclick="sendBroadcast('ALERT')">SEND_ALERT</button>
+                <button class="btn" style="width:100%; border-color:var(--red); color:var(--red);" onclick="sendBroadcast('CRITICAL')">CRITICAL_OVERRIDE</button>
+            </div>
+
+            <div class="panel">
+                <h3>SECURITY_INTERDICTION</h3>
+                <div id="blacklist-display" style="height: 100px; overflow-y:auto; background:#000; padding:10px; font-size:0.6rem; margin-bottom:10px; border:1px solid #111;"></div>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="ban-id" placeholder="USER_ID">
+                    <button class="btn" style="margin:0;" onclick="toggleBan()">BAN</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>CORE_STATUS</h3>
+                <div id="stats-content"></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; padding-top:10px; border-top:1px solid #111;">
+                    <span style="font-size:0.6rem; color:var(--blue)">GHOST_STEALTH</span>
+                    <label class="switch">
+                        <input type="checkbox" id="ghost-toggle" onclick="toggleGhostMode()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>ADMIN_TOOLS</h3>
+                <button class="btn" style="width:100%;" onclick="window.location.href='it_recovery.html'">GOTO_RECOVERY</button>
+                <button class="btn" style="width:100%; border-color:var(--gold); color:var(--gold);" onclick="exportData()">EXPORT_VAULT_BACKUP</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- LOGS & STATS ---
+        function renderLogs() {
+            const logContainer = document.getElementById('audit-log');
+            const db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
+            
+            logContainer.innerHTML = db.AUDIT_LOG.length === 0 ? "> NO_DATA" : "";
+            db.AUDIT_LOG.forEach(entry => {
+                const isFail = entry.status.includes("FAILED") || entry.status.includes("BAN");
+                logContainer.innerHTML += `
+                    <div class="log-entry">
+                        <span class="log-time">[${entry.time}]</span>
+                        <span class="log-user">${entry.user}</span>: 
+                        <span class="${isFail ? 'log-fail' : ''}">${entry.status}</span>
+                    </div>`;
+            });
+
+            const ninjaCount = (JSON.parse(localStorage.getItem('ninja_roster')) || []).length;
+            const scrollCount = (JSON.parse(localStorage.getItem('vault_snippets')) || []).length;
+            document.getElementById('stats-content').innerHTML = `
+                <div class="stat-line"><span>ACTIVE_NINJAS:</span><span>${ninjaCount}</span></div>
+                <div class="stat-line"><span>SAVED_SCROLLS:</span><span>${scrollCount}</span></div>
+                <div class="stat-line"><span>UPLINK_STATUS:</span><span style="color:var(--green)">STABLE</span></div>
+            `;
+        }
+
+        function clearLogs() {
+            if(confirm("WIPE AUDIT HISTORY?")) {
+                let db = JSON.parse(localStorage.getItem('vault_users'));
+                db.AUDIT_LOG = [];
+                localStorage.setItem('vault_users', JSON.stringify(db));
+                renderLogs();
+            }
+        }
+
+        // --- BROADCAST ---
+        function sendBroadcast(type) {
+            const msg = document.getElementById('broadcast-msg').value.trim();
+            if(!msg) return;
+            const data = { message: msg, type: type, timestamp: Date.now(), sender: "IT_ADMIN" };
+            localStorage.setItem('system_broadcast', JSON.stringify(data));
+            
+            let db = JSON.parse(localStorage.getItem('vault_users'));
+            db.AUDIT_LOG.unshift({time: new Date().toLocaleString(), user: "IT_ADMIN", status: `BROADCAST: ${msg}`});
+            localStorage.setItem('vault_users', JSON.stringify(db));
+            alert("TRANSMITTED");
+            document.getElementById('broadcast-msg').value = "";
+            renderLogs();
+        }
+
+        // --- BLACKLIST ---
+        function renderBlacklist() {
+            const display = document.getElementById('blacklist-display');
+            const db = JSON.parse(localStorage.getItem('vault_users')) || { BLACKLIST: [] };
+            if (!db.BLACKLIST || db.BLACKLIST.length === 0) {
+                display.innerHTML = "<span style='color:#333'>EMPTY</span>";
+                return;
+            }
+            display.innerHTML = db.BLACKLIST.map(id => `
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                    <span style="color:var(--red)">${id}</span>
+                    <span style="cursor:pointer; color:#444" onclick="removeBan('${id}')">[DEL]</span>
+                </div>
+            `).join('');
+        }
+
+        function toggleBan() {
+            const id = document.getElementById('ban-id').value.trim().toUpperCase();
+            if(!id) return;
+            let db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [], BLACKLIST: [] };
+            if(!db.BLACKLIST) db.BLACKLIST = [];
+            if(!db.BLACKLIST.includes(id)) {
+                db.BLACKLIST.push(id);
+                db.AUDIT_LOG.unshift({time: new Date().toLocaleString(), user: "SYSTEM", status: `BANNED_ID: ${id}`});
+            }
+            localStorage.setItem('vault_users', JSON.stringify(db));
+            document.getElementById('ban-id').value = "";
+            renderBlacklist(); renderLogs();
+        }
+
+        function removeBan(id) {
+            let db = JSON.parse(localStorage.getItem('vault_users'));
+            db.BLACKLIST = db.BLACKLIST.filter(i => i !== id);
+            localStorage.setItem('vault_users', JSON.stringify(db));
+            renderBlacklist();
+        }
+
+        // --- GHOST MODE ---
+        function toggleGhostMode() {
+            const active = document.getElementById('ghost-toggle').checked;
+            localStorage.setItem('ghost_enabled', active);
+            localStorage.setItem('it_active', !active); // it_active is what Sensei sees
+            document.getElementById('ghost-indicator').innerText = active ? "STEALTH_STATUS: STEALTH_ACTIVE" : "STEALTH_STATUS: VISIBLE";
+            document.getElementById('ghost-indicator').style.color = active ? "var(--green)" : "#555";
+        }
+
+        function exportData() {
+            const blob = new Blob([JSON.stringify(localStorage)], { type: 'text/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'full_system_backup.json';
+            a.click();
+        }
+
+        // --- INIT ---
+        window.onload = () => {
+            renderLogs();
+            renderBlacklist();
+            if(localStorage.getItem('ghost_enabled') === 'true') {
+                document.getElementById('ghost-toggle').checked = true;
+                toggleGhostMode();
+            }
+        };
+    </script>
+</body>
+</html>
