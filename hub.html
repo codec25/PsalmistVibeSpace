@@ -97,12 +97,32 @@
         .intel-header { color: var(--gold); font-weight: 900; margin-bottom: 8px; letter-spacing: 1px; display: block; }
         .intel-item { margin-bottom: 10px; display: block; border-left: 2px solid var(--blue); padding-left: 8px; }
 
+        /* --- NEURAL BROADCAST OVERLAY --- */
+        #broadcast-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999;
+            display: none; align-items: center; justify-content: center; padding: 40px;
+            backdrop-filter: blur(10px);
+        }
+        .broadcast-box {
+            border: 2px solid var(--green); padding: 40px; background: #050810; 
+            max-width: 600px; width: 100%; box-shadow: 0 0 50px rgba(0, 255, 136, 0.2); 
+            text-align: center; border-radius: 20px;
+        }
+
         @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
 
         @media (max-width: 850px) { .content-stack { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
+
+    <div id="broadcast-overlay">
+        <div class="broadcast-box" id="b-box">
+            <h1 id="b-type" style="color:var(--green); letter-spacing:10px; margin-top:0; font-size: 1rem;">SYSTEM_MESSAGE</h1>
+            <p id="b-text" style="font-size:1.1rem; line-height:1.6; color:#fff; font-family:monospace; margin: 25px 0;"></p>
+            <button class="btn-logout" style="border-color:var(--green); color:var(--green); background:transparent; width:100%;" onclick="acknowledgeBroadcast()">ACKNOWLEDGE_RECEIPT</button>
+        </div>
+    </div>
 
     <script>
         // --- GLOBAL LOCK CHECK ---
@@ -177,7 +197,7 @@
             </div>
         </a>
 
-        <a href="theory_vault.html" class="card">
+        <a href="theory_vault.html" class="card" id="theory-link">
             <div class="card-icon" style="color:var(--purple)">📓</div>
             <div class="card-content">
                 <div class="card-title">THEORY VAULT</div>
@@ -186,12 +206,14 @@
         </a>
     </div>
 
-    <div id="intel-trigger">?</div>
-    <div id="intel-popover">
-        <span class="intel-header">SENSEI_STRATEGY</span>
-        <span class="intel-item"><b>THE PATH:</b> Start in Piano Lab for visuals, then Pitch Hub for ears.</span>
-        <span class="intel-item"><b>XP GAIN:</b> Missions yield 3x rewards. Level up to unlock Vault sectors.</span>
-        <span class="intel-item"><b>FLOW:</b> Use the new Studio Lab to record your own melodies and beats.</span>
+    <div id="intel-trigger-container">
+        <div id="intel-trigger">?</div>
+        <div id="intel-popover">
+            <span class="intel-header">SENSEI_STRATEGY</span>
+            <span class="intel-item"><b>THE PATH:</b> Start in Piano Lab for visuals, then Pitch Hub for ears.</span>
+            <span class="intel-item"><b>XP GAIN:</b> Missions yield 3x rewards. Level up to unlock Vault sectors.</span>
+            <span class="intel-item"><b>FLOW:</b> Use the new Studio Lab to record your own melodies and beats.</span>
+        </div>
     </div>
 
     <script>
@@ -201,7 +223,20 @@
             const level = Math.floor(currentXP / 2500) + 1;
             const isGuest = localStorage.getItem('isGuest') === 'true';
 
-            // SECURITY CHECK: Kick out if Sensei locked account while session was active
+            // BLACKLIST CHECK
+            const vault = JSON.parse(localStorage.getItem('vault_users')) || {};
+            if (vault.BLACKLIST && vault.BLACKLIST.includes(user.toUpperCase())) {
+                alert("CRITICAL_ERROR: Your ID has been flag-blocked by IT_ADMIN.");
+                logout();
+                return;
+            }
+
+            // GUEST LIMITS (Stealth Mode)
+            if (isGuest) {
+                document.getElementById('intel-trigger-container').style.display = 'none';
+            }
+
+            // SECURITY CHECK
             if (!isGuest && localStorage.getItem(`lock_${user}`) === "true") {
                 alert("ACCESS_SUSPENDED: Your account has been locked by a Sensei.");
                 logout();
@@ -239,6 +274,43 @@
             }
         };
 
+        // NEURAL BROADCAST LISTENER
+        function listenForBroadcast() {
+            const data = localStorage.getItem('system_broadcast');
+            if(!data) return;
+
+            const broadcast = JSON.parse(data);
+            const lastSeen = localStorage.getItem('last_seen_broadcast_hub');
+
+            if(lastSeen !== broadcast.timestamp.toString()) {
+                const overlay = document.getElementById('broadcast-overlay');
+                const bText = document.getElementById('b-text');
+                const bType = document.getElementById('b-type');
+                const bBox = document.getElementById('b-box');
+
+                bText.innerText = broadcast.message;
+                
+                if(broadcast.type === 'CRITICAL') {
+                    bType.innerText = 'CRITICAL_OVERRIDE';
+                    bType.style.color = 'var(--red)';
+                    bBox.style.borderColor = 'var(--red)';
+                } else {
+                    bType.innerText = 'SYSTEM_MESSAGE';
+                    bType.style.color = 'var(--green)';
+                    bBox.style.borderColor = 'var(--green)';
+                }
+
+                overlay.style.display = 'flex';
+                localStorage.setItem('last_seen_broadcast_hub', broadcast.timestamp);
+            }
+        }
+
+        function acknowledgeBroadcast() {
+            document.getElementById('broadcast-overlay').style.display = 'none';
+        }
+
+        setInterval(listenForBroadcast, 3000);
+
         function logout() {
             const isGuest = localStorage.getItem('isGuest') === 'true';
             if (isGuest) {
@@ -247,6 +319,7 @@
                 localStorage.removeItem('isGuest');
                 localStorage.removeItem('currentLevel');
                 localStorage.removeItem('distinctions');
+                localStorage.removeItem('userRole');
             }
             window.location.href = 'index.html';
         }
