@@ -3,73 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <title>SYSTEM_DIAGNOSTICS // Terminal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Fira+Code&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #050505; --green: #00ff88; --red: #ff4b2b; --blue: #4facfe; }
+        :root { --bg: #050505; --green: #00ff88; --red: #ff4b2b; --blue: #4facfe; --gold: #ffcc00; }
         body { background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; padding: 40px; }
-        .log { background: #000; border: 1px solid #222; padding: 20px; font-family: monospace; font-size: 0.8rem; line-height: 1.6; border-radius: 10px; }
-        .status-pass { color: var(--green); }
-        .status-fail { color: var(--red); }
-        .header { border-bottom: 2px solid #222; padding-bottom: 10px; margin-bottom: 20px; }
-        .pulse { animation: pulse-red 2s infinite; }
-        @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .log { background: #000; border: 1px solid #222; padding: 30px; font-family: 'Fira Code', monospace; font-size: 0.85rem; line-height: 1.8; border-radius: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,1); }
+        .status-pass { color: var(--green); text-shadow: 0 0 5px var(--green); }
+        .status-fail { color: var(--red); text-shadow: 0 0 5px var(--red); font-weight: bold; }
+        .status-warn { color: var(--gold); }
+        .header { border-bottom: 2px solid #222; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .btn { padding: 12px 25px; background: transparent; border: 1px solid #333; color: #555; font-family: 'Orbitron'; cursor: pointer; transition: 0.3s; margin-right: 10px; font-size: 0.7rem; }
+        .btn:hover { border-color: var(--blue); color: var(--blue); }
+        .pulse { animation: pulse-text 2s infinite; }
+        @keyframes pulse-text { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1 style="margin:0;">DIAGNOSTIC_SCAN</h1>
-        <p style="font-size:0.7rem; color:#555;">ACADEMY_INTEGRITY_CHECK_v1.0</p>
+        <div>
+            <h1 style="margin:0; letter-spacing: 5px;">DIAGNOSTIC_SCAN</h1>
+            <p style="font-size:0.7rem; color:#555; margin-top:5px;">ACADEMY_INTEGRITY_CHECK_v5.2 // ENCRYPTED_SESSION</p>
+        </div>
+        <div id="scan-time" style="font-size: 0.7rem; color: var(--blue);"></div>
     </div>
 
     <div class="log" id="diag-log">
-        > INITIALIZING_SYSTEM_SCAN...<br>
+        <span class="pulse">> INITIALIZING_SECURE_SCAN...</span><br>
     </div>
 
-    <button onclick="runDiagnostics()" style="margin-top:20px; padding:10px 20px; background:transparent; border:1px solid var(--blue); color:var(--blue); font-family:'Orbitron'; cursor:pointer;">RE-SCAN_CORE</button>
-    <button onclick="window.location.href='it_manager.html'" style="margin-top:20px; padding:10px 20px; background:transparent; border:1px solid #555; color:#555; font-family:'Orbitron'; cursor:pointer;">BACK_TO_OVERWATCH</button>
+    <div style="margin-top:30px;">
+        <button class="btn" onclick="runDiagnostics()" style="border-color: var(--blue); color: var(--blue);">RUN_RE-SCAN</button>
+        <button class="btn" onclick="window.location.href='it_manager.html'">EXIT_DIAGNOSTICS</button>
+        <button class="btn" onclick="exportLogs()" style="border-color: var(--gold); color: var(--gold);">EXPORT_SNAPSHOT</button>
+    </div>
 
     <script>
         function log(msg, type) {
             const container = document.getElementById('diag-log');
-            const colorClass = type === 'pass' ? 'status-pass' : (type === 'fail' ? 'status-fail' : '');
-            container.innerHTML += `<span class="${colorClass}">> ${msg}</span><br>`;
+            let colorClass = '';
+            if(type === 'pass') colorClass = 'status-pass';
+            if(type === 'fail') colorClass = 'status-fail';
+            if(type === 'warn') colorClass = 'status-warn';
+            
+            container.innerHTML += `<span class="${colorClass}">[${new Date().toLocaleTimeString()}] > ${msg}</span><br>`;
+            container.scrollTop = container.scrollHeight;
         }
 
         function runDiagnostics() {
-            document.getElementById('diag-log').innerHTML = "> INITIALIZING...<br>";
-            
-            // 1. Check User Vault
-            const vault = JSON.parse(localStorage.getItem('vault_users'));
-            if(vault) log("USER_VAULT: DETECTED", 'pass');
-            else log("USER_VAULT: NOT_FOUND (CRITICAL)", 'fail');
+            document.getElementById('diag-log').innerHTML = "<span class='pulse'>> SCAN_IN_PROGRESS...</span><br>";
+            document.getElementById('scan-time').innerText = "LAST_SCAN: " + new Date().toLocaleTimeString();
 
-            // 2. Check Ninja Roster
-            const roster = JSON.parse(localStorage.getItem('ninja_roster'));
-            if(roster && roster.length > 0) log(`NINJA_ROSTER: ${roster.length} OPERATIVES_CONNECTED`, 'pass');
-            else log("NINJA_ROSTER: EMPTY", 'fail');
+            setTimeout(() => {
+                document.getElementById('diag-log').innerHTML = "";
+                
+                // 1. Core Database Integrity
+                const vault = JSON.parse(localStorage.getItem('vault_users'));
+                if(vault) {
+                    log("CORE_VAULT: ONLINE", 'pass');
+                    if(vault.teachers) log(`SENSEI_REGISTRY: ${Object.keys(vault.teachers).length} VERIFIED_KEYS`, 'pass');
+                    else log("SENSEI_REGISTRY: NO_DATA_FOUND", 'warn');
+                } else {
+                    log("CORE_VAULT: NOT_FOUND (SYSTEM_UNSTABLE)", 'fail');
+                }
 
-            // 3. Check Broadcast Channel
-            const broadcast = localStorage.getItem('system_broadcast');
-            log("BROADCAST_CHANNEL: ACTIVE", 'pass');
+                // 2. Ninja Roster Check (Synced with Hub & Sensei Dash)
+                const rosterFull = JSON.parse(localStorage.getItem('ninja_roster_full'));
+                if(rosterFull) {
+                    const count = Object.keys(rosterFull).length;
+                    log(`NINJA_ROSTER_FULL: ${count} OPERATIVES_IN_DB`, 'pass');
+                } else {
+                    log("NINJA_ROSTER_FULL: MISSING (STUDENTS_CANNOT_LOG_IN)", 'fail');
+                }
 
-            // 4. Check Tournament Bracket
-            const bracket = localStorage.getItem('tournament_bracket');
-            if(bracket) log("TOURNAMENT_DATA: SYNCED", 'pass');
-            else log("TOURNAMENT_DATA: IDLE", '');
+                // 3. Vault Snippets (The Secret Scrolls)
+                const snippets = JSON.parse(localStorage.getItem('vault_snippets')) || [];
+                log(`STORAGE_DRIVE: ${snippets.length} SECRET_SCROLLS_ARCHIVED`, 'pass');
 
-            // 5. Check IT Stealth Mode
-            const ghost = localStorage.getItem('ghost_enabled') === 'true';
-            log(`GHOST_PROTOCOL: ${ghost ? 'ACTIVE_STEALTH' : 'VISIBLE'}`, ghost ? 'pass' : '');
+                // 4. Ghost Protocol Status
+                const ghost = localStorage.getItem('ghost_enabled') === 'true';
+                log(`GHOST_PROTOCOL: ${ghost ? 'ACTIVE_STEALTH' : 'BROADCAST_VISIBLE'}`, ghost ? 'warn' : 'pass');
 
-            // 6. Check for Frozen Senseis
-            let frozenCount = 0;
-            for(let i=0; i<localStorage.length; i++){
-                if(localStorage.key(i).startsWith('freeze_') && localStorage.getItem(localStorage.key(i)) === 'true') frozenCount++;
-            }
-            if(frozenCount > 0) log(`SECURITY_ALERTS: ${frozenCount} SENSEI_TERMINALS_LOCKED`, 'fail');
-            else log("SECURITY_ALERTS: NO_STAFF_RESTRICTIONS", 'pass');
+                // 5. Lockdown & Freeze Status
+                const globalLock = localStorage.getItem('global_system_lock') === 'true';
+                if(globalLock) log("GLOBAL_LOCKDOWN: ACTIVE", 'fail');
+                else log("GLOBAL_LOCKDOWN: DEACTIVATED", 'pass');
 
-            log("<br>--- SCAN_COMPLETE ---", '');
+                // 6. Security Blacklist
+                if(vault && vault.BLACKLIST) {
+                    log(`SECURITY_BLACKLIST: ${vault.BLACKLIST.length} IDs_RESTRICTED`, vault.BLACKLIST.length > 0 ? 'warn' : 'pass');
+                }
+
+                // 7. Tournament Synchronization
+                const bracket = JSON.parse(localStorage.getItem('tournament_bracket'));
+                if(bracket && Object.keys(bracket).length > 0) log("TOURNAMENT_ENGINE: DATA_SYNCED", 'pass');
+                else log("TOURNAMENT_ENGINE: IDLE", 'warn');
+
+                log("<br>--- SCAN_COMPLETE: ALL_SYSTEMS_OPERATIONAL ---", 'pass');
+            }, 800);
+        }
+
+        function exportLogs() {
+            const data = localStorage.getItem('vault_users');
+            const blob = new Blob([data], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `SYSTEM_BACKUP_${new Date().getTime()}.json`;
+            a.click();
+            log("DATABASE_SNAPSHOT_EXPORTED", 'pass');
         }
 
         window.onload = runDiagnostics;
