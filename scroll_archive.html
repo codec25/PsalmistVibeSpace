@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SCROLL_ARCHIVE // Technique Repository</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #4facfe;
+            --bg: #050505;
+            --panel: rgba(10,15,25,0.9);
+            --syntax-kw: #ff007f;
+            --syntax-str: #ffcc00;
+        }
+        body, html { margin: 0; padding: 0; background: var(--bg); color: var(--neon-blue); font-family: 'Fira Code', monospace; height: 100vh; overflow: hidden; }
+        
+        #matrix-canvas { position: fixed; top: 0; left: 0; z-index: 0; opacity: 0.15; pointer-events: none; }
+
+        /* Navigation Header */
+        header { 
+            position: relative; z-index: 10; padding: 15px 25px; 
+            background: rgba(0,0,0,0.85); border-bottom: 2px solid var(--neon-blue); 
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 0 15px rgba(79, 172, 254, 0.3);
+        }
+
+        .main-layout { 
+            position: relative; z-index: 10; display: grid; 
+            grid-template-columns: 280px 1fr 320px; gap: 20px; 
+            padding: 20px; height: calc(100vh - 80px); overflow: hidden; 
+        }
+
+        .panel { 
+            background: var(--panel); border: 1px solid #1e2544; 
+            padding: 15px; display: flex; flex-direction: column; 
+            backdrop-filter: blur(5px);
+        }
+
+        .section-tag { font-family: 'Orbitron'; font-size: 0.6rem; color: #556688; margin-bottom: 10px; border-bottom: 1px solid #1e2544; padding-bottom: 5px; }
+
+        /* The Editor */
+        .editor-container { position: relative; flex-grow: 1; background: #000; border: 1px solid #111; box-shadow: inset 0 0 10px #000; }
+        #code-input, #code-highlight { 
+            position: absolute; inset: 0; padding: 20px; font-size: 0.95rem; 
+            line-height: 1.6; font-family: 'Fira Code'; white-space: pre-wrap; box-sizing: border-box; 
+        }
+        #code-input { z-index: 2; background: transparent; color: transparent; caret-color: #fff; border: none; outline: none; resize: none; }
+        #code-highlight { z-index: 1; color: #445577; pointer-events: none; }
+        
+        /* Syntax Colors */
+        .token-keyword { color: var(--syntax-kw); text-shadow: 0 0 5px var(--syntax-kw); }
+        .token-string { color: var(--syntax-str); }
+
+        .btn-ui { 
+            background: transparent; border: 1px solid var(--neon-blue); 
+            color: var(--neon-blue); padding: 8px 16px; cursor: pointer; 
+            font-family: 'Orbitron'; font-size: 0.7rem; transition: 0.3s;
+        }
+        .btn-ui:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 15px var(--neon-blue); }
+
+        #log-feed { flex-grow: 1; overflow-y: auto; font-size: 0.75rem; color: #4facfe; background: #000; padding: 10px; }
+    </style>
+</head>
+<body>
+
+<canvas id="matrix-canvas"></canvas>
+
+<header>
+    <div style="font-family:'Orbitron'; font-weight: 900; letter-spacing: 3px;">TECHNIQUE_ARCHIVE</div>
+    <div style="display: flex; gap: 20px;">
+        <button class="btn-ui" onclick="window.location.href='sensei_dash.html'">RETURN_TO_MISSION_CONTROL</button>
+        <button class="btn-ui" style="border-color: #ff4b2b; color: #ff4b2b;" onclick="location.reload()">SYNC_RELOAD</button>
+    </div>
+</header>
+
+<div class="main-layout">
+    <div class="panel">
+        <div class="section-tag">SCROLL_LIBRARY</div>
+        <div id="snippet-list" style="flex-grow:1; overflow-y:auto;"></div>
+        <button class="btn-ui" onclick="clearAll()">PURGE_LIBRARY</button>
+    </div>
+
+    <div class="panel">
+        <div class="section-tag">NEURAL_EDITOR_V5</div>
+        <div class="editor-container">
+            <textarea id="code-input" spellcheck="false" oninput="updateEditor();"></textarea>
+            <pre id="code-highlight"><code></code></pre>
+        </div>
+        <div style="margin-top:15px; display:flex; gap:10px;">
+            <input type="text" id="filename" placeholder="technique_name.js" style="background:#000; border:1px solid #1e2544; color:white; padding:10px; flex-grow:1; font-family:'Fira Code';">
+            <button class="btn-ui" onclick="saveSnippet()">COMMIT_SCROLL</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="section-tag">DEBUG_LOG</div>
+        <div id="log-feed"></div>
+        <input type="text" id="term-cmd" placeholder="root@sensei:~#" style="width:100%; background:#000; border:1px solid #1e2544; color:white; padding:10px; font-size:0.75rem; margin-top:10px;" onkeydown="if(event.key==='Enter') runTerminal(this.value)">
+    </div>
+</div>
+
+<script>
+    // Matrix Rain Effect (Blue Edition)
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const drops = Array(Math.floor(canvas.width/16)).fill(1);
+    function draw() {
+        ctx.fillStyle = 'rgba(0,0,0,0.05)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = '#1e2544'; ctx.font = '16px monospace';
+        drops.forEach((y, i) => {
+            ctx.fillText(Math.floor(Math.random()*2), i*16, y*16);
+            if(y*16 > canvas.height && Math.random() > 0.985) drops[i] = 0;
+            drops[i]++;
+        });
+    }
+    setInterval(draw, 50);
+
+    // Editor Logic
+    function updateEditor() {
+        let code = document.getElementById('code-input').value;
+        code = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        code = code.replace(/\b(const|let|var|function|return|if|else|for|while)\b/g, '<span class="token-keyword">$1</span>');
+        code = code.replace(/(".*?"|'.*?'|`.*?`)/g, '<span class="token-string">$1</span>');
+        document.querySelector('#code-highlight code').innerHTML = code + (code.endsWith('\n') ? ' ' : '');
+    }
+
+    function saveSnippet() {
+        const name = document.getElementById('filename').value || "unnamed_technique.js";
+        const code = document.getElementById('code-input').value;
+        const snips = JSON.parse(localStorage.getItem('vault_snippets')) || [];
+        snips.push({ name, code });
+        localStorage.setItem('vault_snippets', JSON.stringify(snips));
+        loadList();
+        logSystem(`Technique "${name}" secured in library.`);
+    }
+
+    function loadList() {
+        const list = document.getElementById('snippet-list');
+        list.innerHTML = '';
+        const snips = JSON.parse(localStorage.getItem('vault_snippets')) || [];
+        snips.forEach((s, i) => {
+            const d = document.createElement('div');
+            d.style = "padding:10px; border-left:2px solid var(--neon-blue); background:rgba(79,172,254,0.05); margin-bottom:8px; cursor:pointer; font-size:0.7rem;";
+            d.innerText = s.name;
+            d.onclick = () => { document.getElementById('code-input').value = s.code; updateEditor(); document.getElementById('filename').value = s.name; };
+            list.appendChild(d);
+        });
+    }
+
+    function logSystem(m) {
+        const f = document.getElementById('log-feed');
+        f.innerHTML += `<div style="margin-bottom:5px;">[SYSTEM]: ${m}</div>`;
+        f.scrollTop = f.scrollHeight;
+    }
+
+    function runTerminal(val) {
+        document.getElementById('term-cmd').value = '';
+        logSystem(`> ${val}`);
+        if(val === 'help') logSystem("CMDS: help, clear, status, purge");
+        else if(val === 'clear') document.getElementById('log-feed').innerHTML = '';
+        else if(val === 'status') logSystem("VAULT: ENCRYPTED\nSECTOR: BLUE_ARCHIVE\nLATENCY: 14ms");
+        else if(val === 'purge') clearAll();
+    }
+
+    function clearAll() { if(confirm("Purge Library?")) { localStorage.removeItem('vault_snippets'); loadList(); } }
+
+    window.onload = loadList;
+</script>
+</body>
+</html>

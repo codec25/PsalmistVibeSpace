@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ROOT_OVERRIDE // Master Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        body { background: #050000; color: #ff0000; font-family: 'Fira Code', monospace; padding: 40px; }
+        .panel { border: 1px solid #ff0000; padding: 25px; background: #000; margin-bottom: 20px; }
+        h1 { font-family: 'Orbitron'; color: white; border-bottom: 2px solid #ff0000; }
+        table { width: 100%; text-align: left; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; border-bottom: 1px solid #220000; }
+        .btn-danger { background: #ff0000; color: #000; border: none; padding: 10px 20px; font-weight: 900; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>ROOT_SYSTEM_OVERRIDE</h1>
+    
+    <div class="panel">
+        <h3>SECURITY_AUDIT_LOG (IT Actions)</h3>
+        <table id="audit-table">
+            <thead>
+                <tr><th>TIMESTAMP</th><th>ACTION</th><th>TARGET</th></tr>
+            </thead>
+            <tbody id="audit-body"></tbody>
+        </table>
+    </div>
+
+    <div class="panel">
+        <h3>IT_CREDENTIAL_OVERRIDE</h3>
+        <input type="password" id="new-it-pass" placeholder="NEW_IT_PASSWORD" style="padding:10px; width:300px;">
+        <button class="btn-danger" onclick="overrideIT()">OVERWRITE_IT_KEY</button>
+    </div>
+
+    <button class="btn-danger" style="background:white;" onclick="window.location.href='index.html'">EXIT_ROOT_SESS</button>
+
+    <script>
+        window.onload = () => {
+            const db = JSON.parse(localStorage.getItem('vault_users'));
+            const body = document.getElementById('audit-body');
+            if(db && db.AUDIT_LOG) {
+                db.AUDIT_LOG.reverse().forEach(log => {
+                    body.innerHTML += `<tr><td>${log.timestamp}</td><td>${log.action}</td><td>${log.target}</td></tr>`;
+                });
+            }
+        };
+
+        function overrideIT() {
+            let db = JSON.parse(localStorage.getItem('vault_users'));
+            db.IT_PASS = document.getElementById('new-it-pass').value;
+            localStorage.setItem('vault_users', JSON.stringify(db));
+            alert("SUCCESS: IT_SPECIALIST_PASSWORD_UPDATED");
+        }
+    </script>
+</body>
+</html>
