@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SENSEI_DASH // Mission Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #010204; --panel: rgba(10, 14, 23, 0.9); 
+            --blue: #4facfe; --gold: #ffcc00; --border: #1e2544; 
+            --green: #00ff88; --red: #ff4b2b; --it-watch: #555;
+        }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 50%, #0a1324 0%, #010204 100%);
+            padding: 40px 20px;
+        }
+
+        .dashboard-header {
+            width: 100%; max-width: 1100px; display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 40px; border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+        }
+
+        /* Surveillance Status Light */
+        .it-status {
+            font-size: 0.6rem; display: flex; align-items: center; gap: 8px;
+            background: rgba(0,0,0,0.5); padding: 5px 12px; border-radius: 20px;
+            border: 1px solid #333;
+        }
+        .status-light { width: 8px; height: 8px; border-radius: 50%; background: var(--it-watch); box-shadow: 0 0 5px var(--it-watch); }
+        .watching { background: var(--red) !important; box-shadow: 0 0 10px var(--red) !important; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.3; } }
+
+        .vault-grid {
+            display: grid; grid-template-columns: 1fr 400px; gap: 30px;
+            width: 100%; max-width: 1100px;
+        }
+
+        .vault-card {
+            background: var(--panel); border: 1px solid var(--border);
+            border-radius: 20px; padding: 30px; backdrop-filter: blur(10px);
+            margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .section-title {
+            font-size: 0.7rem; color: var(--gold); letter-spacing: 3px;
+            margin-bottom: 20px; text-transform: uppercase; border-left: 3px solid var(--gold);
+            padding-left: 15px;
+        }
+
+        .btn {
+            padding: 12px; border: none; border-radius: 8px; font-family: 'Orbitron';
+            font-weight: 900; cursor: pointer; transition: 0.3s; text-transform: uppercase;
+            letter-spacing: 1px; font-size: 0.65rem;
+        }
+        
+        .btn-archive { background: var(--blue); color: #000; width: 100%; margin-bottom: 10px; }
+        .btn-logout { background: transparent; border: 1px solid var(--red); color: var(--red); }
+        
+        input, select, textarea {
+            width: 100%; padding: 12px; background: #000; border: 1px solid var(--border);
+            color: #fff; border-radius: 8px; font-family: 'Orbitron'; margin-bottom: 15px;
+        }
+
+        .ninja-item {
+            background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px;
+            margin-bottom: 15px; border: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+
+    <script>
+        const currentTeacher = sessionStorage.getItem('currentTeacher');
+        if (!currentTeacher) window.location.href = 'index.html';
+
+        // Check if IT has locked this teacher
+        const db = JSON.parse(localStorage.getItem('vault_users')) || {};
+        if (db.LOCKED_TEACHERS && db.LOCKED_TEACHERS.includes(currentTeacher)) {
+            alert("ACCESS_REVOKED: This sector has been sealed by IT_ADMIN.");
+            sessionStorage.clear();
+            window.location.href = 'index.html';
+        }
+    </script>
+
+    <header class="dashboard-header">
+        <div>
+            <div class="it-status">
+                <div id="it-light" class="status-light"></div>
+                <span id="it-text">IT_SURVEILLANCE: PASSIVE</span>
+            </div>
+            <h1 id="welcome-text" style="margin:10px 0 0 0; letter-spacing: 5px;">SENSEI_DASH</h1>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-archive" style="width:auto;" onclick="window.location.href='scroll_archive.html'">OPEN_SCROLL_ARCHIVE</button>
+            <button class="btn btn-logout" onclick="logout()">DISCONNECT</button>
+        </div>
+    </header>
+
+    <div class="vault-grid">
+        <div class="vault-card">
+            <div class="section-title">Mission Control</div>
+            <label style="font-size:0.6rem; color:var(--blue);">CURRENT_OBJECTIVE</label>
+            <input type="text" id="mission-name" placeholder="Operation: Phantom Script">
+            <select id="mission-type">
+                <option value="CODE">CODE_KATA</option>
+                <option value="LOGIC">LOGIC_GATE_TRAINING</option>
+            </select>
+            <button class="btn" style="background:var(--green); color:#000; width:100%;" onclick="alert('Mission Deployed')">DEPLOY_TO_NINJAS</button>
+        </div>
+
+        <div class="vault-card">
+            <div class="section-title">Ninja Roster</div>
+            <div id="roster-list" style="max-height: 400px; overflow-y: auto;">
+                </div>
+            <hr style="border:0; border-top:1px solid #1e2544; margin: 20px 0;">
+            <input type="text" id="new-ninja" placeholder="NEW_NINJA_ID">
+            <button class="btn" style="background:#fff; color:#000; width:100%;" onclick="addNinja()">AUTHORIZE_NEW_ACCESS</button>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('welcome-text').innerText = currentTeacher + "_CORE";
+
+        // Surveillance simulation (Logic: if IT_ADMIN recently logged in)
+        if(localStorage.getItem('it_active') === 'true') {
+            document.getElementById('it-light').classList.add('watching');
+            document.getElementById('it-text').innerText = "IT_SURVEILLANCE: ACTIVE_SCAN";
+        }
+
+        function logout() {
+            sessionStorage.removeItem('currentTeacher');
+            window.location.href = 'index.html';
+        }
+
+        // Logic for Ninja management remains similar but saves to your main vault_users db
+        function addNinja() {
+            const name = document.getElementById('new-ninja').value.toUpperCase();
+            if(!name) return;
+            // logic to add ninja to local storage...
+            alert("Ninja " + name + " added to your scroll.");
+        }
+    </script>
+</body>
+</html>
