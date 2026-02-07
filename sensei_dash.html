@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SENSEI_COMMAND_v5 // Psalmist Vibes</title>
+    <title>SENSEI_COMMAND_v5 // Command Center</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -53,22 +53,28 @@
         .btn-gold { border-color: var(--gold); color: var(--gold); }
         .btn-green { border-color: var(--green); color: var(--green); }
 
+        .bracket-round { display: flex; flex-direction: column; justify-content: center; }
         .bracket-slot { width: 150px; background: #000; border: 1px solid var(--border); color: #fff; font-size: 0.6rem; padding: 8px; margin-bottom: 5px; border-radius: 4px; }
     </style>
 </head>
 <body>
 
 <script>
-    // --- 1. IT SECURITY & IDENTITY ---
-    const SENSEI_ID = localStorage.getItem('ninjaUser') || "UNKNOWN_SENSEI";
+    // --- 1. CORE IDENTITY & IT SECURITY ---
+    const SENSEI_ID = localStorage.getItem('ninjaUser') || "MASTER_SENSEI";
 
     function checkITSecurity() {
         // Freeze Check
         if (localStorage.getItem(`freeze_${SENSEI_ID}`) === 'true') {
-            document.body.innerHTML = `<div style="background:#000; color:var(--red); height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>TERMINAL_FROZEN</h1><p>ACCESS REVOKED BY IT_MANAGEMENT</p></div>`;
+            document.body.innerHTML = `
+                <div style="background:#000; color:var(--red); height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;">
+                    <h1>TERMINAL_FROZEN</h1>
+                    <p>ACCESS REVOKED BY IT_MANAGEMENT</p>
+                    <button class="btn" style="width:200px;" onclick="location.href='index.html'">EXIT</button>
+                </div>`;
             window.stop();
         }
-        // Surveillance Check
+        // Surveillance Light Update
         const isWatched = localStorage.getItem('it_active') === 'true';
         document.getElementById('it-light').className = isWatched ? 'light watching' : 'light';
         document.getElementById('it-text').innerText = isWatched ? "IT_SURVEILLANCE: ACTIVE_SCAN" : "IT_SURVEILLANCE: PASSIVE";
@@ -102,7 +108,7 @@
                 <option value="PIANO_LAB">PIANO_LAB</option>
                 <option value="RHYTHM_HUB">RHYTHM_HUB</option>
             </select>
-            <button class="btn btn-blue" onclick="deployMission()">TRANSMIT_ORDERS</button>
+            <button class="btn" onclick="deployMission()">TRANSMIT_ORDERS</button>
             <button class="btn btn-red" style="margin-top:5px;" onclick="cancelMission()">ABORT_MISSION</button>
         </div>
 
@@ -150,12 +156,14 @@
             <div style="display:flex; justify-content:space-between; padding:20px; background:#000; border-radius:10px;">
                 <div class="bracket-round">
                     <input type="text" class="bracket-slot" id="q1" placeholder="Q1">
-                    <input type="text" class="bracket-slot" id="q2" placeholder="Q2"><div style="height:15px;"></div>
+                    <input type="text" class="bracket-slot" id="q2" placeholder="Q2">
+                    <div style="height:15px;"></div>
                     <input type="text" class="bracket-slot" id="q3" placeholder="Q3">
                     <input type="text" class="bracket-slot" id="q4" placeholder="Q4">
                 </div>
                 <div class="bracket-round">
-                    <input type="text" class="bracket-slot" id="s1" placeholder="SEMI_1" style="border-color:var(--purple);"><div style="height:40px;"></div>
+                    <input type="text" class="bracket-slot" id="s1" placeholder="SEMI_1" style="border-color:var(--purple);">
+                    <div style="height:40px;"></div>
                     <input type="text" class="bracket-slot" id="s2" placeholder="SEMI_2" style="border-color:var(--purple);">
                 </div>
                 <div class="bracket-round">
@@ -163,37 +171,48 @@
                 </div>
             </div>
             <div style="display:flex; gap:10px; margin-top:10px;">
-                <button class="btn btn-gold" style="width:auto;" onclick="saveBracket()">LOCK_BRACKET</button>
-                <button class="btn btn-blue" style="width:auto;" onclick="window.open('spectator_view.html', '_blank')">OPEN_PROJECTOR_VIEW</button>
+                <button class="btn btn-gold" style="width:auto;" onclick="saveBracket()">SAVE_BRACKET</button>
+                <button class="btn btn-blue" style="width:auto;" onclick="window.open('spectator_view.html', '_blank')">OPEN_SPECTATOR_VIEW</button>
+                <button class="btn btn-red" style="width:auto;" onclick="resetBracket()">RESET</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // --- CORE LOGIC ---
+    // --- 2. MISSION & ANNOUNCEMENT LOGIC ---
     function deployMission() {
-        const m = { name: document.getElementById('m-name').value, goal: document.getElementById('m-goal').value, type: document.getElementById('m-type').value, active: true };
+        const name = document.getElementById('m-name').value;
+        const goal = document.getElementById('m-goal').value;
+        const type = document.getElementById('m-type').value;
+        if(!name || !goal) return alert("INPUT_REQUIRED");
+
+        const m = { name, goal, type, active: true };
         localStorage.setItem('active_mission', JSON.stringify(m));
-        reportToIT(`MISSION_DEPLOYED: ${m.name}`);
-        alert("TRANSMITTED");
+        reportToIT(`MISSION_DEPLOYED: ${name}`);
+        alert("TRANSMITTED_TO_NINJA_HUBS");
     }
 
-    function cancelMission() { 
-        localStorage.removeItem('active_mission'); 
+    function cancelMission() {
+        localStorage.removeItem('active_mission');
         reportToIT("MISSION_ABORTED");
+        alert("MISSION_OFFLINE");
     }
 
     function postAnnouncement() {
         const msg = document.getElementById('announcement-input').value;
+        if(!msg) return;
         localStorage.setItem('system_broadcast', JSON.stringify({ message: msg, type: 'INFO', timestamp: Date.now() }));
-        reportToIT(`BROADCAST: ${msg.substring(0,20)}...`);
+        reportToIT(`GLOBAL_BROADCAST: ${msg.substring(0,20)}...`);
+        document.getElementById('announcement-input').value = "";
     }
 
+    // --- 3. XP & LEADERBOARD LOGIC ---
     function refreshLeaderboard() {
         const list = document.getElementById('leaderboard-list');
         const ninjas = JSON.parse(localStorage.getItem('ninja_roster')) || [];
         let totalXP = 0;
+        
         let data = ninjas.map(n => {
             const xp = parseInt(localStorage.getItem(`xp_${n}`)) || 0;
             totalXP += xp;
@@ -204,7 +223,7 @@
         data.forEach((n, i) => {
             list.innerHTML += `
                 <div style="padding:8px; border-bottom:1px solid #111; font-size:0.6rem;">
-                    <div style="display:flex; justify-content:space-between;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span>#${i+1} ${n.name} ${n.xp >= 10000 ? '🎖️' : ''}</span>
                         <span>${n.xp} XP</span>
                     </div>
@@ -224,6 +243,7 @@
         refreshLeaderboard();
     }
 
+    // --- 4. DUEL ARENA & TIMER ---
     function updateDuel() {
         const n1 = document.getElementById('select-n1').value;
         const n2 = document.getElementById('select-n2').value;
@@ -234,31 +254,43 @@
     function announceWinner() {
         const n1 = document.getElementById('select-n1').value;
         const n2 = document.getElementById('select-n2').value;
-        const xp1 = parseInt(localStorage.getItem(`xp_${n1}`)) || 0;
-        const xp2 = parseInt(localStorage.getItem(`xp_${n2}`)) || 0;
-        const win = xp1 > xp2 ? n1 : n2;
+        const win = parseInt(localStorage.getItem(`xp_${n1}`)) > parseInt(localStorage.getItem(`xp_${n2}`)) ? n1 : n2;
         localStorage.setItem('system_broadcast', JSON.stringify({ message: `DUEL_VICTOR: ${win}!`, type: 'ALERT', timestamp: Date.now() }));
+        reportToIT(`DUEL_VICTOR_ANNOUNCED: ${win}`);
     }
 
-    function fireSFX(type) { localStorage.setItem('sfx_trigger', type); }
-
-    function saveBracket() {
-        const b = {}; ['q1','q2','q3','q4','s1','s2','f1'].forEach(id => b[id] = document.getElementById(id).value);
-        localStorage.setItem('tournament_bracket', JSON.stringify(b));
-    }
-
-    let tInt;
     function startTimer() {
         let s = parseInt(document.getElementById('timer-input').value);
+        clearInterval(tInt);
         tInt = setInterval(() => {
             s--;
             let str = Math.floor(s/60).toString().padStart(2,'0') + ":" + (s%60).toString().padStart(2,'0');
             localStorage.setItem('active_timer', JSON.stringify({ active: true, timeString: str, seconds: s }));
             document.getElementById('dash-timer-preview').innerText = str;
-            if (s<=0) { clearInterval(tInt); fireSFX('battle'); }
+            if (s<=0) { clearInterval(tInt); fireSFX('battle'); localStorage.setItem('active_timer', JSON.stringify({ active: false })); }
         }, 1000);
     }
+    let tInt;
 
+    function fireSFX(type) { localStorage.setItem('sfx_trigger', type); }
+
+    // --- 5. TOURNAMENT SYNC ---
+    function saveBracket() {
+        const b = {}; 
+        ['q1','q2','q3','q4','s1','s2','f1'].forEach(id => b[id] = document.getElementById(id).value);
+        localStorage.setItem('tournament_bracket', JSON.stringify(b));
+        reportToIT("TOURNAMENT_BRACKET_UPDATED");
+        alert("BRACKET_SAVED_TO_SPECTATOR_VIEW");
+    }
+
+    function resetBracket() {
+        if(confirm("WIPE BRACKET?")) {
+            ['q1','q2','q3','q4','s1','s2','f1'].forEach(id => document.getElementById(id).value = "");
+            localStorage.removeItem('tournament_bracket');
+        }
+    }
+
+    // --- INIT ---
     window.onload = () => {
         refreshLeaderboard();
         const ninjas = JSON.parse(localStorage.getItem('ninja_roster')) || [];
@@ -270,10 +302,11 @@
         const b = JSON.parse(localStorage.getItem('tournament_bracket'));
         if(b) Object.keys(b).forEach(id => document.getElementById(id).value = b[id]);
         
-        // Register Teacher to Global Roster
+        // Register Teacher
         let teachers = JSON.parse(localStorage.getItem('psalmist_teachers')) || {};
         teachers[SENSEI_ID] = { status: "ONLINE", lastPing: Date.now() };
         localStorage.setItem('psalmist_teachers', JSON.stringify(teachers));
+        reportToIT("SENSEI_DASHBOARD_OPENED");
     };
 </script>
 </body>
