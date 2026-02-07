@@ -59,6 +59,21 @@
         #global-xp { color: var(--gold); font-weight: 900; font-size: 1.1rem; display: block; }
         #rank-tag { font-size: 0.55rem; letter-spacing: 2px; color: var(--blue); font-weight: 700; }
 
+        /* Leaderboard Section */
+        .leaderboard-panel {
+            width: 100%;
+            max-width: 600px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .lb-title { font-size: 0.6rem; color: var(--gold); letter-spacing: 3px; margin-bottom: 12px; font-weight: 900; text-align: center; }
+        .lb-row { display: flex; justify-content: space-between; font-size: 0.7rem; padding: 5px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .lb-row.active-user { color: var(--green); background: rgba(0, 255, 136, 0.05); }
+        .lb-rank { color: var(--blue); font-weight: 900; width: 30px; }
+
         .grid {
             width: 100%; 
             max-width: 600px; 
@@ -129,9 +144,15 @@
     </div>
 </header>
 
-<div style="text-align: center; margin-bottom: 40px;">
+<div style="text-align: center; margin-bottom: 25px;">
     <h1 style="font-size: 1.4rem; letter-spacing: 6px; margin: 0; color: var(--blue); font-weight: 900;">PITCH_HUB</h1>
     <div style="font-size: 0.65rem; color: #444; margin-top: 8px; letter-spacing: 2px;">NEURAL_EAR_TRAINING_v4.0</div>
+</div>
+
+<div class="leaderboard-panel">
+    <div class="lb-title">NEURAL_RANKINGS</div>
+    <div id="leaderboard-list">
+        </div>
 </div>
 
 <div class="grid">
@@ -206,10 +227,27 @@
         localStorage.setItem('psalmist_teachers', JSON.stringify(rosters));
     }
 
+    function renderLeaderboard() {
+        const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        const lbList = document.getElementById('leaderboard-list');
+        
+        // Convert object to array and sort by XP
+        let ninjas = Object.keys(roster).map(key => ({
+            name: key,
+            xp: roster[key].xp || 0
+        })).sort((a, b) => b.xp - a.xp).slice(0, 5); // Top 5
+
+        lbList.innerHTML = ninjas.map((ninja, index) => `
+            <div class="lb-row ${ninja.name === ninjaName ? 'active-user' : ''}">
+                <div><span class="lb-rank">#${index + 1}</span> ${ninja.name}</div>
+                <div style="color:var(--gold)">${ninja.xp} XP</div>
+            </div>
+        `).join('') || '<div class="lb-row" style="justify-content:center; color:#444;">NO_DATA_FOUND</div>';
+    }
+
     function updateHUD() {
         checkSecurityHandshake();
         
-        // Syncing with ninja_roster_full used in pitch_vocal
         const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
         const xp = (roster[ninjaName] && roster[ninjaName].xp) ? roster[ninjaName].xp : (parseInt(localStorage.getItem(`xp_${ninjaName}`)) || 0);
         
@@ -221,6 +259,7 @@
         else if (xp >= 5000) rank = "ACOLYTE";
         
         document.getElementById('rank-tag').innerText = `RANK: ${rank}`;
+        renderLeaderboard();
     }
 
     window.onload = updateHUD;
