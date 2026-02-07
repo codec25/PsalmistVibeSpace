@@ -205,19 +205,16 @@
 
         // --- 1. CORE SECURITY & IT HANDSHAKE (The Pulse) ---
         function checkSecurityHandshake() {
-            // Global System Lock
             if (localStorage.getItem('global_system_lock') === 'true') {
                 document.body.innerHTML = `<div style="background:#000; color:#ff4b2b; height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>SYSTEM_LOCKED</h1><p>THE ARCHITECT HAS SUSPENDED ALL SECTORS.</p></div>`;
                 window.stop();
             }
 
-            // Remote Freeze Check
             if (localStorage.getItem(`freeze_${ninjaName}`) === 'true') {
                 document.body.innerHTML = `<div style="background:#000; color:var(--red); height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>TERMINAL_LOCKED</h1><p>RESTRICTED BY IT_MANAGEMENT</p></div>`;
                 window.stop();
             }
 
-            // Neural Pulse (Register Online Status for IT Manager)
             let rosters = JSON.parse(localStorage.getItem('psalmist_teachers')) || {};
             rosters[ninjaName] = { 
                 lastActive: new Date().toLocaleTimeString(), 
@@ -239,14 +236,18 @@
             }
         }
 
-        // --- 3. PAGE INITIALIZATION ---
+        // --- 3. PAGE INITIALIZATION (Updated to use Central Roster) ---
         window.onload = () => {
             checkSecurityHandshake();
             const isGuest = localStorage.getItem('isGuest') === 'true';
 
-            // XP Sync (Unique per user)
-            const currentXP = parseInt(localStorage.getItem(`xp_${ninjaName}`)) || 0;
-            const level = Math.floor(currentXP / 2500) + 1;
+            // Sync from the Master Roster
+            const masterRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            const myData = masterRoster[ninjaName] || { xp: 0, level: 1, status: "LEVEL 01 ACADEMY" };
+
+            const currentXP = myData.xp;
+            const level = myData.level || Math.floor(currentXP / 2500) + 1;
+            const lockedStatus = myData.status;
 
             // Blacklist Check
             const vault = JSON.parse(localStorage.getItem('vault_users')) || {};
@@ -258,7 +259,6 @@
 
             document.getElementById('display-name').innerText = ninjaName.toUpperCase();
             
-            const lockedStatus = localStorage.getItem(`status_${ninjaName}`) || "LEVEL 01 ACADEMY";
             const sessionLabel = isGuest ? "GUEST_SESSION" : "OFFICIAL_MEMBER";
             document.getElementById('display-rank').innerText = `${lockedStatus} // ${sessionLabel} // LVL ${level} // XP: ${currentXP}`;
 
@@ -324,15 +324,12 @@
         }
 
         function logout() {
-            // Don't clear EVERYTHING so we don't wipe the whole classroom DB, 
-            // just the session data.
             localStorage.removeItem('ninjaUser');
             localStorage.removeItem('isGuest');
             localStorage.removeItem('userRole');
             window.location.href = 'index.html';
         }
 
-        // --- RUN CONTINUOUS SYNC CYCLES ---
         setInterval(listenForBroadcast, 2000);
         setInterval(checkSecurityHandshake, 3000);
         setInterval(listenForSFX, 1000);
