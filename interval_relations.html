@@ -17,70 +17,83 @@
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
             display: flex; flex-direction: column; align-items: center; min-height: 100vh;
             background-image: radial-gradient(circle at center, #0b1426 0%, #020406 100%);
-            overflow-x: hidden;
-            padding: env(safe-area-inset-top) 15px 40px 15px;
+            padding: 20px;
         }
 
-        /* --- Guidance System Styles --- */
-        .protocol-briefing {
-            width: 100%; max-width: 600px; background: rgba(79, 172, 254, 0.1);
-            border: 1px solid var(--blue); border-radius: 12px; padding: 15px;
-            margin-bottom: 20px; font-size: 0.65rem; line-height: 1.5; color: var(--blue);
-            animation: fadeIn 0.8s ease-out; position: relative;
-        }
-        .briefing-close { position: absolute; top: 10px; right: 10px; cursor: pointer; color: #fff; font-size: 0.8rem; }
-        
-        .hint-text {
-            font-size: 0.6rem; color: #555; letter-spacing: 2px; margin-bottom: 8px;
-            text-transform: uppercase; text-align: center; width: 100%;
-        }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- Existing Styles (Unchanged) --- */
         .hud-top {
             width: 100%; max-width: 800px; padding: 20px 0;
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid var(--border); margin-bottom: 20px;
         }
-        .hud-top div { font-size: 0.6rem; letter-spacing: 2px; }
-        .xp-display { color: var(--gold); font-weight: 700; }
-        .exit-link { color: var(--blue); text-decoration: none; font-weight: 900; }
+        .xp-display { color: var(--gold); font-weight: 700; font-size: 0.8rem; }
+        .exit-link { color: var(--blue); text-decoration: none; font-weight: 900; font-size: 0.7rem; }
+
+        .settings-bar {
+            width: 100%; max-width: 600px; background: var(--panel);
+            border: 1px solid var(--border); border-radius: 12px; padding: 12px;
+            margin-bottom: 15px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+            font-size: 0.65rem; letter-spacing: 1px; gap: 10px;
+        }
+
+        select, .toggle-btn {
+            background: #000; border: 1px solid var(--blue); color: var(--blue);
+            font-family: 'Orbitron'; padding: 6px 10px; border-radius: 4px; cursor: pointer;
+        }
+        .toggle-btn.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 900; }
 
         .main-stage { width: 100%; max-width: 600px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
 
-        .matrix-display {
-            width: 100%; height: 200px; background: rgba(255,255,255,0.02);
-            border-radius: 20px; border: 1px inset var(--border);
-            display: flex; justify-content: center; align-items: center; position: relative;
+        .interface-viewport {
+            width: 100%; height: 200px; 
+            display: flex; justify-content: center; align-items: center;
+            position: relative;
         }
 
-        .node-container { display: flex; gap: 15px; }
-        .node { 
-            width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--blue);
-            opacity: 0.2; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .matrix-display {
+            width: 100%; height: 100%; background: rgba(255,255,255,0.02);
+            border-radius: 20px; border: 1px inset var(--border);
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.3s ease;
         }
+        .node-container { display: flex; gap: 30px; }
+        .node { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--blue); opacity: 0.2; transition: 0.3s; }
         .node.active { opacity: 1; background: #fff; box-shadow: 0 0 30px var(--blue); transform: scale(1.1); }
 
-        .choices-grid { 
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%;
+        .piano-outer {
+            width: 100%; height: 100%;
+            background: #111; padding: 15px; border-radius: 12px;
+            border: 4px solid #222; position: absolute; top:0; left:0;
+            display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 5;
         }
+        .piano-keys { position: relative; height: 100%; width: 100%; display: flex; }
+        .key { transition: 0.15s; position: relative; }
+        .key.white {
+            flex: 1; background: linear-gradient(to bottom, #eee 0%, #fff 100%);
+            border: 1px solid #ccc; border-radius: 0 0 5px 5px; z-index: 1;
+        }
+        .key.black {
+            position: absolute; width: 6.5%; height: 60%; background: #222;
+            border-radius: 0 0 3px 3px; z-index: 2; border: 1px solid #000;
+        }
+        .key.active-note { background: var(--green) !important; box-shadow: 0 0 20px var(--green); }
+        
+        .semitone-hint {
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            font-size: 0.6rem; color: var(--gold); background: #000;
+            padding: 4px 10px; border-radius: 4px; border: 1px solid var(--gold);
+            z-index: 10;
+        }
+
+        .choices-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; }
         .choice-btn { 
             background: var(--panel); border: 1px solid var(--border); color: #fff; padding: 18px;
-            font-family: 'Orbitron'; font-size: 0.8rem; font-weight: 700; cursor: pointer; border-radius: 12px;
-            transition: 0.2s;
+            font-family: 'Orbitron'; font-size: 0.7rem; font-weight: 700; cursor: pointer; border-radius: 12px;
+            transition: 0.2s; letter-spacing: 1px;
         }
-        .choice-btn:active { transform: scale(0.95); background: rgba(79, 172, 254, 0.2); }
-
+        
         .action-btns { width: 100%; display: flex; gap: 15px; margin-top: 10px; }
-        .btn-main { 
-            flex: 2; background: var(--blue); color: #000; border: none; padding: 20px; 
-            font-family: 'Orbitron'; font-weight: 900; border-radius: 15px; cursor: pointer; letter-spacing: 2px;
-        }
-        .btn-sub { 
-            flex: 1; background: none; color: var(--gold); border: 1px solid var(--gold); 
-            padding: 20px; font-family: 'Orbitron'; border-radius: 15px; cursor: pointer; font-size: 0.6rem;
-        }
+        .btn-main { flex: 2; background: var(--blue); color: #000; border: none; padding: 20px; font-family: 'Orbitron'; font-weight: 900; border-radius: 15px; cursor: pointer; letter-spacing: 2px; }
+        .btn-sub { flex: 1; background: none; color: var(--gold); border: 1px solid var(--gold); padding: 20px; font-family: 'Orbitron'; border-radius: 15px; cursor: pointer; font-size: 0.6rem; }
     </style>
 </head>
 <body>
@@ -91,24 +104,38 @@
         <a href="pitch_hub.html" class="exit-link">EXIT</a>
     </div>
 
+    <div class="settings-bar">
+        <div>
+            OPTIONS: 
+            <select id="option-count" onchange="resetAndGenerate()">
+                <option value="2">2</option>
+                <option value="4" selected>4</option>
+                <option value="6">6</option>
+                <option value="8">8</option>
+            </select>
+        </div>
+        <button id="harmonic-toggle" class="toggle-btn" onclick="toggleHarmonic()">HARMONIC: OFF</button>
+        <button id="piano-toggle" class="toggle-btn" onclick="togglePiano()">SWITCH: PIANO</button>
+    </div>
+
     <div class="main-stage">
         
-        <div id="briefing" class="protocol-briefing">
-            <span class="briefing-close" onclick="this.parentElement.style.display='none'">[X]</span>
-            <strong>NINJA_PROTOCOL:</strong> Two frequencies will trigger. Calculate the mathematical distance (Interval) between them. Match the harmonic relation to the grid.
-        </div>
+        <div class="interface-viewport">
+            <div class="matrix-display" id="digital-layer">
+                <div class="node-container">
+                    <div class="node" id="node-1"></div>
+                    <div class="node" id="node-2"></div>
+                </div>
+            </div>
 
-        <div class="matrix-display">
-            <div class="node-container">
-                <div class="node" id="node-1"></div>
-                <div class="node" id="node-2"></div>
+            <div class="piano-outer" id="piano-layer">
+                <div id="hint-box" class="semitone-hint" style="display:none;">0 SEMITONES</div>
+                <div class="piano-keys" id="piano-keys-container"></div>
             </div>
         </div>
 
-        <div class="choices-grid" id="choices-container">
-            </div>
-
-        <div class="hint-text" id="action-hint">WAITING FOR GEOMETRIC DATA</div>
+        <div class="choices-grid" id="choices-container"></div>
+        <div id="action-hint" style="font-size:0.6rem; color:#555; letter-spacing:2px; text-transform:uppercase;">Select the correct harmonic distance</div>
 
         <div class="action-btns">
             <button class="btn-main" onclick="generateNewInterval()">NEW RELATION</button>
@@ -119,71 +146,120 @@
     <script>
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const INTERVALS = [
-            { name: "Minor 2nd", semitones: 1 },
-            { name: "Major 2nd", semitones: 2 },
-            { name: "Minor 3rd", semitones: 3 },
-            { name: "Major 3rd", semitones: 4 },
-            { name: "Perfect 4th", semitones: 5 },
-            { name: "Tritone", semitones: 6 },
-            { name: "Perfect 5th", semitones: 7 },
-            { name: "Minor 6th", semitones: 8 },
-            { name: "Major 6th", semitones: 9 },
-            { name: "Minor 7th", semitones: 10 },
-            { name: "Major 7th", semitones: 11 },
-            { name: "Octave", semitones: 12 }
+            { name: "Minor 2nd", semitones: 1 }, { name: "Major 2nd", semitones: 2 },
+            { name: "Minor 3rd", semitones: 3 }, { name: "Major 3rd", semitones: 4 },
+            { name: "Perfect 4th", semitones: 5 }, { name: "Tritone", semitones: 6 },
+            { name: "Perfect 5th", semitones: 7 }, { name: "Minor 6th", semitones: 8 },
+            { name: "Major 6th", semitones: 9 }, { name: "Minor 7th", semitones: 10 },
+            { name: "Major 7th", semitones: 11 }, { name: "Perfect Octave", semitones: 12 }
         ];
 
-        let rootMidi, targetMidi, currentInterval;
+        let rootMidi, targetMidi, currentInterval = null, pianoEnabled = false, harmonicEnabled = false;
 
-        function refreshXP() {
-            const xp = localStorage.getItem('totalXP') || '0';
-            document.getElementById('global-xp').innerText = `XP: ${xp.toString().padStart(5, '0')}`;
+        function togglePiano() {
+            pianoEnabled = !pianoEnabled;
+            const btn = document.getElementById('piano-toggle');
+            const pianoLayer = document.getElementById('piano-layer');
+            const digitalLayer = document.getElementById('digital-layer');
+            const hint = document.getElementById('hint-box');
+
+            if (pianoEnabled) {
+                btn.innerText = `SWITCH: SCREEN`;
+                btn.classList.add('active');
+                pianoLayer.style.display = 'block';
+                digitalLayer.style.opacity = '0';
+                if(currentInterval) hint.style.display = 'block';
+                buildPiano();
+            } else {
+                btn.innerText = `SWITCH: PIANO`;
+                btn.classList.remove('active');
+                pianoLayer.style.display = 'none';
+                digitalLayer.style.opacity = '1';
+                hint.style.display = 'none';
+            }
+        }
+
+        function toggleHarmonic() {
+            harmonicEnabled = !harmonicEnabled;
+            const btn = document.getElementById('harmonic-toggle');
+            btn.innerText = `HARMONIC: ${harmonicEnabled ? 'ON' : 'OFF'}`;
+            btn.classList.toggle('active');
+        }
+
+        function buildPiano() {
+            const container = document.getElementById('piano-keys-container');
+            container.innerHTML = '';
+            const pattern = [0,1,0,1,0,0,1,0,1,0,1,0]; 
+            let whiteIdx = 0;
+            for(let i=0; i<13; i++) {
+                const midi = 60 + i;
+                const isBlack = pattern[i % 12] === 1;
+                const key = document.createElement('div');
+                key.className = `key ${isBlack ? 'black' : 'white'}`;
+                key.id = `key-${midi}`;
+                if(isBlack) key.style.left = ((whiteIdx * 14.28) - 3.25) + "%";
+                else whiteIdx++;
+                container.appendChild(key);
+            }
+        }
+
+        function resetAndGenerate() {
+            if(!currentInterval) return;
+            generateNewInterval();
         }
 
         function generateNewInterval() {
-            rootMidi = 60 + Math.floor(Math.random() * 12);
+            rootMidi = 60 + Math.floor(Math.random() * 5); 
             currentInterval = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
             targetMidi = rootMidi + currentInterval.semitones;
             
-            document.getElementById('action-hint').innerText = "RELATION ACTIVE: IDENTIFY HARMONIC SPACE";
+            document.querySelectorAll('.key').forEach(k => k.classList.remove('active-note'));
+            const hint = document.getElementById('hint-box');
+            hint.innerText = `${currentInterval.semitones} SEMITONES`;
+            if(pianoEnabled) hint.style.display = 'block';
+
             playInterval();
             setupButtons();
         }
 
         function playInterval() {
+            if (!currentInterval) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            
+            const targetDelay = harmonicEnabled ? 0 : 0.7;
             playNote(rootMidi, 0, "node-1");
-            playNote(targetMidi, 0.6, "node-2");
+            playNote(targetMidi, targetDelay, "node-2");
         }
 
         function playNote(midi, delay, nodeId) {
             const freq = 440 * Math.pow(2, (midi - 69) / 12);
             const osc = audioCtx.createOscillator();
             const g = audioCtx.createGain();
-            
             osc.connect(g); g.connect(audioCtx.destination);
             g.gain.setValueAtTime(0, audioCtx.currentTime + delay);
-            g.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + delay + 0.1);
+            g.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + delay + 0.1);
             g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + 1.2);
-            
             osc.frequency.value = freq;
             osc.start(audioCtx.currentTime + delay);
             osc.stop(audioCtx.currentTime + delay + 1.2);
 
             setTimeout(() => {
-                document.getElementById(nodeId).classList.add('active');
-                setTimeout(() => document.getElementById(nodeId).classList.remove('active'), 800);
+                if (!pianoEnabled) document.getElementById(nodeId)?.classList.add('active');
+                if (pianoEnabled) document.getElementById(`key-${midi}`)?.classList.add('active-note');
+                setTimeout(() => {
+                    if (!pianoEnabled) document.getElementById(nodeId)?.classList.remove('active');
+                }, 800);
             }, delay * 1000);
         }
 
         function setupButtons() {
             const container = document.getElementById('choices-container');
+            const count = parseInt(document.getElementById('option-count').value);
             container.innerHTML = '';
             
-            // Randomize 4 choices including the correct one
+            if(!currentInterval) return;
+
             let choices = [currentInterval];
-            while(choices.length < 4) {
+            while(choices.length < count) {
                 let r = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
                 if(!choices.find(c => c.name === r.name)) choices.push(r);
             }
@@ -192,34 +268,41 @@
                 const b = document.createElement('button');
                 b.className = 'choice-btn';
                 b.innerText = intv.name;
-                b.onclick = () => checkAnswer(intv, b);
+                b.onclick = () => {
+                    if(intv.name === currentInterval.name) {
+                        b.style.background = "var(--green)";
+                        b.style.color = "#000";
+                        document.getElementById('action-hint').innerText = "CALCULATION CORRECT // +75 XP";
+                        addXP(75);
+                        setTimeout(generateNewInterval, 1000);
+                    } else {
+                        b.style.background = "var(--red)";
+                        setTimeout(() => b.style.background = "", 500);
+                    }
+                };
                 container.appendChild(b);
             });
         }
 
-        function checkAnswer(intv, btn) {
-            if(intv.name === currentInterval.name) {
-                btn.style.backgroundColor = "var(--green)";
-                btn.style.color = "#000";
-                document.getElementById('action-hint').innerText = "HARMONY SYNCED // +75 XP ACQUIRED";
-                addXP(75);
-                setTimeout(generateNewInterval, 800);
-            } else {
-                btn.style.backgroundColor = "var(--red)";
-                document.getElementById('action-hint').innerText = "INTERVAL MISMATCH // RE-CALCULATE semitones";
-                setTimeout(() => btn.style.backgroundColor = "", 400);
-            }
+        function addXP(amt) {
+            const ninjaName = localStorage.getItem('ninjaUser') || "GUEST_NINJA";
+            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            if(!roster[ninjaName]) roster[ninjaName] = { xp: 0 };
+            roster[ninjaName].xp += amt;
+            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+            refreshXP();
         }
 
-        function addXP(amt) {
-            let total = parseInt(localStorage.getItem('totalXP') || 0) + amt;
-            localStorage.setItem('totalXP', total);
-            refreshXP();
+        function refreshXP() {
+            const ninjaName = localStorage.getItem('ninjaUser') || "GUEST_NINJA";
+            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            const xp = roster[ninjaName]?.xp || 0;
+            document.getElementById('global-xp').innerText = `XP: ${xp.toString().padStart(5, '0')}`;
         }
 
         window.onload = () => {
             refreshXP();
-            // Initial call removed to allow user to start via button
+            // We don't auto-start to avoid audio context issues on load
         };
     </script>
 </body>
