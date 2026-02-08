@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PRACTICE_DRILLS // Neural_Ninja_v8</title>
+    <title>PRACTICE_DRILLS // Neural_Ninja_v10</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -22,6 +22,13 @@
             font-size: 0.6rem; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.8);
             z-index: 100; position: relative;
         }
+
+        .btn-hub {
+            padding: 4px 8px; border: 1px solid var(--blue); color: var(--blue);
+            background: transparent; font-family: 'Orbitron'; font-size: 0.5rem;
+            cursor: pointer; text-decoration: none; border-radius: 3px;
+        }
+        .btn-hub:hover { background: rgba(79, 172, 254, 0.2); }
 
         #progress-container {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.1);
@@ -47,16 +54,16 @@
         .controls-row::-webkit-scrollbar { display: none; }
         
         .config-box { 
-            flex: 0 0 115px; background: rgba(255,255,255,0.05); padding: 5px; 
+            flex: 0 0 120px; background: rgba(255,255,255,0.05); padding: 5px; 
             border: 1px solid var(--border); border-radius: 4px; text-align: center;
         }
         .config-box label { font-size: 0.4rem; color: var(--blue); font-weight: 900; display: block; margin-bottom: 2px; }
         
         select, button.ui-btn { 
             background: #000; color: #fff; border: 1px solid var(--border); 
-            font-size: 0.5rem; width: 100%; height: 25px; font-family: 'Orbitron';
+            font-size: 0.5rem; width: 100%; height: 22px; font-family: 'Orbitron'; margin-top: 2px;
         }
-        input[type=range] { width: 100%; height: 15px; accent-color: var(--blue); }
+        input[type=range] { width: 100%; height: 12px; accent-color: var(--blue); }
         
         button.ui-btn.active { color: var(--green); border-color: var(--green); box-shadow: 0 0 5px var(--green); }
         button.ui-btn.challenge-active { color: var(--red); border-color: var(--red); box-shadow: 0 0 5px var(--red); }
@@ -91,7 +98,6 @@
             position: absolute; width: 90%; left: 5%; height: 20px; 
             border-radius: 4px; z-index: 5;
         }
-        /* Color-coded Notes */
         .note-L { background: var(--blue); box-shadow: 0 0 15px var(--blue); }
         .note-R { background: var(--gold); box-shadow: 0 0 15px var(--gold); }
 
@@ -114,6 +120,7 @@
 <body>
 
     <div class="hud-top">
+        <a href="rhythm_hub.html" class="btn-hub">RETURN_HUB</a>
         <div id="acc-display" style="color:var(--gold)">ACC: 100%</div>
         <div id="metronome-ui" class="metronome-light"></div>
         <div id="record-display" onclick="clearRecord()" style="font-size:0.5rem; color:var(--blue); cursor:pointer; text-decoration:underline;">BEST: --</div>
@@ -174,8 +181,13 @@
             <div class="config-box"><label>BPM: <span id="bpmVal">100</span></label>
                 <input type="range" id="bpmSlider" min="40" max="220" value="100" oninput="updateBPM()">
             </div>
-            <div class="config-box"><label>METRO VOL</label>
+            <div class="config-box"><label>METRONOME</label>
                 <input type="range" id="metroVol" min="0" max="100" value="50">
+                <select id="metroType">
+                    <option value="tick">TICK</option>
+                    <option value="wood">WOOD</option>
+                    <option value="bell">BELL</option>
+                </select>
                 <button onclick="toggleMetronomeAudio()" id="metro-btn" class="ui-btn">OFF</button>
             </div>
             <div class="config-box"><label>SNARE VOL</label>
@@ -261,7 +273,7 @@
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             metroAudio = !metroAudio;
             document.getElementById('metro-btn').classList.toggle('active', metroAudio);
-            document.getElementById('metro-btn').innerText = metroAudio ? "METRO: ON" : "METRO: OFF";
+            document.getElementById('metro-btn').innerText = metroAudio ? "ON" : "OFF";
         }
 
         function toggleChallenge() {
@@ -279,13 +291,22 @@
         function playTick() {
             if (!metroAudio || !audioCtx) return;
             const vol = document.getElementById('metroVol').value / 100;
+            const type = document.getElementById('metroType').value;
             const osc = audioCtx.createOscillator();
             const g = audioCtx.createGain();
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+            
+            let freq = 880;
+            let decay = 0.05;
+
+            if (type === 'wood') { freq = 440; decay = 0.1; }
+            if (type === 'bell') { freq = 1200; decay = 0.2; }
+
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
             g.gain.setValueAtTime(vol * 0.2, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + decay);
+            
             osc.connect(g); g.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+            osc.start(); osc.stop(audioCtx.currentTime + decay);
         }
 
         function playSnare(isPerfect) {
@@ -391,6 +412,8 @@
             if (bpm > currentRecord) {
                 localStorage.setItem('ninja_drill_record', bpm);
                 loadRecord();
+                document.getElementById('record-display').style.color = 'var(--green)';
+                setTimeout(() => document.getElementById('record-display').style.color = 'var(--blue)', 1000);
             }
         }
 
