@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PRACTICE_DRILLS // Neural_Ninja_Mobile</title>
+    <title>PRACTICE_DRILLS // Neural_Ninja_v8</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -17,17 +17,29 @@
             touch-action: none; -webkit-user-select: none; user-select: none;
         }
 
-        /* HUD */
         .hud-top {
             display: flex; justify-content: space-between; align-items: center; padding: 10px 15px;
             font-size: 0.6rem; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.8);
-            z-index: 100;
+            z-index: 100; position: relative;
         }
-        .metronome-flash { width: 12px; height: 12px; border-radius: 50%; background: var(--blue); opacity: 0; transition: opacity 0.05s; }
+
+        #progress-container {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.1);
+        }
+        #progress-fill {
+            width: 0%; height: 100%; background: var(--green); box-shadow: 0 0 10px var(--green);
+            transition: width 0.3s ease;
+        }
+        
+        .metronome-light { 
+            width: 14px; height: 14px; border-radius: 50%; 
+            background: var(--blue); box-shadow: 0 0 10px var(--blue);
+            opacity: 0.2; transition: opacity 0.05s, transform 0.05s;
+        }
+        .metronome-light.pulse { opacity: 1; transform: scale(1.2); }
 
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; align-items: center; position: relative; padding: 5px; }
 
-        /* Mobile Control Bar */
         .controls-row { 
             display: flex; gap: 5px; width: 100%; overflow-x: auto; padding: 5px 0;
             scrollbar-width: none; z-index: 50;
@@ -35,7 +47,7 @@
         .controls-row::-webkit-scrollbar { display: none; }
         
         .config-box { 
-            flex: 0 0 90px; background: rgba(255,255,255,0.05); padding: 5px; 
+            flex: 0 0 115px; background: rgba(255,255,255,0.05); padding: 5px; 
             border: 1px solid var(--border); border-radius: 4px; text-align: center;
         }
         .config-box label { font-size: 0.4rem; color: var(--blue); font-weight: 900; display: block; margin-bottom: 2px; }
@@ -44,9 +56,11 @@
             background: #000; color: #fff; border: 1px solid var(--border); 
             font-size: 0.5rem; width: 100%; height: 25px; font-family: 'Orbitron';
         }
-        button.ui-btn.active { color: var(--green); border-color: var(--green); }
+        input[type=range] { width: 100%; height: 15px; accent-color: var(--blue); }
+        
+        button.ui-btn.active { color: var(--green); border-color: var(--green); box-shadow: 0 0 5px var(--green); }
+        button.ui-btn.challenge-active { color: var(--red); border-color: var(--red); box-shadow: 0 0 5px var(--red); }
 
-        /* Game Board */
         .lane-container { 
             display: flex; gap: 10px; flex-grow: 1; width: 100%; max-width: 600px;
             position: relative; margin: 10px 0;
@@ -58,7 +72,6 @@
             border-radius: 12px;
         }
 
-        /* Responsive Hit Zone */
         .hit-zone {
             position: absolute; bottom: 0; width: 100%; height: 140px; 
             background: rgba(79, 172, 254, 0.05); border-top: 2px solid rgba(79, 172, 254, 0.3);
@@ -67,7 +80,6 @@
             pointer-events: auto; z-index: 10;
         }
         
-        /* The Target Line - Match this visually */
         .hit-zone::after {
             content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 3px;
             background: var(--blue); box-shadow: 0 0 15px var(--blue); transform: translateY(-50%);
@@ -76,9 +88,12 @@
         .hit-zone.active { background: var(--blue); color: #000; }
 
         .note {
-            position: absolute; width: 90%; left: 5%; height: 20px; background: var(--gold);
-            box-shadow: 0 0 15px var(--gold); border-radius: 4px; z-index: 5;
+            position: absolute; width: 90%; left: 5%; height: 20px; 
+            border-radius: 4px; z-index: 5;
         }
+        /* Color-coded Notes */
+        .note-L { background: var(--blue); box-shadow: 0 0 15px var(--blue); }
+        .note-R { background: var(--gold); box-shadow: 0 0 15px var(--gold); }
 
         .feedback {
             position: absolute; top: 30%; width: 100%; text-align: center;
@@ -99,47 +114,134 @@
 <body>
 
     <div class="hud-top">
-        <div id="xp-display" style="color:var(--gold)">XP: 0000</div>
-        <div id="m-flash" class="metronome-flash"></div>
-        <div id="acc-display">ACCURACY: 100%</div>
+        <div id="acc-display" style="color:var(--gold)">ACC: 100%</div>
+        <div id="metronome-ui" class="metronome-light"></div>
+        <div id="record-display" onclick="clearRecord()" style="font-size:0.5rem; color:var(--blue); cursor:pointer; text-decoration:underline;">BEST: --</div>
+        <div id="streak-display">STREAK: 0</div>
+        <div id="progress-container"><div id="progress-fill"></div></div>
     </div>
 
     <div class="main-stage">
         <div class="controls-row">
-            <div class="config-box"><label>PATTERN</label>
+            <div class="config-box"><label>40 RUDIMENTS</label>
                 <select id="patternType" onchange="resetPattern()">
                     <option value="random">RANDOM</option>
-                    <option value="single_stroke_roll">SINGLE</option>
-                    <option value="double_stroke_roll">DOUBLE</option>
-                    <option value="single_paradiddle">PARA</option>
+                    <optgroup label="Essential Rolls">
+                        <option value="single_stroke_roll">Single Stroke Roll</option>
+                        <option value="double_stroke_roll">Double Stroke Roll</option>
+                        <option value="multiple_bounce_roll">Multiple Bounce Roll</option>
+                        <option value="triple_stroke_roll">Triple Stroke Roll</option>
+                    </optgroup>
+                    <optgroup label="Diddle Rudiments">
+                        <option value="single_paradiddle">Single Paradiddle</option>
+                        <option value="double_paradiddle">Double Paradiddle</option>
+                        <option value="triple_paradiddle">Triple Paradiddle</option>
+                        <option value="paradiddle_diddle">Paradiddle-Diddle</option>
+                    </optgroup>
+                    <optgroup label="Short Rolls">
+                        <option value="five_stroke_roll">5 Stroke Roll</option>
+                        <option value="six_stroke_roll">6 Stroke Roll</option>
+                        <option value="seven_stroke_roll">7 Stroke Roll</option>
+                        <option value="nine_stroke_roll">9 Stroke Roll</option>
+                        <option value="ten_stroke_roll">10 Stroke Roll</option>
+                        <option value="eleven_stroke_roll">11 Stroke Roll</option>
+                        <option value="thirteen_stroke_roll">13 Stroke Roll</option>
+                        <option value="fifteen_stroke_roll">15 Stroke Roll</option>
+                        <option value="seventeen_stroke_roll">17 Stroke Roll</option>
+                    </optgroup>
+                    <optgroup label="Flam Rudiments">
+                        <option value="flam">Flam</option>
+                        <option value="flam_accent">Flam Accent</option>
+                        <option value="flam_tap">Flam Tap</option>
+                        <option value="flamicue">Flamacue</option>
+                        <option value="flam_paradiddle">Flam Paradiddle</option>
+                        <option value="flam_drag">Flam Drag</option>
+                    </optgroup>
+                    <optgroup label="Drag Rudiments">
+                        <option value="drag">Drag</option>
+                        <option value="single_drag_tap">Single Drag Tap</option>
+                        <option value="double_drag_tap">Double Drag Tap</option>
+                        <option value="lesson_25">Lesson 25</option>
+                        <option value="single_dragadiddle">Single Dragadiddle</option>
+                        <option value="drag_paradiddle_1">Drag Paradiddle #1</option>
+                        <option value="drag_paradiddle_2">Drag Paradiddle #2</option>
+                        <option value="single_ratamacue">Single Ratamacue</option>
+                        <option value="double_ratamacue">Double Ratamacue</option>
+                        <option value="triple_ratamacue">Triple Ratamacue</option>
+                    </optgroup>
                 </select>
             </div>
             <div class="config-box"><label>BPM: <span id="bpmVal">100</span></label>
-                <input type="range" id="bpmSlider" min="40" max="220" value="100" oninput="updateBPM()" style="width:100%">
+                <input type="range" id="bpmSlider" min="40" max="220" value="100" oninput="updateBPM()">
             </div>
-            <div class="config-box"><label>SNARE</label>
-                <button onclick="toggleAudio()" id="audio-btn" class="ui-btn">OFF</button>
+            <div class="config-box"><label>METRO VOL</label>
+                <input type="range" id="metroVol" min="0" max="100" value="50">
+                <button onclick="toggleMetronomeAudio()" id="metro-btn" class="ui-btn">OFF</button>
             </div>
-            <div class="config-box"><label>FEEDBACK</label>
-                <button onclick="toggleTest()" id="test-btn" class="ui-btn">OFF</button>
+            <div class="config-box"><label>SNARE VOL</label>
+                <input type="range" id="snareVol" min="0" max="100" value="70">
+                <button onclick="toggleChallenge()" id="challenge-btn" class="ui-btn">CHALLENGE: OFF</button>
             </div>
         </div>
 
         <div class="lane-container" id="lane-wrapper"></div>
 
-        <button class="btn-start" id="start-btn" onclick="toggleGame()">START_PROTOCOL</button>
+        <button class="btn-start" id="start-btn" onclick="toggleGame()">START_DRILL</button>
     </div>
 
     <script>
-        let isPlaying = false, audioEnabled = false, testMode = false, audioCtx, gameLoop;
+        let isPlaying = false, metroAudio = false, challengeMode = false, audioCtx, gameLoop;
         let notes = [], masterInterval, patternStep = 0, lastTime = 0;
-        let hits = 0, totalHits = 0;
+        let hits = 0, totalHits = 0, streak = 0, missCount = 0;
 
         const RUDIMENTS = {
-            single_stroke_roll: ['L','R'],
-            double_stroke_roll: ['L','L','R','R'],
-            single_paradiddle: ['L','R','L','L','R','L','R','R']
+            single_stroke_roll: ['R','L'],
+            double_stroke_roll: ['R','R','L','L'],
+            triple_stroke_roll: ['R','R','R','L','L','L'],
+            multiple_bounce_roll: ['R','L','R','L'],
+            single_paradiddle: ['R','L','R','R','L','R','L','L'],
+            double_paradiddle: ['R','L','R','L','R','R','L','R','L','R','L','L'],
+            triple_paradiddle: ['R','L','R','L','R','L','R','R','L','R','L','R','L','R','L','L'],
+            paradiddle_diddle: ['R','L','R','R','L','L'],
+            five_stroke_roll: ['R','R','L','L','R','_'],
+            six_stroke_roll: ['R','L','L','R','R','L'],
+            seven_stroke_roll: ['R','R','L','L','R','R','L'],
+            nine_stroke_roll: ['R','R','L','L','R','R','L','L','R'],
+            ten_stroke_roll: ['R','R','L','L','R','R','L','L','R','L'],
+            eleven_stroke_roll: ['R','R','L','L','R','R','L','L','R','R','L'],
+            thirteen_stroke_roll: ['R','R','L','L','R','R','L','L','R','R','L','L','R'],
+            fifteen_stroke_roll: ['R','R','L','L','R','R','L','L','R','R','L','L','R','R','L'],
+            seventeen_stroke_roll: ['R','R','L','L','R','R','L','L','R','R','L','L','R','R','L','L','R'],
+            flam: ['L','R'],
+            flam_accent: ['L','R','L','R','R','L','R','L'],
+            flam_tap: ['R','R','L','L'],
+            flamicue: ['L','R','L','R','L','R'],
+            flam_paradiddle: ['L','R','L','R','R','R','L','R','L','L'],
+            flam_drag: ['L','R','L','L','R','L','R','R'],
+            drag: ['L','L','R'],
+            single_drag_tap: ['L','L','R','L','R','R','L','R'],
+            double_drag_tap: ['L','L','R','L','L','R','L','R','R','L','R','R','L','R'],
+            lesson_25: ['L','L','R','L','R'],
+            single_dragadiddle: ['R','R','L','R','L','L','R','L'],
+            drag_paradiddle_1: ['R','L','L','R','R','L','R','R','L','L'],
+            drag_paradiddle_2: ['R','L','R','L','L','R','R','L','R','L','R','R','L','L'],
+            single_ratamacue: ['L','L','R','L','R','L'],
+            double_ratamacue: ['L','L','R','L','L','R','L','R','L'],
+            triple_ratamacue: ['L','L','R','L','L','R','L','L','R','L','R','L']
         };
+
+        function loadRecord() {
+            const best = localStorage.getItem('ninja_drill_record');
+            document.getElementById('record-display').innerText = best ? `BEST: ${best} BPM` : "BEST: --";
+        }
+        
+        function clearRecord() {
+            if(confirm("Wipe high score record?")) {
+                localStorage.removeItem('ninja_drill_record');
+                loadRecord();
+            }
+        }
+        loadRecord();
 
         function initLanes() {
             const wrapper = document.getElementById('lane-wrapper');
@@ -148,30 +250,25 @@
                 const lane = document.createElement('div'); lane.className = 'lane';
                 const zone = document.createElement('div'); zone.className = 'hit-zone';
                 zone.id = `zone-${i}`; zone.innerText = key;
-                
-                // Mobile-First Touch
-                zone.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    triggerHit(i);
-                });
-                
+                zone.addEventListener('touchstart', (e) => { e.preventDefault(); triggerHit(i); });
                 lane.appendChild(zone);
                 wrapper.appendChild(lane);
             });
         }
         initLanes();
 
-        function toggleAudio() {
+        function toggleMetronomeAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            audioEnabled = !audioEnabled;
-            document.getElementById('audio-btn').classList.toggle('active', audioEnabled);
-            document.getElementById('audio-btn').innerText = audioEnabled ? "ON" : "OFF";
+            metroAudio = !metroAudio;
+            document.getElementById('metro-btn').classList.toggle('active', metroAudio);
+            document.getElementById('metro-btn').innerText = metroAudio ? "METRO: ON" : "METRO: OFF";
         }
 
-        function toggleTest() {
-            testMode = !testMode;
-            document.getElementById('test-btn').classList.toggle('active', testMode);
-            document.getElementById('test-btn').innerText = testMode ? "ON" : "OFF";
+        function toggleChallenge() {
+            challengeMode = !challengeMode;
+            document.getElementById('challenge-btn').classList.toggle('challenge-active', challengeMode);
+            document.getElementById('challenge-btn').innerText = challengeMode ? "SURVIVAL" : "OFF";
+            updateProgressBar();
         }
 
         function updateBPM() {
@@ -179,24 +276,62 @@
             if (isPlaying) { clearInterval(masterInterval); startMasterClock(); }
         }
 
+        function playTick() {
+            if (!metroAudio || !audioCtx) return;
+            const vol = document.getElementById('metroVol').value / 100;
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+            g.gain.setValueAtTime(vol * 0.2, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        function playSnare(isPerfect) {
+            if (!audioCtx) return;
+            const vol = document.getElementById('snareVol').value / 100;
+            const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < noiseBuffer.length; i++) output[i] = Math.random() * 2 - 1;
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = noiseBuffer;
+            const noiseFilter = audioCtx.createBiquadFilter();
+            noiseFilter.type = 'lowpass'; 
+            noiseFilter.frequency.value = isPerfect ? 1800 : 1000;
+            const noiseEnvelope = audioCtx.createGain();
+            noiseEnvelope.gain.setValueAtTime(vol * 0.5, audioCtx.currentTime);
+            noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            noise.connect(noiseFilter); noiseFilter.connect(noiseEnvelope); noiseEnvelope.connect(audioCtx.destination);
+            noise.start(); noise.stop(audioCtx.currentTime + 0.1);
+        }
+
         function startMasterClock() {
             const msPerBeat = 60000 / document.getElementById('bpmSlider').value;
             masterInterval = setInterval(() => {
                 spawnNoteSync();
-                const flash = document.getElementById('m-flash');
-                flash.style.opacity = 1; setTimeout(() => flash.style.opacity = 0, 50);
+                const light = document.getElementById('metronome-ui');
+                light.classList.add('pulse');
+                playTick();
+                setTimeout(() => light.classList.remove('pulse'), 100);
             }, msPerBeat);
         }
 
         function spawnNoteSync() {
             const type = document.getElementById('patternType').value;
             let laneIdx = Math.floor(Math.random() * 2);
+            let hand = 'R';
             if (type !== 'random') {
                 const pat = RUDIMENTS[type];
-                laneIdx = pat[patternStep % pat.length] === 'L' ? 0 : 1;
+                hand = pat[patternStep % pat.length];
+                if (hand === '_') { patternStep++; return; } 
+                laneIdx = hand === 'L' ? 0 : 1;
                 patternStep++;
+            } else {
+                hand = laneIdx === 0 ? 'L' : 'R';
             }
-            const noteEl = document.createElement('div'); noteEl.className = 'note';
+            const noteEl = document.createElement('div'); 
+            noteEl.className = `note note-${hand}`;
             noteEl.style.top = '-20px';
             document.querySelectorAll('.lane')[laneIdx].appendChild(noteEl);
             notes.push({ el: noteEl, key: laneIdx, top: -20 });
@@ -204,42 +339,79 @@
 
         function triggerHit(key) {
             if (!isPlaying) return;
-            if (window.navigator.vibrate) window.navigator.vibrate(20); // Haptic
+            if (window.navigator.vibrate) window.navigator.vibrate(15);
 
             const zone = document.getElementById(`zone-${key}`);
             const laneHeight = document.getElementById('lane-wrapper').offsetHeight;
-            const targetCenter = laneHeight - 70; // Middle of hit zone line
+            const targetCenter = laneHeight - 70; 
             
             zone.classList.add('active');
             setTimeout(() => zone.classList.remove('active'), 80);
 
-            if (audioEnabled && audioCtx) {
-                const osc = audioCtx.createOscillator();
-                const g = audioCtx.createGain();
-                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-                g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-                osc.connect(g); g.connect(audioCtx.destination);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-            }
-
-            // Accuracy check: (n.top + half-note-height) vs target line
             const hitIdx = notes.findIndex(n => n.key === key && Math.abs((n.top + 10) - targetCenter) < 70);
             
-            if (testMode) {
-                totalHits++;
-                if (hitIdx !== -1) {
-                    hits++;
-                    const dist = Math.abs((notes[hitIdx].top + 10) - targetCenter);
-                    showFeedback(key, dist < 20 ? "PERFECT" : "GOOD", dist < 20 ? "var(--green)" : "var(--gold)");
-                } else {
-                    showFeedback(key, "MISS", "var(--red)");
-                }
-                document.getElementById('acc-display').innerText = `ACCURACY: ${Math.floor((hits/totalHits)*100)}%`;
-            }
-
+            totalHits++;
             if (hitIdx !== -1) {
+                hits++; streak++; missCount = 0;
+                const dist = Math.abs((notes[hitIdx].top + 10) - targetCenter);
+                const isPerfect = dist < 20;
+                playSnare(isPerfect);
+                showFeedback(key, isPerfect ? "PERFECT" : "GOOD", isPerfect ? "var(--green)" : "var(--gold)");
                 notes[hitIdx].el.remove();
                 notes.splice(hitIdx, 1);
+
+                if (challengeMode) {
+                    updateProgressBar();
+                    if (hits % 50 === 0) {
+                        let currentBPM = parseInt(document.getElementById('bpmSlider').value);
+                        if (currentBPM < 220) {
+                            document.getElementById('bpmSlider').value = currentBPM + 5;
+                            updateBPM();
+                            checkNewRecord(currentBPM + 5);
+                        }
+                    }
+                }
+            } else {
+                playSnare(false);
+                handleMiss(key);
+            }
+            updateHUD();
+        }
+
+        function updateProgressBar() {
+            const fill = document.getElementById('progress-fill');
+            if (!challengeMode) { fill.style.width = '0%'; return; }
+            const percent = ((hits % 50) / 50) * 100;
+            fill.style.width = percent + '%';
+        }
+
+        function checkNewRecord(bpm) {
+            if (!challengeMode) return;
+            const currentRecord = parseInt(localStorage.getItem('ninja_drill_record')) || 0;
+            if (bpm > currentRecord) {
+                localStorage.setItem('ninja_drill_record', bpm);
+                loadRecord();
+            }
+        }
+
+        function handleMiss(key) {
+            streak = 0;
+            missCount++;
+            showFeedback(key, "MISS", "var(--red)");
+            if (challengeMode && missCount >= 3) {
+                alert("CHALLENGE FAILED: Too many consecutive misses!");
+                toggleGame();
+            }
+        }
+
+        function updateHUD() {
+            const acc = totalHits > 0 ? Math.floor((hits/totalHits)*100) : 100;
+            document.getElementById('acc-display').innerText = `ACC: ${acc}%`;
+            document.getElementById('streak-display').innerText = `STREAK: ${streak}`;
+            
+            if (challengeMode && acc < 80 && totalHits > 10) {
+                alert("CHALLENGE FAILED: Accuracy dropped below 80%!");
+                toggleGame();
             }
         }
 
@@ -255,8 +427,6 @@
             const laneHeight = wrapper.offsetHeight;
             const targetCenter = laneHeight - 70;
             const bpm = document.getElementById('bpmSlider').value;
-            
-            // Speed = Distance to target / Time per beat
             const speed = (targetCenter / (60000 / bpm)) * dt;
             
             for (let i = notes.length - 1; i >= 0; i--) {
@@ -265,9 +435,11 @@
                 n.el.style.top = n.top + 'px';
                 
                 if (n.top > laneHeight) {
-                    if (testMode) { totalHits++; showFeedback(n.key, "MISS", "var(--red)"); }
+                    totalHits++;
+                    handleMiss(n.key);
                     n.el.remove();
                     notes.splice(i, 1);
+                    updateHUD();
                 }
             }
         }
@@ -283,13 +455,16 @@
         function toggleGame() {
             isPlaying = !isPlaying; lastTime = 0;
             const btn = document.getElementById('start-btn');
-            btn.innerText = isPlaying ? "TERMINATE_DRILL" : "START_PROTOCOL";
+            btn.innerText = isPlaying ? "STOP_DRILL" : "START_DRILL";
             btn.classList.toggle('running', isPlaying);
             
             if (isPlaying) {
                 if (audioCtx) audioCtx.resume();
                 notes.forEach(n => n.el.remove()); notes = [];
-                hits = 0; totalHits = 0; patternStep = 0;
+                hits = 0; totalHits = 0; streak = 0; missCount = 0; patternStep = 0;
+                updateHUD();
+                updateProgressBar();
+                if (challengeMode) checkNewRecord(parseInt(document.getElementById('bpmSlider').value));
                 startMasterClock(); gameTick(performance.now());
             } else {
                 clearInterval(masterInterval); cancelAnimationFrame(gameLoop);
@@ -298,8 +473,8 @@
 
         function resetPattern() { patternStep = 0; }
         
-        // Keyboard support for desktop testing
         document.addEventListener('keydown', e => {
+            if (e.code === 'Space') { e.preventDefault(); toggleGame(); }
             if (e.key.toLowerCase() === 'd') triggerHit(0);
             if (e.key.toLowerCase() === 'j') triggerHit(1);
         });
