@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PRACTICE_DRILLS // Neural_Ninja_v10</title>
+    <title>PRACTICE_DRILLS // Neural_Ninja_v11</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -100,6 +100,7 @@
         }
         .note-L { background: var(--blue); box-shadow: 0 0 15px var(--blue); }
         .note-R { background: var(--gold); box-shadow: 0 0 15px var(--gold); }
+        .note-ghost { opacity: 0.35; box-shadow: none !important; border: 1px dashed #fff; }
 
         .feedback {
             position: absolute; top: 30%; width: 100%; text-align: center;
@@ -190,9 +191,10 @@
                 </select>
                 <button onclick="toggleMetronomeAudio()" id="metro-btn" class="ui-btn">OFF</button>
             </div>
-            <div class="config-box"><label>SNARE VOL</label>
+            <div class="config-box"><label>SNARE / HITS</label>
                 <input type="range" id="snareVol" min="0" max="100" value="70">
-                <button onclick="toggleChallenge()" id="challenge-btn" class="ui-btn">CHALLENGE: OFF</button>
+                <button onclick="toggleGhost()" id="ghost-btn" class="ui-btn">GHOST: OFF</button>
+                <button onclick="toggleChallenge()" id="challenge-btn" class="ui-btn">SURVIVAL: OFF</button>
             </div>
         </div>
 
@@ -202,7 +204,7 @@
     </div>
 
     <script>
-        let isPlaying = false, metroAudio = false, challengeMode = false, audioCtx, gameLoop;
+        let isPlaying = false, metroAudio = false, challengeMode = false, ghostMode = false, audioCtx, gameLoop;
         let notes = [], masterInterval, patternStep = 0, lastTime = 0;
         let hits = 0, totalHits = 0, streak = 0, missCount = 0;
 
@@ -279,8 +281,14 @@
         function toggleChallenge() {
             challengeMode = !challengeMode;
             document.getElementById('challenge-btn').classList.toggle('challenge-active', challengeMode);
-            document.getElementById('challenge-btn').innerText = challengeMode ? "SURVIVAL" : "OFF";
+            document.getElementById('challenge-btn').innerText = challengeMode ? "SURVIVAL: ON" : "SURVIVAL: OFF";
             updateProgressBar();
+        }
+
+        function toggleGhost() {
+            ghostMode = !ghostMode;
+            document.getElementById('ghost-btn').classList.toggle('active', ghostMode);
+            document.getElementById('ghost-btn').innerText = ghostMode ? "GHOST: ON" : "GHOST: OFF";
         }
 
         function updateBPM() {
@@ -294,24 +302,20 @@
             const type = document.getElementById('metroType').value;
             const osc = audioCtx.createOscillator();
             const g = audioCtx.createGain();
-            
-            let freq = 880;
-            let decay = 0.05;
-
+            let freq = 880, decay = 0.05;
             if (type === 'wood') { freq = 440; decay = 0.1; }
             if (type === 'bell') { freq = 1200; decay = 0.2; }
-
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
             g.gain.setValueAtTime(vol * 0.2, audioCtx.currentTime);
             g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + decay);
-            
             osc.connect(g); g.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + decay);
         }
 
-        function playSnare(isPerfect) {
+        function playSnare(isPerfect, isGhost) {
             if (!audioCtx) return;
-            const vol = document.getElementById('snareVol').value / 100;
+            const baseVol = document.getElementById('snareVol').value / 100;
+            const vol = isGhost ? baseVol * 0.3 : baseVol;
             const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
             const output = noiseBuffer.getChannelData(0);
             for (let i = 0; i < noiseBuffer.length; i++) output[i] = Math.random() * 2 - 1;
@@ -319,7 +323,7 @@
             noise.buffer = noiseBuffer;
             const noiseFilter = audioCtx.createBiquadFilter();
             noiseFilter.type = 'lowpass'; 
-            noiseFilter.frequency.value = isPerfect ? 1800 : 1000;
+            noiseFilter.frequency.value = isPerfect ? (isGhost ? 1200 : 1800) : 1000;
             const noiseEnvelope = audioCtx.createGain();
             noiseEnvelope.gain.setValueAtTime(vol * 0.5, audioCtx.currentTime);
             noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
@@ -348,39 +352,33 @@
                 if (hand === '_') { patternStep++; return; } 
                 laneIdx = hand === 'L' ? 0 : 1;
                 patternStep++;
-            } else {
-                hand = laneIdx === 0 ? 'L' : 'R';
-            }
+            } else { hand = laneIdx === 0 ? 'L' : 'R'; }
+
+            const isGhost = ghostMode && Math.random() > 0.7;
             const noteEl = document.createElement('div'); 
-            noteEl.className = `note note-${hand}`;
+            noteEl.className = `note note-${hand} ${isGhost ? 'note-ghost' : ''}`;
             noteEl.style.top = '-20px';
             document.querySelectorAll('.lane')[laneIdx].appendChild(noteEl);
-            notes.push({ el: noteEl, key: laneIdx, top: -20 });
+            notes.push({ el: noteEl, key: laneIdx, top: -20, isGhost: isGhost });
         }
 
         function triggerHit(key) {
             if (!isPlaying) return;
-            if (window.navigator.vibrate) window.navigator.vibrate(15);
-
             const zone = document.getElementById(`zone-${key}`);
             const laneHeight = document.getElementById('lane-wrapper').offsetHeight;
             const targetCenter = laneHeight - 70; 
-            
             zone.classList.add('active');
             setTimeout(() => zone.classList.remove('active'), 80);
-
             const hitIdx = notes.findIndex(n => n.key === key && Math.abs((n.top + 10) - targetCenter) < 70);
-            
             totalHits++;
             if (hitIdx !== -1) {
                 hits++; streak++; missCount = 0;
                 const dist = Math.abs((notes[hitIdx].top + 10) - targetCenter);
                 const isPerfect = dist < 20;
-                playSnare(isPerfect);
+                playSnare(isPerfect, notes[hitIdx].isGhost);
                 showFeedback(key, isPerfect ? "PERFECT" : "GOOD", isPerfect ? "var(--green)" : "var(--gold)");
                 notes[hitIdx].el.remove();
                 notes.splice(hitIdx, 1);
-
                 if (challengeMode) {
                     updateProgressBar();
                     if (hits % 50 === 0) {
@@ -392,10 +390,7 @@
                         }
                     }
                 }
-            } else {
-                playSnare(false);
-                handleMiss(key);
-            }
+            } else { playSnare(false, false); handleMiss(key); }
             updateHUD();
         }
 
@@ -418,24 +413,16 @@
         }
 
         function handleMiss(key) {
-            streak = 0;
-            missCount++;
+            streak = 0; missCount++;
             showFeedback(key, "MISS", "var(--red)");
-            if (challengeMode && missCount >= 3) {
-                alert("CHALLENGE FAILED: Too many consecutive misses!");
-                toggleGame();
-            }
+            if (challengeMode && missCount >= 3) { alert("CHALLENGE FAILED: Too many consecutive misses!"); toggleGame(); }
         }
 
         function updateHUD() {
             const acc = totalHits > 0 ? Math.floor((hits/totalHits)*100) : 100;
             document.getElementById('acc-display').innerText = `ACC: ${acc}%`;
             document.getElementById('streak-display').innerText = `STREAK: ${streak}`;
-            
-            if (challengeMode && acc < 80 && totalHits > 10) {
-                alert("CHALLENGE FAILED: Accuracy dropped below 80%!");
-                toggleGame();
-            }
+            if (challengeMode && acc < 80 && totalHits > 10) { alert("CHALLENGE FAILED: Accuracy dropped below 80%!"); toggleGame(); }
         }
 
         function showFeedback(key, text, color) {
@@ -451,17 +438,13 @@
             const targetCenter = laneHeight - 70;
             const bpm = document.getElementById('bpmSlider').value;
             const speed = (targetCenter / (60000 / bpm)) * dt;
-            
             for (let i = notes.length - 1; i >= 0; i--) {
                 const n = notes[i];
                 n.top += speed;
                 n.el.style.top = n.top + 'px';
-                
                 if (n.top > laneHeight) {
-                    totalHits++;
-                    handleMiss(n.key);
-                    n.el.remove();
-                    notes.splice(i, 1);
+                    totalHits++; handleMiss(n.key);
+                    n.el.remove(); notes.splice(i, 1);
                     updateHUD();
                 }
             }
@@ -480,22 +463,17 @@
             const btn = document.getElementById('start-btn');
             btn.innerText = isPlaying ? "STOP_DRILL" : "START_DRILL";
             btn.classList.toggle('running', isPlaying);
-            
             if (isPlaying) {
                 if (audioCtx) audioCtx.resume();
                 notes.forEach(n => n.el.remove()); notes = [];
                 hits = 0; totalHits = 0; streak = 0; missCount = 0; patternStep = 0;
-                updateHUD();
-                updateProgressBar();
+                updateHUD(); updateProgressBar();
                 if (challengeMode) checkNewRecord(parseInt(document.getElementById('bpmSlider').value));
                 startMasterClock(); gameTick(performance.now());
-            } else {
-                clearInterval(masterInterval); cancelAnimationFrame(gameLoop);
-            }
+            } else { clearInterval(masterInterval); cancelAnimationFrame(gameLoop); }
         }
 
         function resetPattern() { patternStep = 0; }
-        
         document.addEventListener('keydown', e => {
             if (e.code === 'Space') { e.preventDefault(); toggleGame(); }
             if (e.key.toLowerCase() === 'd') triggerHit(0);
