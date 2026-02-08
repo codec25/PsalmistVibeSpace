@@ -57,7 +57,7 @@
         .btn-green { border-color: var(--green); color: var(--green); }
         .btn-green:hover { background: var(--green); color: #000; box-shadow: 0 0 15px var(--green); }
 
-        input, textarea {
+        input, textarea, select {
             width: 100%; background: #000; border: 1px solid var(--border); 
             color: #fff; padding: 10px; font-family: 'Orbitron'; font-size: 0.65rem; border-radius: 5px; margin-bottom: 10px;
         }
@@ -108,28 +108,45 @@
                 <h3>NEURAL_BROADCAST</h3>
                 <textarea id="broadcast-msg" placeholder="MESSAGE_CONTENT..."></textarea>
                 <button class="btn" style="width:100%; border-color:var(--gold); color:var(--gold);" onclick="sendBroadcast('ALERT')">SEND_ALERT</button>
+                <button class="btn btn-green" style="width:100%;" onclick="bulkXPGrant()">GRANT_BULK_XP</button>
                 <button class="btn" style="width:100%; border-color:var(--red); color:var(--red);" onclick="sendBroadcast('CRITICAL')">CRITICAL_OVERRIDE</button>
             </div>
 
             <div class="panel">
                 <h3>SECURITY_INTERDICTION</h3>
-                <div id="blacklist-display" style="height: 100px; overflow-y:auto; background:#000; padding:10px; font-size:0.6rem; margin-bottom:10px; border:1px solid #111;"></div>
+                <div id="blacklist-display" style="height: 180px; overflow-y:auto; background:#000; padding:10px; font-size:0.6rem; margin-bottom:10px; border:1px solid #111;"></div>
                 <div style="display:flex; gap:5px;">
-                    <input type="text" id="ban-id" placeholder="USER_ID">
+                    <input type="text" id="ban-id" placeholder="SEARCH_OR_BAN_ID" onkeyup="searchStudent()">
                     <button class="btn" style="margin:0;" onclick="toggleBan()">BAN</button>
                 </div>
             </div>
 
             <div class="panel">
                 <h3>CORE_STATUS</h3>
+                
+                <div id="hall-of-fame" style="margin-bottom:15px; padding:10px; background:rgba(255, 204, 0, 0.05); border:1px solid rgba(255, 204, 0, 0.2); border-radius:8px; text-align:center;">
+                    <div style="font-size:0.5rem; color:var(--gold); letter-spacing:2px;">ACADEMY_TOTAL_POWER</div>
+                    <div id="total-academy-xp" style="font-size:1.2rem; font-weight:900; color:#fff; text-shadow:0 0 10px var(--gold);">0</div>
+                </div>
+
                 <div id="stats-content"></div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; padding-top:10px; border-top:1px solid #111;">
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid #111;">
                     <span style="font-size:0.6rem; color:var(--blue)">GHOST_STEALTH</span>
                     <label class="switch">
                         <input type="checkbox" id="ghost-toggle" onclick="toggleGhostMode()">
                         <span class="slider"></span>
                     </label>
                 </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid #111;">
+                    <span style="font-size:0.6rem; color:var(--red)">STREAK_PROTECTION</span>
+                    <label class="switch">
+                        <input type="checkbox" id="streak-freeze-toggle" onclick="toggleStreakFreeze()">
+                        <span class="slider" style="border-color:var(--red)"></span>
+                    </label>
+                </div>
+                
                 <button class="btn" style="width:100%; margin-top:15px;" onclick="exportData()">EXPORT_VAULT_BACKUP</button>
             </div>
         </div>
@@ -141,19 +158,14 @@
             const id = document.getElementById('teach-id').value.trim().toUpperCase();
             const pass = document.getElementById('teach-pass').value.trim();
             if(!id || !pass) return alert("REQUIRED: ID + PASS");
-
             let db = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
             if(!db.teachers) db.teachers = {};
-
             db.teachers[id] = pass;
             db.AUDIT_LOG = db.AUDIT_LOG || [];
             db.AUDIT_LOG.unshift({time: new Date().toLocaleTimeString(), user: "IT_ADMIN", status: `PROVISIONED_TEACHER: ${id}`});
-            
             localStorage.setItem('vault_users', JSON.stringify(db));
-            document.getElementById('teach-id').value = "";
-            document.getElementById('teach-pass').value = "";
-            renderTeachers();
-            renderLogs();
+            document.getElementById('teach-id').value = ""; document.getElementById('teach-pass').value = "";
+            renderTeachers(); renderLogs();
         }
 
         function removeTeacher(id) {
@@ -169,131 +181,135 @@
             const list = document.getElementById('teacher-list');
             const db = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
             const teachers = db.teachers || {};
-            
             list.innerHTML = Object.keys(teachers).length === 0 ? "<span style='color:#333'>NO_TEACHERS</span>" : "";
             for (let id in teachers) {
-                list.innerHTML += `
-                    <div class="user-list-item">
-                        <span>${id}</span>
-                        <span style="color:var(--red); cursor:pointer;" onclick="removeTeacher('${id}')">[REVOKE]</span>
+                list.innerHTML += `<div class="user-list-item"><span>${id}</span><span style="color:var(--red); cursor:pointer;" onclick="removeTeacher('${id}')">[REVOKE]</span></div>`;
+            }
+        }
+
+        // --- SEARCH & PROMOTION & SHADOW ---
+        function searchStudent() {
+            const id = document.getElementById('ban-id').value.trim().toUpperCase();
+            const display = document.getElementById('blacklist-display');
+            const rawRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            if (!id) { renderBlacklist(); return; }
+            const student = rawRoster[id];
+            if (student) {
+                const isModern = typeof student === 'object';
+                const currentStatus = student.status || "LEVEL 01 ACADEMY";
+                display.innerHTML = `
+                    <div style="border: 1px solid var(--blue); padding: 5px; border-radius: 4px; background: rgba(79,172,254,0.1);">
+                        <div style="color:var(--gold); font-weight:bold; margin-bottom:5px;">DATA_FOUND: ${id}</div>
+                        <div style="font-size:0.55rem; color:#aaa; margin-bottom:8px;">
+                            RANK: <span style="color:var(--blue)">${currentStatus}</span><br>
+                            XP: <span style="color:var(--green)">${isModern ? student.xp : '0'}</span>
+                        </div>
+                        <select id="rank-select" style="margin-bottom:5px;">
+                            <option value="">-- PROMOTION --</option>
+                            <option value="ACADEMY_NINJA">ACADEMY_NINJA</option>
+                            <option value="ELITE_STRIKER">ELITE_STRIKER</option>
+                            <option value="SHADOW_MASTER">SHADOW_MASTER</option>
+                        </select>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn btn-green" style="flex:1; margin:0; padding:5px; font-size:0.45rem;" onclick="promoteStudent('${id}')">RANK</button>
+                            <button class="btn" style="flex:1; margin:0; padding:5px; font-size:0.45rem; border-color:var(--blue); color:var(--blue);" onclick="shadowLogin('${id}')">SHADOW</button>
+                        </div>
                     </div>`;
+            } else { display.innerHTML = `<span style='color:var(--red)'>NOT_FOUND</span>`; }
+        }
+
+        function promoteStudent(id) {
+            const newRank = document.getElementById('rank-select').value;
+            if(!newRank) return;
+            let roster = JSON.parse(localStorage.getItem('ninja_roster_full'));
+            if(roster[id] && typeof roster[id] === 'object') {
+                roster[id].status = newRank;
+                localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+                searchStudent();
             }
         }
 
-        // --- LOGS & STATS ---
-        function renderLogs() {
-            const logContainer = document.getElementById('audit-log');
-            const db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
-            
-            logContainer.innerHTML = !db.AUDIT_LOG || db.AUDIT_LOG.length === 0 ? "> NO_DATA" : "";
-            if(db.AUDIT_LOG) {
-                db.AUDIT_LOG.forEach(entry => {
-                    const isFail = entry.status.includes("FAILED") || entry.status.includes("BAN") || entry.status.includes("CRITICAL");
-                    logContainer.innerHTML += `
-                        <div class="log-entry">
-                            <span class="log-time">[${entry.time}]</span>
-                            <span class="log-user">${entry.user}</span>: 
-                            <span class="${isFail ? 'log-fail' : ''}">${entry.status}</span>
-                        </div>`;
-                });
-            }
-
-            const ninjaCount = Object.keys(JSON.parse(localStorage.getItem('ninja_roster_full')) || {}).length;
-            const teacherCount = Object.keys(db.teachers || {}).length;
-            document.getElementById('stats-content').innerHTML = `
-                <div class="stat-line"><span>ACTIVE_SENSEIS:</span><span>${teacherCount}</span></div>
-                <div class="stat-line"><span>ACTIVE_NINJAS:</span><span>${ninjaCount}</span></div>
-                <div class="stat-line"><span>UPLINK_STATUS:</span><span style="color:var(--green)">SECURE</span></div>
-            `;
+        function shadowLogin(id) {
+            localStorage.setItem('ninjaUser', id);
+            window.location.href = 'hub.html';
         }
 
-        function clearLogs() {
-            if(confirm("WIPE AUDIT HISTORY?")) {
-                let db = JSON.parse(localStorage.getItem('vault_users'));
-                db.AUDIT_LOG = [];
-                localStorage.setItem('vault_users', JSON.stringify(db));
-                renderLogs();
-            }
-        }
-
-        // --- BROADCAST ---
-        function sendBroadcast(type) {
-            const msg = document.getElementById('broadcast-msg').value.trim();
-            if(!msg) return;
-            const data = { message: msg, type: type, timestamp: Date.now(), sender: "IT_ADMIN" };
-            localStorage.setItem('system_broadcast', JSON.stringify(data));
-            
-            let db = JSON.parse(localStorage.getItem('vault_users'));
-            db.AUDIT_LOG.unshift({time: new Date().toLocaleTimeString(), user: "IT_ADMIN", status: `BROADCAST: ${msg}`});
-            localStorage.setItem('vault_users', JSON.stringify(db));
-            alert("TRANSMITTED");
-            document.getElementById('broadcast-msg').value = "";
+        // --- BULK XP & STREAK ---
+        function bulkXPGrant() {
+            const baseAmount = parseInt(prompt("BASE_XP_AMOUNT:", "500"));
+            if (isNaN(baseAmount) || baseAmount <= 0) return;
+            const streakData = JSON.parse(localStorage.getItem('academy_streak_stats')) || { count: 0 };
+            const isHot = streakData.count >= 7;
+            const finalAmount = isHot ? Math.floor(baseAmount * 1.1) : baseAmount;
+            let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            for (let id in roster) if (typeof roster[id] === 'object') roster[id].xp = (roster[id].xp || 0) + finalAmount;
+            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+            sendBroadcast(isHot ? 'SUCCESS' : 'REWARD', `XP_DISTRIBUTED: +${finalAmount} ${isHot ? '(10%_BONUS)' : ''}`);
             renderLogs();
         }
 
-        // --- BLACKLIST ---
-        function renderBlacklist() {
-            const display = document.getElementById('blacklist-display');
-            const db = JSON.parse(localStorage.getItem('vault_users')) || { BLACKLIST: [] };
-            if (!db.BLACKLIST || db.BLACKLIST.length === 0) {
-                display.innerHTML = "<span style='color:#333'>EMPTY</span>";
-                return;
+        function toggleStreakFreeze() {
+            const isFrozen = document.getElementById('streak-freeze-toggle').checked;
+            localStorage.setItem('streak_freeze_active', isFrozen);
+        }
+
+        // --- SYSTEM CORE ---
+        function renderLogs() {
+            const logContainer = document.getElementById('audit-log');
+            const db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
+            logContainer.innerHTML = "";
+            if(db.AUDIT_LOG) {
+                db.AUDIT_LOG.slice(0, 50).forEach(entry => {
+                    logContainer.innerHTML += `<div class="log-entry"><span class="log-time">[${entry.time}]</span><span class="log-user">${entry.user}</span>: ${entry.status}</div>`;
+                });
             }
-            display.innerHTML = db.BLACKLIST.map(id => `
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <span style="color:var(--red)">${id}</span>
-                    <span style="cursor:pointer; color:#444" onclick="removeBan('${id}')">[DEL]</span>
-                </div>
-            `).join('');
+
+            const rawRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            let totalPower = 0, legacyCount = 0;
+            for (let id in rawRoster) {
+                if (typeof rawRoster[id] === 'object') totalPower += (rawRoster[id].xp || 0);
+                else legacyCount++;
+            }
+            document.getElementById('total-academy-xp').innerText = totalPower.toLocaleString();
+            document.getElementById('stats-content').innerHTML = `
+                <div class="stat-line"><span>ACTIVE_NINJAS:</span><span>${Object.keys(rawRoster).length}</span></div>
+                <div class="stat-line"><span>LEGACY_DATA:</span><span style="color:${legacyCount > 0 ? 'var(--red)' : 'var(--green)'}">${legacyCount}</span></div>
+            `;
+        }
+
+        function sendBroadcast(type, customMsg) {
+            const msg = customMsg || document.getElementById('broadcast-msg').value;
+            localStorage.setItem('system_broadcast', JSON.stringify({ message: msg, type: type, timestamp: Date.now() }));
+            renderLogs();
         }
 
         function toggleBan() {
             const id = document.getElementById('ban-id').value.trim().toUpperCase();
-            if(!id) return;
-            let db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [], BLACKLIST: [] };
+            let db = JSON.parse(localStorage.getItem('vault_users')) || { BLACKLIST: [] };
             if(!db.BLACKLIST) db.BLACKLIST = [];
-            if(!db.BLACKLIST.includes(id)) {
-                db.BLACKLIST.push(id);
-                db.AUDIT_LOG.unshift({time: new Date().toLocaleTimeString(), user: "SYSTEM", status: `BANNED_ID: ${id}`});
-            }
-            localStorage.setItem('vault_users', JSON.stringify(db));
-            document.getElementById('ban-id').value = "";
-            renderBlacklist(); renderLogs();
-        }
-
-        function removeBan(id) {
-            let db = JSON.parse(localStorage.getItem('vault_users'));
-            db.BLACKLIST = db.BLACKLIST.filter(i => i !== id);
+            db.BLACKLIST.push(id);
             localStorage.setItem('vault_users', JSON.stringify(db));
             renderBlacklist();
         }
 
-        // --- GHOST MODE ---
+        function renderBlacklist() {
+            const db = JSON.parse(localStorage.getItem('vault_users')) || { BLACKLIST: [] };
+            document.getElementById('blacklist-display').innerHTML = (db.BLACKLIST || []).map(id => `<div>${id}</div>`).join('');
+        }
+
         function toggleGhostMode() {
             const active = document.getElementById('ghost-toggle').checked;
             localStorage.setItem('ghost_enabled', active);
-            localStorage.setItem('it_active', !active); 
             document.getElementById('ghost-indicator').innerText = active ? "STEALTH_STATUS: STEALTH_ACTIVE" : "STEALTH_STATUS: VISIBLE";
-            document.getElementById('ghost-indicator').style.color = active ? "var(--green)" : "#555";
         }
 
-        function exportData() {
-            const blob = new Blob([JSON.stringify(localStorage)], { type: 'text/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'full_system_backup.json';
-            a.click();
-        }
+        function clearLogs() { if(confirm("WIPE?")) { let db = JSON.parse(localStorage.getItem('vault_users')); db.AUDIT_LOG = []; localStorage.setItem('vault_users', JSON.stringify(db)); renderLogs(); } }
+        function exportData() { const blob = new Blob([JSON.stringify(localStorage)], { type: 'text/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'backup.json'; a.click(); }
 
-        // --- INIT ---
         window.onload = () => {
-            renderLogs();
-            renderBlacklist();
-            renderTeachers();
-            if(localStorage.getItem('ghost_enabled') === 'true') {
-                document.getElementById('ghost-toggle').checked = true;
-                toggleGhostMode();
-            }
+            renderLogs(); renderBlacklist(); renderTeachers();
+            document.getElementById('ghost-toggle').checked = localStorage.getItem('ghost_enabled') === 'true';
+            document.getElementById('streak-freeze-toggle').checked = localStorage.getItem('streak_freeze_active') === 'true';
         };
     </script>
 </body>
