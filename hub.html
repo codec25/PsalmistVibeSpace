@@ -38,7 +38,7 @@
         }
 
         .user-info h2 { margin: 0; font-size: 1rem; letter-spacing: 2px; color: var(--gold); }
-        .user-info span { font-size: 0.6rem; color: var(--blue); text-transform: uppercase; }
+        .user-info span { font-size: 0.6rem; color: var(--blue); text-transform: uppercase; display: block; margin-top: 4px; }
 
         .btn-logout {
             background: rgba(255, 75, 43, 0.1); border: 1px solid var(--red); color: var(--red);
@@ -67,7 +67,7 @@
             margin-bottom: 20px; font-size: 0.65rem; text-align: center; letter-spacing: 1px;
         }
 
-        /* --- Grid Layout --- */
+        /* --- Content Layout --- */
         .content-stack { width: 100%; max-width: 1100px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
         .card {
             background: var(--panel); backdrop-filter: blur(15px); border: 1px solid var(--border);
@@ -76,26 +76,10 @@
         }
         .card:hover { transform: translateY(-5px); border-color: var(--blue); background: rgba(79, 172, 254, 0.05); }
         .card-icon { width: 60px; height: 60px; border-radius: 16px; background: rgba(255,255,255,0.03); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; border: 1px solid var(--border); }
-        
-        /* --- Discreet Intelligence System --- */
-        #intel-trigger {
-            position: fixed; bottom: 20px; right: 20px; width: 40px; height: 40px;
-            background: rgba(0,0,0,0.8); border: 1px solid var(--border); border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; color: var(--blue);
-            font-size: 0.8rem; cursor: help; z-index: 1000; transition: 0.3s;
-        }
-        #intel-popover {
-            position: fixed; bottom: 70px; right: 20px; width: 280px; 
-            background: #0a0e17; border: 1px solid var(--blue); border-radius: 15px;
-            padding: 15px; font-size: 0.65rem; line-height: 1.4; color: #aaa;
-            opacity: 0; pointer-events: none; transition: 0.3s; transform: translateY(10px);
-            z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        }
-        #intel-trigger:hover + #intel-popover { opacity: 1; pointer-events: auto; transform: translateY(0); }
-        .intel-header { color: var(--gold); font-weight: 900; margin-bottom: 8px; letter-spacing: 1px; display: block; }
-        .intel-item { margin-bottom: 10px; display: block; border-left: 2px solid var(--blue); padding-left: 8px; }
+        .card-title { font-size: 0.8rem; font-weight: 900; letter-spacing: 1px; }
+        .card-desc { font-size: 0.6rem; color: #777; margin-top: 5px; }
 
-        /* --- NEURAL BROADCAST OVERLAY --- */
+        /* --- Neural Overlay --- */
         #broadcast-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999;
             display: none; align-items: center; justify-content: center; padding: 40px;
@@ -123,10 +107,13 @@
 
     <header>
         <div class="user-info">
-            <h2 id="display-name">MUSIC NINJA</h2>
-            <span id="display-rank">LEVEL 01 ACADEMY</span>
+            <h2 id="display-name">LOADING...</h2>
+            <span id="display-rank">SYNCING_DATA...</span>
         </div>
-        <button class="btn-logout" onclick="logout()">EXIT_HUB ⏻</button>
+        <div style="display:flex; gap:15px; align-items:center;">
+             <div id="active-timer" style="color:var(--gold); font-size:1rem; font-weight:900;">00:00</div>
+             <button class="btn-logout" onclick="logout()">EXIT_HUB ⏻</button>
+        </div>
     </header>
 
     <div id="announcement-bar">
@@ -181,158 +168,130 @@
             </div>
         </a>
 
-        <a href="theory_vault.html" class="card" id="theory-link">
+        <a href="#" onclick="checkVaultAccess()" class="card" id="theory-link">
             <div class="card-icon" style="color:var(--purple)">📓</div>
             <div class="card-content">
                 <div class="card-title">THEORY VAULT</div>
-                <div class="card-desc">Laws of the musical universe.</div>
+                <div class="card-desc" id="vault-desc" style="color:var(--green)">ACCESS GRANTED: OPEN DOORS</div>
             </div>
         </a>
     </div>
 
-    <div id="intel-trigger-container">
-        <div id="intel-trigger">?</div>
-        <div id="intel-popover">
-            <span class="intel-header">SENSEI_STRATEGY</span>
-            <span class="intel-item"><b>THE PATH:</b> Start in Piano Lab for visuals, then Pitch Hub for ears.</span>
-            <span class="intel-item"><b>XP GAIN:</b> Missions yield 3x rewards. Level up to unlock Vault sectors.</span>
-            <span class="intel-item"><b>FLOW:</b> Use the new Studio Lab to record your own melodies and beats.</span>
-        </div>
-    </div>
-
     <script>
-        const ninjaName = localStorage.getItem('ninjaUser') || "GUEST_NINJA";
+        const ninjaUser = localStorage.getItem('ninjaUser');
+        if (!ninjaUser) window.location.href = 'index.html';
 
-        // --- 1. CORE SECURITY & IT HANDSHAKE (The Pulse) ---
-        function checkSecurityHandshake() {
-            if (localStorage.getItem('global_system_lock') === 'true') {
-                document.body.innerHTML = `<div style="background:#000; color:#ff4b2b; height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>SYSTEM_LOCKED</h1><p>THE ARCHITECT HAS SUSPENDED ALL SECTORS.</p></div>`;
-                window.stop();
-            }
-
-            if (localStorage.getItem(`freeze_${ninjaName}`) === 'true') {
-                document.body.innerHTML = `<div style="background:#000; color:var(--red); height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>TERMINAL_LOCKED</h1><p>RESTRICTED BY IT_MANAGEMENT</p></div>`;
-                window.stop();
-            }
-
-            let rosters = JSON.parse(localStorage.getItem('psalmist_teachers')) || {};
-            rosters[ninjaName] = { 
-                lastActive: new Date().toLocaleTimeString(), 
-                status: "ONLINE",
-                role: localStorage.getItem('userRole') || "NINJA"
-            };
-            localStorage.setItem('psalmist_teachers', JSON.stringify(rosters));
-        }
-
-        // --- 2. SFX TRIGGER LISTENER ---
-        function listenForSFX() {
-            const sfx = localStorage.getItem('sfx_trigger');
-            if (sfx) {
-                const audio = new Audio();
-                if (sfx === 'horn') audio.src = 'https://www.myinstants.com/media/sounds/air-horn.mp3';
-                if (sfx === 'battle') audio.src = 'https://www.myinstants.com/media/sounds/battle-start.mp3';
-                audio.play().catch(() => {});
-                localStorage.removeItem('sfx_trigger');
-            }
-        }
-
-        // --- 3. PAGE INITIALIZATION (Updated to use Central Roster) ---
-        window.onload = () => {
-            checkSecurityHandshake();
-            const isGuest = localStorage.getItem('isGuest') === 'true';
-
-            // Sync from the Master Roster
+        // --- 1. CORE DATA SYNC ---
+        function syncHub() {
             const masterRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-            const myData = masterRoster[ninjaName] || { xp: 0, level: 1, status: "LEVEL 01 ACADEMY" };
+            const myData = masterRoster[ninjaUser] || { xp: 0, status: "LEVEL 01 ACADEMY" };
 
-            const currentXP = myData.xp;
-            const level = myData.level || Math.floor(currentXP / 2500) + 1;
-            const lockedStatus = myData.status;
-
-            // Blacklist Check
-            const vault = JSON.parse(localStorage.getItem('vault_users')) || {};
-            if (vault.BLACKLIST && vault.BLACKLIST.includes(ninjaName.toUpperCase())) {
-                alert("ACCESS_DENIED: YOUR ID IS BLACKLISTED.");
-                logout();
-                return;
-            }
-
-            document.getElementById('display-name').innerText = ninjaName.toUpperCase();
+            // Update UI
+            document.getElementById('display-name').innerText = ninjaUser.toUpperCase();
             
-            const sessionLabel = isGuest ? "GUEST_SESSION" : "OFFICIAL_MEMBER";
-            document.getElementById('display-rank').innerText = `${lockedStatus} // ${sessionLabel} // LVL ${level} // XP: ${currentXP}`;
+            // Handle display rank text for Guest vs Member
+            const typeLabel = localStorage.getItem('userType') === 'GUEST' ? "VISITOR" : "OFFICIAL";
+            document.getElementById('display-rank').innerText = `${myData.status} // ${typeLabel} // XP: ${myData.xp.toLocaleString()}`;
 
             // Sync Academy Announcement
             const msg = localStorage.getItem('academy_announcement');
             if (msg && msg.trim() !== "") {
                 document.getElementById('announcement-bar').style.display = 'block';
                 document.getElementById('announcement-text').innerText = msg;
+            } else {
+                document.getElementById('announcement-bar').style.display = 'none';
             }
 
-            // Sync Active Mission
+            // Mission Logic
             const mission = JSON.parse(localStorage.getItem('active_mission'));
+            const tracker = document.getElementById('mission-tracker');
             if (mission && mission.active) {
-                document.getElementById('mission-tracker').style.display = 'block';
+                tracker.style.display = 'block';
                 document.getElementById('m-name').innerText = mission.name.toUpperCase();
                 document.getElementById('m-desc').innerText = `Objective: Reach ${mission.goal} XP in ${mission.type}`;
                 
-                let progress = Math.min((currentXP / mission.goal) * 100, 100);
+                let progress = Math.min((myData.xp / mission.goal) * 100, 100);
                 document.getElementById('m-percent').innerText = Math.floor(progress) + "%";
                 document.getElementById('progress-bar').style.width = progress + "%";
-
-                if (progress >= 100) {
-                    document.getElementById('m-percent').innerText = "COMPLETE";
-                    document.getElementById('m-percent').style.color = "var(--green)";
-                    document.getElementById('progress-bar').style.background = "var(--green)";
-                }
+            } else {
+                tracker.style.display = 'none';
             }
-        };
 
-        // --- 4. NEURAL BROADCAST LISTENER ---
+            // Timer Logic
+            const timer = JSON.parse(localStorage.getItem('active_timer'));
+            if (timer && timer.active) {
+                document.getElementById('active-timer').innerText = timer.timeString;
+                document.getElementById('active-timer').style.display = 'block';
+            } else {
+                document.getElementById('active-timer').style.display = 'none';
+            }
+        }
+
+        // --- 2. BROADCAST LISTENER ---
         function listenForBroadcast() {
             const data = localStorage.getItem('system_broadcast');
             if(!data) return;
-
             const broadcast = JSON.parse(data);
-            const lastSeen = localStorage.getItem('last_seen_broadcast_hub');
+            const lastSeen = localStorage.getItem('last_seen_bc_hub');
 
             if(lastSeen !== broadcast.timestamp.toString()) {
                 const overlay = document.getElementById('broadcast-overlay');
-                const bText = document.getElementById('b-text');
-                const bType = document.getElementById('b-type');
-                const bBox = document.getElementById('b-box');
-
-                bText.innerText = broadcast.message;
-                
-                if(broadcast.type === 'ALERT') {
-                    bType.innerText = 'CRITICAL_OVERRIDE';
-                    bType.style.color = 'var(--red)';
-                    bBox.style.borderColor = 'var(--red)';
-                } else {
-                    bType.innerText = 'SYSTEM_MESSAGE';
-                    bType.style.color = 'var(--green)';
-                    bBox.style.borderColor = 'var(--green)';
-                }
-
+                document.getElementById('b-text').innerText = broadcast.message;
+                document.getElementById('b-type').innerText = broadcast.type === 'ALERT' ? 'CRITICAL_OVERRIDE' : 'SYSTEM_MESSAGE';
+                document.getElementById('b-box').style.borderColor = broadcast.type === 'ALERT' ? 'var(--red)' : 'var(--green)';
                 overlay.style.display = 'flex';
-                localStorage.setItem('last_seen_broadcast_hub', broadcast.timestamp);
+                localStorage.setItem('last_seen_bc_hub', broadcast.timestamp);
             }
         }
 
-        function acknowledgeBroadcast() {
-            document.getElementById('broadcast-overlay').style.display = 'none';
+        // --- 3. SECURITY & SFX ---
+        function checkITStatus() {
+            if (localStorage.getItem('global_system_lock') === 'true') {
+                document.body.innerHTML = "<div style='color:red; text-align:center; padding-top:20%; font-family:Orbitron; background:black; height:100vh;'><h1>SYSTEM_LOCKED</h1><p>RESTRICTED BY IT_ADMIN</p></div>";
+                return;
+            }
+            
+            // Check if user is blacklisted
+            const vault = JSON.parse(localStorage.getItem('vault_users')) || {};
+            if (vault.BLACKLIST && vault.BLACKLIST.includes(ninjaUser)) {
+                alert("ACCESS_TERMINATED");
+                logout();
+            }
+
+            const sfx = localStorage.getItem('sfx_trigger');
+            if (sfx) {
+                const audio = new Audio(sfx === 'horn' ? 'https://www.myinstants.com/media/sounds/air-horn.mp3' : 'https://www.myinstants.com/media/sounds/battle-start.mp3');
+                audio.play().catch(() => {});
+                localStorage.removeItem('sfx_trigger');
+            }
         }
 
+        // UNLOCKED: Everyone can enter now
+        function checkVaultAccess() {
+            window.location.href = 'theory_vault.html';
+        }
+
+        function acknowledgeBroadcast() { document.getElementById('broadcast-overlay').style.display = 'none'; }
+        
         function logout() {
+            const userType = localStorage.getItem('userType');
+            
+            // GUEST DATA DELETION LOGIC
+            if (userType === 'GUEST') {
+                let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+                delete roster[ninjaUser]; 
+                localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+            }
+
             localStorage.removeItem('ninjaUser');
-            localStorage.removeItem('isGuest');
-            localStorage.removeItem('userRole');
+            localStorage.removeItem('userType');
             window.location.href = 'index.html';
         }
 
+        setInterval(syncHub, 1500);
         setInterval(listenForBroadcast, 2000);
-        setInterval(checkSecurityHandshake, 3000);
-        setInterval(listenForSFX, 1000);
+        setInterval(checkITStatus, 1000);
+        window.onload = syncHub;
     </script>
 </body>
 </html>
