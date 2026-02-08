@@ -581,7 +581,7 @@ quizzes:[
 }
 ];
 
-/* ============================ DRUM THEORY BOOK (LESSONS EXPANDED — AUDIO REMOVED) ============================ */
+/* ============================ DRUM THEORY BOOK (BOOK ONLY — NO GRADING) ============================ */
 const DRUM_BOOK = [
 {
 level:1,
@@ -611,14 +611,7 @@ Core identity:
 A drummer is not a soloist first — a drummer is a **timekeeper**. Groove before flash. Control before speed.
 `,
 spec:"Professional Beginner Drum Pedagogy",
-img:"DRUM: TIMEKEEPING • POSTURE • SINGLE STROKES",
-quizzes:[
-{q:"What is a drummer’s first responsibility?",a:["Playing fills","Keeping steady time"],c:1},
-{q:"Which stroke uses alternating hands?",a:["Single stroke","Double stroke"],c:0},
-{q:"What should beginners focus on first?",a:["Speed","Control and timing"],c:1},
-{q:"Why is posture important?",a:["Looks professional","Prevents tension and improves control"],c:1},
-{q:"What does groove depend on most?",a:["Stick tricks","Time consistency"],c:1}
-]
+img:"DRUM: TIMEKEEPING • POSTURE • SINGLE STROKES"
 },
 {
 level:2,
@@ -656,14 +649,7 @@ Core identity:
 Subdivision is the **internal grid** that makes groove reliable.
 `,
 spec:"Intermediate Drum Timing Systems",
-img:"DRUM: SUBDIVISION GRID • INTERNAL CLOCK",
-quizzes:[
-{q:"Subdivision divides beats into:",a:["Random parts","Equal parts"],c:1},
-{q:"Which surface often plays subdivisions?",a:["Kick drum","Hi-hat"],c:1},
-{q:"Why is subdivision important?",a:["For decoration","For timing accuracy"],c:1},
-{q:"Which feel uses triplets?",a:["Swing","Straight rock"],c:0},
-{q:"Subdivision primarily improves:",a:["Tempo stability","Stick height"],c:0}
-]
+img:"DRUM: SUBDIVISION GRID • INTERNAL CLOCK"
 },
 {
 level:3,
@@ -700,14 +686,7 @@ Core identity:
 Groove is not complexity — groove is **control over time**.
 `,
 spec:"Advanced Coordination & Groove Systems",
-img:"DRUM: LIMB INDEPENDENCE • TIME CONTROL",
-quizzes:[
-{q:"Groove requires:",a:["One limb","Multiple limb coordination"],c:1},
-{q:"What stays constant during groove?",a:["Tempo","Stick height"],c:0},
-{q:"Independence means:",a:["Same rhythm everywhere","Different rhythms per limb"],c:1},
-{q:"Which limb usually controls time?",a:["Hi-hat/ride hand","Floor tom"],c:0},
-{q:"Groove is best described as:",a:["Speed","Feel and timing"],c:1}
-]
+img:"DRUM: LIMB INDEPENDENCE • TIME CONTROL"
 },
 {
 level:4,
@@ -747,14 +726,7 @@ Core identity:
 A fill is not decoration — it is **structural glue**.
 `,
 spec:"Professional Drum Flow & Transition Systems",
-img:"DRUM: FILL STRUCTURES • PHRASE CONNECTION",
-quizzes:[
-{q:"What is the purpose of a fill?",a:["Show off","Connect sections"],c:1},
-{q:"A fill should end:",a:["Anywhere","On the downbeat"],c:1},
-{q:"Bad fills cause:",a:["Momentum","Disruption"],c:1},
-{q:"Fills are usually played:",a:["Between phrases","During vocals"],c:0},
-{q:"Good fills enhance:",a:["Timing","Music"],c:1}
-]
+img:"DRUM: FILL STRUCTURES • PHRASE CONNECTION"
 },
 {
 level:5,
@@ -791,14 +763,7 @@ Core identity:
 Polyrhythm is **time mastery**, not complexity for its own sake.
 `,
 spec:"Elite Rhythm & Polyrhythmic Studies",
-img:"DRUM: 3 AGAINST 2 • MULTI-GRID CONTROL",
-quizzes:[
-{q:"Polyrhythms involve:",a:["One rhythm","Multiple rhythms"],c:1},
-{q:"3 against 2 means:",a:["3 notes vs 2 notes","3 beats vs 2 songs"],c:0},
-{q:"Polyrhythms improve:",a:["Timing awareness","Stick tricks"],c:0},
-{q:"Polyrhythms are common in:",a:["African drumming","Marching band only"],c:0},
-{q:"Polyrhythms develop:",a:["Control","Volume"],c:0}
-]
+img:"DRUM: 3 AGAINST 2 • MULTI-GRID CONTROL"
 }
 ];
 
@@ -909,60 +874,18 @@ function renderQuestion() {
     });
 }
 
-/* ============================ DRUM BOOK ENGINE (UNCHANGED STRUCTURE — AUDIO REMOVED) ============================ */
-let drumLevel = 1;
-let drumQuestionIndex = 0;
-
+/* ============================ DRUM BOOK ENGINE (BOOK ONLY — NO EXAMS, NO GRADES) ============================ */
 function loadDrumBook(lvl){
-    drumLevel = lvl;
     const data = DRUM_BOOK.find(d=>d.level===lvl);
     document.getElementById('m-title').innerText = "DRUM_BOOK // " + data.title;
     document.getElementById('m-body').innerText = data.manual;
     document.getElementById('m-spec').innerText = data.spec;
     document.getElementById('visual-aid-container').innerText = data.img;
-    document.getElementById('exam-terminal').classList.remove('passed');
-    document.getElementById('upgrade-btn').style.display = 'none';
+    document.getElementById('exam-terminal').style.display = 'none';
     document.getElementById('flashcard-panel').style.display = 'none';
-    drumQuestionIndex = 0;
-    renderDrumQuestion();
 }
 
-function renderDrumQuestion(){
-    const data = DRUM_BOOK.find(d=>d.level===drumLevel);
-    const quiz = data.quizzes[drumQuestionIndex];
-    document.getElementById('q-text').innerText = "DRUM_EXAM: " + quiz.q;
-    const grid = document.getElementById('options-grid');
-    grid.innerHTML = '';
-
-    quiz.a.forEach((opt, idx) => {
-        const btn = document.createElement('button');
-        btn.className = 'option-btn';
-        btn.innerText = opt;
-        btn.onclick = () => {
-            if (idx === quiz.c) {
-                btn.classList.add('correct');
-                setTimeout(() => {
-                    drumQuestionIndex++;
-                    if (drumQuestionIndex >= data.quizzes.length) {
-                        document.getElementById('exam-terminal').classList.add('passed');
-                        if (drumLevel < DRUM_BOOK.length) {
-                            document.getElementById('upgrade-btn').style.display = 'block';
-                            document.getElementById('upgrade-btn').onclick = ()=>loadDrumBook(drumLevel+1);
-                        }
-                    } else {
-                        renderDrumQuestion();
-                    }
-                }, 400);
-            } else {
-                btn.classList.add('wrong');
-                setTimeout(() => btn.classList.remove('wrong'), 400);
-            }
-        };
-        grid.appendChild(btn);
-    });
-}
-
-/* ============================ FLASHCARDS ENGINE (UNCHANGED STRUCTURE — AUDIO REMOVED) ============================ */
+/* ============================ FLASHCARDS ENGINE (UNCHANGED) ============================ */
 let flashIndex = 0;
 let showingAnswer = false;
 
@@ -1013,3 +936,4 @@ window.onload = init;
 </script>
 </body>
 </html>
+
