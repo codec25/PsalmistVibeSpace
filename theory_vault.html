@@ -92,7 +92,7 @@
 </head>
 <body>
 
-<div class="header-shield">
+<div class="header-shield" id="main-header">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <span style="font-weight: 900; font-size: 0.75rem; color: var(--blue); letter-spacing: 2px;">THEORY_VAULT // CORE</span>
     </div>
@@ -103,7 +103,7 @@
     </div>
 </div>
 
-<div class="main-layout">
+<div class="main-layout" id="main-content">
     <div class="grade-nav" id="grade-nav"></div>
 
     <div class="manual-container">
@@ -123,11 +123,44 @@
     </div>
 </div>
 
-<div class="nav-footer">
+<div class="nav-footer" id="main-footer">
     <a href="hub.html" class="btn-hub">RETURN TO HUB</a>
 </div>
 
 <script>
+    // --- 1. GATEKEEPER SECURITY PROTOCOL ---
+    (function checkClearance() {
+        const ninjaName = localStorage.getItem('ninjaUser');
+        const masterRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        const itActive = localStorage.getItem('it_active') === 'true'; 
+
+        const userData = masterRoster[ninjaName] || {};
+        const userRank = userData.status || "LEVEL 01 ACADEMY";
+
+        const clearanceRanks = ["ELITE_STRIKER", "SHADOW_MASTER", "PSALMIST_VETERAN"];
+        const hasClearance = clearanceRanks.includes(userRank);
+
+        if (!hasClearance && !itActive) {
+            document.body.innerHTML = `
+                <div style="background:#000; color:#ff4b2b; height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center; padding:20px;">
+                    <h1 style="letter-spacing:10px; border:2px solid #ff4b2b; padding:20px;">ACCESS_DENIED</h1>
+                    <p style="margin:20px 0; color:#555; font-size:0.7rem;">REQUIRED_CLEARANCE: ELITE_STRIKER_OR_HIGHER</p>
+                    <p style="color:#333; font-size:0.5rem;">CURRENT_RANK: ${userRank}</p>
+                    <button onclick="window.location.href='hub.html'" style="background:none; border:1px solid #ff4b2b; color:#ff4b2b; padding:10px 20px; font-family:Orbitron; cursor:pointer; margin-top:30px; font-weight:900;">RETURN_TO_HUB</button>
+                </div>`;
+            
+            let vault = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
+            vault.AUDIT_LOG.unshift({
+                time: new Date().toLocaleTimeString(),
+                user: ninjaName || "UNKNOWN",
+                status: `SECURITY_VIOLATION: Attempted Vault Entry (Rank: ${userRank})`
+            });
+            localStorage.setItem('vault_users', JSON.stringify(vault));
+            window.stop(); 
+        }
+    })();
+
+    // --- 2. VAULT SYLLABUS DATA ---
     const SYLLABUS = [
         { g: 1, title: "THE_TACTUS", manual: "The Tactus is the fundamental, perceived pulse. It represents the temporal ground of a musical composition. Internalizing a consistent Tactus is the first step of conservatory rhythmic training.", spec: "TECH: ISO-PULSE / 4/4 TIME-DOMAIN", q: "Which element provides the constant, underlying heartbeat of a composition?", a: ["Syncopation", "The Tactus"], c: 1 },
         { g: 2, title: "BINARY_DIVISION", manual: "Binary subdivision is the symmetrical splitting of the pulse into two equal units (Eighth-notes). This provides the 'Straight' rhythm feel. Precision in the 1:2 ratio is required for ensemble synchronization.", spec: "TECH: 1:2 RATIO / SYMMETRICAL SUBDIVISION", q: "Splitting a single pulse into two equal parts is called:", a: ["Ternary", "Binary"], c: 1 },
@@ -141,6 +174,7 @@
     let viewingGrade = userLevel;
     let distinctionGrades = JSON.parse(localStorage.getItem('distinctions')) || [];
 
+    // --- 3. VAULT LOGIC ---
     function init() {
         renderNav();
         loadModule(viewingGrade);
