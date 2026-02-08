@@ -119,7 +119,6 @@
 <script>
 /* =====================================================
    PROFESSIONAL PIANO ENGINE + TEACHING SYSTEM
-   (No UI changes — keyboard shortcut based)
    ===================================================== */
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -163,47 +162,47 @@ for(let i=0; i<2; i++){
 verbNode.buffer = impulse;
 
 /* =====================================================
-   PRO PIANO PRESET LIBRARY (SAMPLED STYLE ENGINE)
+   PRO PIANO PRESET LIBRARY
    ===================================================== */
 
 const PianoPresets = {
     "Yamaha Grand": {
-        attack: 0.005,
-        release: 2.8,
-        brightness: 0.7,
-        body: 0.9,
-        harmonics: [1,0.8,0.6,0.3,0.15],
-        noise: 0.02
+        attack: 0.004,
+        release: 3.2,
+        brightness: 0.75,
+        body: 1,
+        harmonics: [1,0.9,0.7,0.5,0.3,0.15],
+        noise: 0.015
     },
     "Concert Grand": {
-        attack: 0.004,
-        release: 3.5,
+        attack: 0.003,
+        release: 4,
         brightness: 0.85,
-        body: 1,
-        harmonics: [1,0.9,0.7,0.45,0.25],
+        body: 1.1,
+        harmonics: [1,0.95,0.8,0.6,0.35,0.2],
         noise: 0.01
     },
     "Kids Toy Piano": {
         attack: 0.002,
-        release: 1.1,
+        release: 1.2,
         brightness: 1,
-        body: 0.35,
-        harmonics: [1,0.3,0.15],
+        body: 0.4,
+        harmonics: [1,0.35,0.15],
         noise: 0.06
     },
     "Soft Practice Piano": {
         attack: 0.01,
-        release: 2,
+        release: 2.4,
         brightness: 0.45,
-        body: 0.8,
+        body: 0.85,
         harmonics: [1,0.6,0.3],
-        noise: 0.015
+        noise: 0.02
     },
     "Electric Piano": {
         attack: 0.003,
         release: 1.8,
         brightness: 0.9,
-        body: 0.5,
+        body: 0.55,
         harmonics: [1,0.5,0.25],
         noise: 0
     }
@@ -256,14 +255,12 @@ let noteStreak = 0, lastNoteTime = 0;
 let lastRecordingURL = null;
 
 /* =====================================================
-   TRUE NATURAL STAFF SYSTEM (NO SHARPS / FLATS SHOWN)
+   TRUE NATURAL STAFF SYSTEM (NO SHARPS / FLATS)
    ===================================================== */
 
 let currentKey = "C";
 
-const NATURAL_NAMES = ['C','C','D','D','E','F','F','G','G','A','A','B'];
-const NATURAL_OFFSETS = [0,1,0,1,0,0,1,0,1,0,1,0]; // black keys pushed to nearest natural step
-
+const NATURAL_NAMES = ['C','C','D','D','E','F','F','G','G','A','A','A','B'];
 const NOTE_INDEX = { C:0, D:1, E:2, F:3, G:4, A:5, B:6 };
 
 function getNoteName(midi) {
@@ -278,13 +275,18 @@ function diatonicStep(midi) {
     return NOTE_INDEX[letter] + noteData.octave * 7; 
 }
 
+/* =====================================================
+   🔧 KEY DROPDOWN ↔ CIRCLE OF FIFTHS SYNC
+   ===================================================== */
+
 function setKey(val) { 
     currentKey = val;
     document.getElementById('keySig').value = val;
-    document.querySelectorAll('.circle-label').forEach(l => l.classList.remove('selected')); 
+
+    document.querySelectorAll('.circle-label').forEach(l => l.classList.remove('selected'));
     const target = document.getElementById(`circle-${val}`);
-    if(target) target.classList.add('selected'); 
-    
+    if(target) target.classList.add('selected');
+
     document.querySelectorAll('.key span').forEach(k => {
         const midi = parseInt(k.parentElement.dataset.midi);
         k.innerText = getNoteName(midi).name;
@@ -381,13 +383,12 @@ function startMetroLoop() {
 }
 
 /* =====================================================
-   PROFESSIONAL PIANO SYNTH (MULTI-HARMONIC SAMPLER STYLE)
+   PROFESSIONAL PIANO SYNTH ENGINE
    ===================================================== */
 
 function playNote(midi, velocity = 0.8, fromTeacher=false) {
     if(oscillators[midi]) return;
 
-    // Teaching Mode validation
     if(isTeaching && !fromTeacher) {
         if(midi !== teachingSequence[teachingIndex]) {
             document.getElementById('status').innerText = "TEACH MODE // TRY AGAIN";
@@ -425,7 +426,6 @@ function playNote(midi, velocity = 0.8, fromTeacher=false) {
         partials.push({o,og});
     });
 
-    // Hammer noise
     if(preset.noise > 0) {
         const noiseBuf = audioCtx.createBuffer(1, audioCtx.sampleRate*0.02, audioCtx.sampleRate);
         const d = noiseBuf.getChannelData(0);
@@ -517,8 +517,7 @@ function exportMidiFile() {
 }
 
 /* =====================================================
-   STAFF RENDERER — PROFESSIONAL NATURAL NOTATION
-   (No sharps, no flats, ledger rules respected)
+   STAFF RENDERER — PROFESSIONAL NOTATION
    ===================================================== */
 
 const sCanvas = document.getElementById('staff-canvas');
@@ -535,8 +534,8 @@ function toggleStaffMode() {
 function drawClef(ctx, type, x, y) {
     ctx.fillStyle = isDarkMode ? '#fff' : '#000';
     if (type === 'treble') {
-        ctx.font = '155px serif'; 
-        ctx.fillText('\u{1D11E}', x - 15, y + 28); 
+        ctx.font = '150px serif'; 
+        ctx.fillText('\u{1D11E}', x - 14, y + 24);
     } else {
         ctx.font = '72px serif';
         ctx.fillText('\u{1D122}', x, y);
@@ -548,17 +547,24 @@ function clearNoteHistory() { updateStaff(); }
 function updateStaff() {
     const ctx = sCtx;
     ctx.clearRect(0, 0, 600, 400);
-    const lineGap = 14; const trebleTop = 90; const bassTop = 240; const left = 40; const right = 560;
-    ctx.strokeStyle = isDarkMode ? '#444' : '#000'; ctx.lineWidth = 1;
+    const lineGap = 14; 
+    const trebleTop = 90; 
+    const bassTop = 240; 
+    const left = 40; 
+    const right = 560;
+
+    ctx.strokeStyle = isDarkMode ? '#444' : '#000'; 
+    ctx.lineWidth = 1;
     for(let i=0;i<5;i++){
         ctx.beginPath(); ctx.moveTo(left, trebleTop + i*lineGap); ctx.lineTo(right, trebleTop + i*lineGap); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(left, bassTop + i*lineGap); ctx.lineTo(right, bassTop + i*lineGap); ctx.stroke();
     }
-    drawClef(ctx, 'treble', 42, trebleTop + lineGap*4.2);
-    drawClef(ctx, 'bass', 44, bassTop + lineGap*3.2);
-    
-    const trebleRefMidi = 64; // E4 bottom line
-    const bassRefMidi = 45;   // A2 bottom line
+
+    drawClef(ctx, 'treble', 42, trebleTop + lineGap*4);
+    drawClef(ctx, 'bass', 44, bassTop + lineGap*3);
+
+    const trebleRefMidi = 64;
+    const bassRefMidi = 45;
     
     document.querySelectorAll('.key.active').forEach(k => {
         const midi = parseInt(k.dataset.midi);
@@ -566,9 +572,11 @@ function updateStaff() {
         
         let refMidi, refY;
         if (midi >= 60) {
-            refMidi = trebleRefMidi; refY = trebleTop + lineGap * 4;
+            refMidi = trebleRefMidi; 
+            refY = trebleTop + lineGap * 4;
         } else {
-            refMidi = bassRefMidi; refY = bassTop + lineGap * 4;
+            refMidi = bassRefMidi; 
+            refY = bassTop + lineGap * 4;
         }
         
         const refStep = diatonicStep(refMidi);
@@ -577,11 +585,16 @@ function updateStaff() {
 
         const topLimit = (midi >= 60) ? trebleTop : bassTop;
         const bottomLimit = (midi >= 60) ? trebleTop + 4*lineGap : bassTop + 4*lineGap;
+
         if (baseY < topLimit - lineGap/2) {
-            for(let y = topLimit - lineGap; y >= baseY - 1; y -= lineGap) { ctx.beginPath(); ctx.moveTo(285, y); ctx.lineTo(315, y); ctx.stroke(); }
+            for(let y = topLimit - lineGap; y >= baseY - 1; y -= lineGap) {
+                ctx.beginPath(); ctx.moveTo(285, y); ctx.lineTo(315, y); ctx.stroke();
+            }
         }
         if (baseY > bottomLimit + lineGap/2) {
-            for(let y = bottomLimit + lineGap; y <= baseY + 1; y += lineGap) { ctx.beginPath(); ctx.moveTo(285, y); ctx.lineTo(315, y); ctx.stroke(); }
+            for(let y = bottomLimit + lineGap; y <= baseY + 1; y += lineGap) {
+                ctx.beginPath(); ctx.moveTo(285, y); ctx.lineTo(315, y); ctx.stroke();
+            }
         }
 
         ctx.beginPath(); 
@@ -593,13 +606,11 @@ function updateStaff() {
 
 /* =====================================================
    TEACHING MODE SYSTEM
-   (Keyboard Shortcut Based — No UI Changes)
    ===================================================== */
 
 let isTeaching = false;
 let teachingSequence = [];
 let teachingIndex = 0;
-let teachingTimer = null;
 
 const FurEliseIntro = [
     76,75,76,75,76,71,74,72,69,
@@ -700,96 +711,122 @@ function toggleGlitch() {
 }
 function toggleSub() { isSub = !isSub; document.getElementById('subBtn').classList.toggle('active', isSub); }
 function toggleHeat() { isHeat = !isHeat; heatNode.curve = isHeat ? makeDistortionCurve(45) : makeDistortionCurve(0); document.getElementById('heatBtn').classList.toggle('heat-active', isHeat); }
-function updateBPM(v) { currentBPM = v; echoDelay.delayTime.setTargetAtTime(60/v, audioCtx.currentTime, 0.1); startMetroLoop(); }
 function toggleReverb() { isVerb = !isVerb; verbGain.gain.setTargetAtTime(isVerb ? 0.5 : 0, audioCtx.currentTime, 0.1); document.getElementById('verbBtn').classList.toggle('active', isVerb); }
-function toggleEcho() { isEcho = !isEcho; echoWet.gain.setTargetAtTime(isEcho?0.3:0, audioCtx.currentTime, 0.1); document.getElementById('echoBtn').classList.toggle('active', isEcho); }
-function toggleArp() { isArp = !isArp; document.getElementById('arpBtn').classList.toggle('active', isArp); if(isArp) startArp(); else clearInterval(arpInterval); }
-function startArp() { 
-    let step = 0; 
-    arpInterval = setInterval(() => { 
-        if (heldKeys.size > 0) { 
-            const sorted = Array.from(heldKeys).sort((a,b) => a-b); 
-            let m = sorted[step % sorted.length]; 
-            playNote(m, 0.6); 
-            setTimeout(()=>stopNote(m), 300); 
-            step++; 
-        } 
-    }, (60/currentBPM) * 500); 
-}
-function toggleRecording() { 
-    if(!isRecording){ 
-        chunks=[]; 
-        mediaRecorder = new MediaRecorder(dest.stream); 
-        mediaRecorder.ondataavailable = e => chunks.push(e.data); 
-        mediaRecorder.onstop = () => { 
-            const blob = new Blob(chunks, {type:'audio/wav'}); 
-            lastRecordingURL = URL.createObjectURL(blob); 
-            openEditor(lastRecordingURL); 
-        }; 
-        mediaRecorder.start(); 
-        document.getElementById('recBtn').classList.add('recording'); 
-    } else { 
-        mediaRecorder.stop(); 
-        document.getElementById('recBtn').classList.remove('recording'); 
-    } 
-    isRecording = !isRecording; 
-}
-function openEditor(url) { const overlay = document.getElementById('editorOverlay'); const audio = document.getElementById('editorAudio'); audio.src = url; overlay.style.display = 'flex'; }
-function closeEditor() { document.getElementById('editorOverlay').style.display = 'none'; }
-function downloadEdited() { if(!lastRecordingURL) return; const a = document.createElement('a'); a.href = lastRecordingURL; a.download = 'apex_session.wav'; a.click(); }
-const dCtx = document.getElementById('dynamics-canvas').getContext('2d');
-function drawDynamics() { 
-    requestAnimationFrame(drawDynamics); 
-    analyzer.getByteTimeDomainData(dataArray); 
-    dCtx.fillStyle='#000'; dCtx.fillRect(0,0,100,30); 
-    dCtx.lineWidth=1; dCtx.strokeStyle='#00ff88'; 
-    dCtx.beginPath(); 
-    let sw = 100/128; let x=0; 
-    for(let i=0;i<128;i++){ 
-        let y = (dataArray[i]/128.0)*15; 
-        if(i===0) dCtx.moveTo(x,y); else dCtx.lineTo(x,y); 
-        x+=sw; 
-    } 
-    dCtx.stroke(); 
-}
-function runTheoryAnalysis() { if(activeMidiSet.size < 3) return; document.getElementById('theory-display').innerText = `CHORD: ANALYZING...`; }
-function toggleLabels() { document.body.classList.toggle('show-labels'); }
+function toggleEcho() { isEcho = !isEcho; echoWet.gain.setTargetAtTime(isEcho ? 0.3 : 0, audioCtx.currentTime, 0.1); document.getElementById('echoBtn').classList.toggle('active', isEcho); }
+function toggleArp() { isArp = !isArp; document.getElementById('arpBtn').classList.toggle('active', isArp); }
 function toggleSustain() { isSustain = !isSustain; document.getElementById('susBtn').classList.toggle('active', isSustain); }
+function toggleLabels() { document.body.classList.toggle('show-labels'); }
+
+/* =====================================================
+   BPM / RECORDING
+   ===================================================== */
+
+function updateBPM(v) { currentBPM = parseInt(v); if(isMetro) startMetroLoop(); }
+
+function toggleRecording() {
+    if(!isRecording) {
+        chunks = [];
+        mediaRecorder = new MediaRecorder(dest.stream);
+        mediaRecorder.ondataavailable = e => chunks.push(e.data);
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'audio/wav' });
+            lastRecordingURL = URL.createObjectURL(blob);
+            document.getElementById('editorAudio').src = lastRecordingURL;
+            document.getElementById('editorOverlay').style.display = 'flex';
+        };
+        mediaRecorder.start();
+        isRecording = true;
+        document.getElementById('recBtn').classList.add('recording');
+        document.getElementById('status').innerText = "Recording...";
+    } else {
+        mediaRecorder.stop();
+        isRecording = false;
+        document.getElementById('recBtn').classList.remove('recording');
+        document.getElementById('status').innerText = "Recording Saved";
+    }
+}
+
+function closeEditor() {
+    document.getElementById('editorOverlay').style.display = 'none';
+}
+function downloadEdited() {
+    if(!lastRecordingURL) return;
+    const a = document.createElement('a');
+    a.href = lastRecordingURL;
+    a.download = "apex_session.wav";
+    a.click();
+}
+
+/* =====================================================
+   CIRCLE OF FIFTHS — BUILD + CLICK LOGIC
+   ===================================================== */
+
+const circleContainer = document.getElementById('circle-fifths');
+const circleKeys = ["C","G","D","A","E","B","F#","C#","Ab","Eb","Bb","F"];
+
+circleKeys.forEach((key, i) => {
+    const el = document.createElement('div');
+    el.className = 'circle-label';
+    el.id = `circle-${key}`;
+    el.innerText = key;
+    const angle = (i / 12) * Math.PI * 2 - Math.PI / 2;
+    const radius = 55;
+    el.style.left = 70 + radius * Math.cos(angle) - 15 + "px";
+    el.style.top = 70 + radius * Math.sin(angle) - 15 + "px";
+    el.onclick = () => setKey(key);
+    circleContainer.appendChild(el);
+});
+
+/* =====================================================
+   ✅ PIANO BUILD — TRUE 88 KEYS (A0 → C8)
+   ===================================================== */
+
+const piano = document.getElementById('piano');
+const startMidi = 21;  // A0
+const endMidi = 108;   // C8
+const blackNotes = [1,3,6,8,10];
+
+for(let midi = startMidi; midi <= endMidi; midi++) {
+    const pc = midi % 12;
+    const isBlack = blackNotes.includes(pc);
+    const key = document.createElement('div');
+    key.className = `key ${isBlack ? 'black' : 'white'}`;
+    key.dataset.midi = midi;
+
+    const label = document.createElement('span');
+    label.innerText = getNoteName(midi).name;
+    key.appendChild(label);
+
+    key.onmousedown = () => playNote(midi, 0.8);
+    key.onmouseup = () => stopNote(midi);
+    key.onmouseleave = () => stopNote(midi);
+    key.ontouchstart = e => { e.preventDefault(); playNote(midi, 0.8); };
+    key.ontouchend = e => { e.preventDefault(); stopNote(midi); };
+
+    piano.appendChild(key);
+}
+
+/* =====================================================
+   THEORY ANALYSIS
+   ===================================================== */
+
+function runTheoryAnalysis() {
+    const notes = [...heldKeys].sort((a,b)=>a-b);
+    if(notes.length === 0) {
+        document.getElementById('theory-display').innerText = "CHORD: ---";
+        return;
+    }
+    const pcs = notes.map(n=>n%12);
+    const unique = [...new Set(pcs)];
+    const names = unique.map(n=>getNoteName(n).name);
+    document.getElementById('theory-display').innerText = "CHORD: " + names.join("-");
+}
 
 /* =====================================================
    INIT
    ===================================================== */
 
-window.onload = () => {
-    const piano = document.getElementById('piano');
-    for(let m=21; m<=108; m++) { 
-        const k = document.createElement('div'); 
-        k.className=`key ${[1,3,6,8,10].includes(m%12)?'black':'white'}`; 
-        k.dataset.midi=m; 
-        k.innerHTML=`<span></span>`; 
-        k.onmousedown=(e)=>{e.preventDefault(); playNote(m);}; 
-        k.onmouseup=k.onmouseleave=()=>stopNote(m); 
-        piano.appendChild(k); 
-    }
-    const angles = {"C":-90,"G":-60,"D":-30,"A":0,"E":30,"F":-120,"Bb":-150,"Eb":-180};
-    Object.keys(angles).forEach(key => { 
-        const l = document.createElement('div'); 
-        l.className = `circle-label`; 
-        l.innerText = key; 
-        l.id = `circle-${key}`; 
-        const rad = angles[key]*(Math.PI/180); 
-        l.style.left = `${55+55*Math.cos(rad)}px`; 
-        l.style.top = `${55+55*Math.sin(rad)}px`; 
-        l.onclick = () => setKey(key); 
-        document.getElementById('circle-fifths').appendChild(l); 
-    });
-    
-    setKey('C'); 
-    drawDynamics(); 
-    updateStaff(); 
-    startMetroLoop();
-    document.querySelector('[data-midi="60"]').scrollIntoView({inline:'center'});
-};
+setKey("C");
 </script>
 </body>
 </html>
