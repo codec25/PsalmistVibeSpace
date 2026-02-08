@@ -96,6 +96,37 @@
             font-size: 0.55rem; color: var(--gold); letter-spacing: 2px;
             font-weight: 900; opacity: 0.8;
         }
+
+        /* 🔥 ADDED — SCORE HUD (NO EXISTING STYLES MODIFIED) */
+        #score-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--gold);
+            border-radius: 14px;
+            padding: 16px 22px;
+            text-align: center;
+            box-shadow: 0 0 25px rgba(255,204,0,0.3);
+        }
+        #score-title { font-size: 0.55rem; letter-spacing: 3px; color: var(--gold); }
+        #score-value { font-size: 2.8rem; font-weight: 900; margin: 4px 0; }
+        #score-status { font-size: 0.55rem; letter-spacing: 2px; color: var(--blue); }
+
+        /* 🔥 ADDED — VISUAL SUCCESS / FAIL FX */
+        .success-flash { animation: successPulse 0.4s ease-out; }
+        .fail-flash { animation: failPulse 0.4s ease-out; }
+
+        @keyframes successPulse {
+            0% { box-shadow: 0 0 0 rgba(0,255,136,0); }
+            50% { box-shadow: 0 0 60px rgba(0,255,136,0.9); }
+            100% { box-shadow: 0 0 0 rgba(0,255,136,0); }
+        }
+        @keyframes failPulse {
+            0% { box-shadow: 0 0 0 rgba(255,75,43,0); }
+            50% { box-shadow: 0 0 60px rgba(255,75,43,0.9); }
+            100% { box-shadow: 0 0 0 rgba(255,75,43,0); }
+        }
     </style>
 </head>
 <body>
@@ -117,7 +148,14 @@
     </div>
 </div>
 
-<div class="center-hub">
+<div class="center-hub" id="center-hub">
+    <!-- 🔥 ADDED SCORE SCREEN -->
+    <div id="score-panel">
+        <div id="score-title">TEST</div>
+        <div id="score-value">0</div>
+        <div id="score-status">READY</div>
+    </div>
+
     <div id="note-display">--</div>
     <div id="freq-display">0.00 Hz</div>
     
@@ -130,6 +168,9 @@
         <button class="btn-audio" onclick="playTargetTone()">PLAY_TARGET</button>
         <button id="record-btn" class="btn-audio" onclick="toggleRecording()">REC_SESSION</button>
         <button id="playback-btn" class="btn-audio" onclick="playBack()" style="display:none; border-color:var(--green); color:var(--green);">PLAYBACK</button>
+        <button id="test-btn" class="btn-audio" onclick="startTest()" style="border-color:var(--blue); color:var(--blue);">START_TEST</button>
+        <button id="stop-btn" class="btn-audio" onclick="stopTest()" style="border-color:var(--red); color:var(--red); display:none;">STOP</button>
+        <button id="replay-btn" class="btn-audio" onclick="playTargetTone()" style="border-color:var(--green); color:var(--green); display:none;">REPLAY</button>
     </div>
     <div id="instruction">INITIALIZING SENSORS...</div>
     <div class="tuner-track">
@@ -174,6 +215,18 @@
     let audioBlob;
     let isRecording = false;
 
+    /* 🔥 TEST SYSTEM */
+    let testRunning = false;
+    let testStartTime = null;
+    let testSamples = [];
+    const TEST_DURATION = 7000;
+    const VOICE_THRESHOLD = 0.015;
+
+    /* 🔥 MIDI */
+    let midiAccess = null;
+    let midiActive = false;
+    let midiNote = null;
+
     const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
     function setMode(m) {
@@ -212,9 +265,11 @@
                 };
 
                 document.getElementById('instruction').innerText = "SENSORS ONLINE";
-                update();
+                if (!animationId) update();
             } catch (e) { alert("Microphone access denied."); }
         }
+
+        initMIDI();
     }
 
     function toggleRecording() {
@@ -244,6 +299,10 @@
     async function playTargetTone() {
         if (!audioCtx) await initSensors();
         if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+        // 🔥 If in test mode → restart round cleanly
+        if (testRunning) resetTestState(true);
+
         const osc = audioCtx.createOscillator();
         const g = audioCtx.createGain();
         osc.frequency.setValueAtTime(lastPitch, audioCtx.currentTime);
@@ -265,21 +324,108 @@
         localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
         
         const popup = document.getElementById('xp-popup');
-        document.getElementById('xp-header').innerText = type === "LEGENDARY" ? "LEGENDARY_SUSTAIN" : "NEURAL_SYNC_SUCCESS";
+        document.getElementById('xp-header').innerText = type === "LEGENDARY" ? "LEGENDARY_SUSTAIN" : "TEST_COMPLETE";
         document.getElementById('xp-amount').innerText = `+${amount} XP`;
         popup.style.display = 'block';
         setTimeout(() => { popup.style.display = 'none'; }, 2500);
     }
 
+    /* ===========================
+       🔥 MIDI SUPPORT
+    =========================== */
+
+    async function initMIDI() {
+        if (!navigator.requestMIDIAccess) return;
+        try {
+            midiAccess = await navigator.requestMIDIAccess();
+            midiAccess.inputs.forEach(input => input.onmidimessage = handleMIDI);
+            midiAccess.onstatechange = e => {
+                midiAccess.inputs.forEach(input => input.onmidimessage = handleMIDI);
+            };
+        } catch(e){}
+    }
+
+    function handleMIDI(msg) {
+        const [cmd, note, vel] = msg.data;
+        if (cmd === 144 && vel > 0) {
+            midiActive = true;
+            midiNote = note;
+            lastPitch = 440 * Math.pow(2, (note - 69) / 12);
+        }
+        if (cmd === 128 || (cmd === 144 && vel === 0)) {
+            midiActive = false;
+        }
+    }
+
+    /* ===========================
+       🔥 TEST CONTROLS (FIXED)
+    =========================== */
+
+    function resetTestState(startImmediately = false) {
+        testRunning = startImmediately;
+        testStartTime = null;
+        testSamples = [];
+        document.getElementById('score-value').innerText = startImmediately ? "..." : "0";
+        document.getElementById('score-status').innerText = startImmediately ? "LISTENING..." : "READY";
+        document.getElementById('test-btn').style.display = startImmediately ? "none" : "inline-block";
+        document.getElementById('stop-btn').style.display = startImmediately ? "inline-block" : "none";
+        document.getElementById('replay-btn').style.display = "none";
+    }
+
+    function startTest() {
+        resetTestState(true);
+    }
+
+    function stopTest() {
+        resetTestState(false);
+    }
+
+    function endTest() {
+        testRunning = false;
+
+        const avgAccuracy = testSamples.length
+            ? testSamples.reduce((a,b)=>a+b,0) / testSamples.length
+            : 0;
+
+        const finalScore = Math.max(1, Math.min(100, Math.round(avgAccuracy * 100)));
+
+        document.getElementById('score-value').innerText = finalScore;
+        document.getElementById('score-status').innerText = "FINAL SCORE";
+        document.getElementById('replay-btn').style.display = "inline-block";
+        document.getElementById('test-btn').style.display = "inline-block";
+        document.getElementById('stop-btn').style.display = "none";
+
+        grantXP(Math.max(10, finalScore));
+    }
+
+    /* ===========================
+       🔥 MAIN UPDATE LOOP
+    =========================== */
+
     function update() {
+        if (!analyser) {
+            animationId = requestAnimationFrame(update);
+            return;
+        }
+
+        let pitch = -1;
+
         const buffer = new Float32Array(analyser.fftSize);
         analyser.getFloatTimeDomainData(buffer);
-        const pitch = autoCorrelate(buffer, audioCtx.sampleRate);
+
+        let rms = 0;
+        for (let i = 0; i < buffer.length; i++) rms += buffer[i] * buffer[i];
+        rms = Math.sqrt(rms / buffer.length);
+
+        if (midiActive) {
+            pitch = lastPitch;
+        } else {
+            pitch = autoCorrelate(buffer, audioCtx.sampleRate);
+        }
 
         if (pitch !== -1) {
             lastPitch = pitch;
             
-            // Vibrato Logic
             pitchHistory.push(pitch);
             if (pitchHistory.length > historyLimit) pitchHistory.shift();
             
@@ -303,7 +449,32 @@
             const needle = document.getElementById('tuner-needle');
             needle.style.left = Math.max(5, Math.min(95, needlePos)) + "%";
 
-            // Elite Detection & Sustain Tracker
+            const absCents = Math.abs(diffCents);
+            const hub = document.getElementById('center-hub');
+
+            /* ===========================
+               🔥 LIVE TEST ENGINE (FIXED)
+            =========================== */
+            if (testRunning) {
+                if (!testStartTime && rms > VOICE_THRESHOLD) {
+                    testStartTime = Date.now();
+                    document.getElementById('score-status').innerText = "TRACKING...";
+                }
+
+                if (testStartTime) {
+                    const accuracy = Math.max(0, 1 - absCents / 50);
+                    testSamples.push(accuracy);
+
+                    const liveScore = Math.round((testSamples.reduce((a,b)=>a+b,0) / testSamples.length) * 100);
+                    document.getElementById('score-value').innerText = Math.max(1, Math.min(100, liveScore));
+
+                    if (Date.now() - testStartTime >= TEST_DURATION) {
+                        endTest();
+                    }
+                }
+            }
+
+            // Elite Detection & Sustain Tracker (unchanged)
             if (Math.abs(diffCents) < 5) {
                 needle.style.background = "var(--green)";
                 eliteStreak++;
@@ -318,7 +489,7 @@
 
                 if (duration >= 10 && sustainActive) {
                     grantXP(250, "LEGENDARY");
-                    sustainActive = false; // Reset so they can't farm it instantly
+                    sustainActive = false;
                     sustainStartTime = Date.now();
                 }
 
@@ -344,6 +515,7 @@
                 }
             }
         }
+
         animationId = requestAnimationFrame(update);
     }
 
