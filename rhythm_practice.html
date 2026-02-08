@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>PRACTICE_DRILLS // Neural_Ninja</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -14,76 +14,122 @@
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
             display: flex; flex-direction: column; height: 100vh; overflow: hidden;
             background-image: radial-gradient(circle at center, #0b1426 0%, #030508 100%);
-            touch-action: manipulation;
+            touch-action: none;
         }
 
         .hud-top {
             display: flex; justify-content: space-between; align-items: center; padding: 10px 15px;
             font-size: 0.55rem; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.5);
-            z-index: 10;
+            z-index: 10; position: relative;
         }
         .xp-display { color: var(--gold); font-weight: 900; letter-spacing: 1px; }
+        .metronome-flash {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 8px; height: 8px; border-radius: 50%; background: var(--blue);
+            opacity: 0; transition: opacity 0.05s;
+        }
 
-        .main-stage { flex-grow: 1; display: flex; flex-direction: column; align-items: center; position: relative; padding: 10px; }
+        .main-stage { flex-grow: 1; display: flex; flex-direction: column; align-items: center; position: relative; padding: 5px; }
 
         .controls-row { 
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; max-width: 600px;
-            margin-bottom: 15px; z-index: 5;
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 100%; max-width: 900px;
+            margin-bottom: 10px; z-index: 5;
         }
-        @media (min-width: 768px) { .controls-row { grid-template-columns: repeat(4, 1fr); } }
 
         .config-box { 
-            background: rgba(255,255,255,0.05); padding: 8px; border: 1px solid var(--border); 
-            display: flex; flex-direction: column; gap: 4px; border-radius: 4px;
+            background: rgba(255,255,255,0.05); padding: 5px; border: 1px solid var(--border); 
+            display: flex; flex-direction: column; gap: 2px; border-radius: 4px;
         }
         .config-box label { font-size: 0.45rem; color: var(--blue); letter-spacing: 1px; font-weight: 900; }
         
         select, input[type="range"] { 
             background: #000; color: #fff; border: 1px solid var(--border); 
-            font-family: Orbitron; font-size: 0.6rem; width: 100%; height: 30px;
+            font-family: Orbitron; font-size: 0.55rem; width: 100%; height: 25px;
         }
 
+        .audio-toggle {
+            background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: #666;
+            font-family: 'Orbitron'; font-size: 0.45rem; padding: 4px; border-radius: 3px;
+            cursor: pointer; margin-top: 2px; transition: 0.2s;
+        }
+        .audio-toggle.active { color: var(--green); border-color: var(--green); box-shadow: 0 0 5px var(--green); }
+
         .lane-container { 
-            display: flex; gap: 10px; height: 60vh; width: 100%; max-width: 500px;
-            perspective: 800px; position: relative;
+            display: flex; gap: 8px; height: 55vh; width: 100%; max-width: 500px;
+            perspective: 800px; position: relative; padding-bottom: 80px;
         }
         
         .lane { 
-            flex: 1; height: 100%; background: rgba(255,255,255,0.02); 
+            flex: 1; height: 100%; background: rgba(255,255,255,0.01); 
             border: 1px solid var(--border); position: relative; overflow: hidden;
-            border-radius: 4px; display: flex; align-items: flex-end;
+            border-radius: 8px;
         }
+
+        .ghost-indicator {
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            width: 30px; height: 5px; background: var(--blue); opacity: 0;
+            filter: blur(2px); transition: opacity 0.1s; pointer-events: none;
+        }
+        .ghost-indicator.active { opacity: 0.8; box-shadow: 0 0 10px var(--blue); }
 
         .hit-zone {
-            width: 100%; height: 70px; margin-bottom: 10px;
-            border-top: 2px solid var(--blue); background: rgba(79, 172, 254, 0.1);
+            position: absolute; bottom: 0; width: 100%; height: 80px;
+            border-top: 3px solid var(--blue); background: rgba(79, 172, 254, 0.15);
             display: flex; align-items: center; justify-content: center; 
-            font-size: 1rem; font-weight: 900; color: var(--blue);
-            transition: 0.1s; -webkit-tap-highlight-color: transparent;
+            font-size: 1.2rem; font-weight: 900; color: var(--blue);
+            transition: 0.05s; pointer-events: auto; z-index: 10;
         }
-        .hit-zone.active { background: var(--blue); color: #000; box-shadow: 0 0 30px var(--blue); transform: scale(0.95); }
+        
+        .hit-zone::after {
+            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 2px;
+            background: rgba(79, 172, 254, 0.4); box-shadow: 0 0 10px var(--blue);
+            pointer-events: none; transform: translateY(-50%);
+        }
+
+        .hit-zone.active { background: var(--blue); color: #000; box-shadow: 0 0 30px var(--blue); transform: scale(0.98); }
 
         .note {
-            position: absolute; width: 100%; height: 20px; background: var(--gold);
-            box-shadow: 0 0 15px var(--gold); border-radius: 2px;
-            pointer-events: none;
+            position: absolute; width: 90%; left: 5%; height: 15px; background: var(--gold);
+            box-shadow: 0 0 10px var(--gold); border-radius: 4px;
+            pointer-events: none; z-index: 2;
+        }
+
+        .combo-counter {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 3rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px var(--gold);
+            pointer-events: none; opacity: 0; transition: transform 0.1s, opacity 0.2s; z-index: 20;
+            text-align: center; font-style: italic;
+        }
+        .combo-counter.active { opacity: 0.6; }
+
+        .hit-feedback {
+            position: absolute; top: -40px; left: 0; width: 100%; text-align: center;
+            font-size: 0.6rem; font-weight: 900; pointer-events: none;
+            animation: feedbackFloat 0.5s ease-out forwards;
+            text-shadow: 0 0 5px #000; z-index: 30;
+        }
+
+        @keyframes feedbackFloat {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-30px); opacity: 0; }
         }
 
         .btn-start {
-            width: 100%; max-width: 400px; padding: 15px; background: var(--blue); 
+            width: 90%; max-width: 400px; padding: 18px; background: var(--blue); 
             border: none; font-family: 'Orbitron'; font-weight: 900; cursor: pointer;
             margin-top: 10px; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0% 100%);
+            font-size: 0.8rem; letter-spacing: 2px;
         }
         .btn-start.running { background: var(--red); color: #fff; }
-
-        .status-msg { margin-top: 10px; color: var(--gold); font-size: 0.6rem; font-weight: 700; text-align: center; }
+        .status-msg { margin-top: 5px; color: var(--gold); font-size: 0.5rem; font-weight: 700; text-align: center; }
     </style>
 </head>
 <body>
 
     <div class="hud-top">
         <div class="xp-display" id="xp-display">XP: 00000</div>
-        <div style="color:var(--blue); font-weight: 900;">DRILL_PROTOCOL_v4</div>
+        <div style="color:var(--blue); font-weight: 900;">DRILL_PROTOCOL_v4_SYNC</div>
+        <div class="metronome-flash" id="metronome-flash"></div>
         <a href="rhythm_hub.html" style="color:var(--red); text-decoration:none;">[ EXIT ]</a>
     </div>
 
@@ -102,270 +148,270 @@
                     <option value="random">RANDOM_FLUX</option>
                     <option value="single_stroke_roll">Single Stroke Roll</option>
                     <option value="double_stroke_roll">Double Stroke Roll</option>
-                    <option value="five_stroke_roll">Five Stroke Roll</option>
-                    <option value="seven_stroke_roll">Seven Stroke Roll</option>
-                    <option value="nine_stroke_roll">Nine Stroke Roll</option>
-                    <option value="ten_stroke_roll">Ten Stroke Roll</option>
-                    <option value="eleven_stroke_roll">Eleven Stroke Roll</option>
-                    <option value="thirteen_stroke_roll">Thirteen Stroke Roll</option>
-                    <option value="fifteen_stroke_roll">Fifteen Stroke Roll</option>
-                    <option value="seventeen_stroke_roll">Seventeen Stroke Roll</option>
-
                     <option value="single_paradiddle">Single Paradiddle</option>
-                    <option value="double_paradiddle">Double Paradiddle</option>
-                    <option value="triple_paradiddle">Triple Paradiddle</option>
-                    <option value="paradiddle_diddle">Paradiddle-diddle</option>
-
-                    <option value="flam">Flam</option>
-                    <option value="flam_accent">Flam Accent</option>
                     <option value="flam_tap">Flam Tap</option>
-                    <option value="flamacue">Flamacue</option>
-                    <option value="pataflafla">Pataflafla</option>
-                    <option value="swiss_army_triplet">Swiss Army Triplet</option>
-                    <option value="inverted_flam_tap">Inverted Flam Tap</option>
-                    <option value="flam_drag">Flam Drag</option>
-
-                    <option value="drag">Drag</option>
-                    <option value="single_drag_tap">Single Drag Tap</option>
-                    <option value="double_drag_tap">Double Drag Tap</option>
-                    <option value="lesson_25">Lesson 25</option>
-                    <option value="single_dragadiddle">Single Dragadiddle</option>
-                    <option value="drag_paradiddle_1">Drag Paradiddle #1</option>
-                    <option value="drag_paradiddle_2">Drag Paradiddle #2</option>
-                    <option value="single_ratamacue">Single Ratamacue</option>
-                    <option value="double_ratamacue">Double Ratamacue</option>
-                    <option value="triple_ratamacue">Triple Ratamacue</option>
                 </select>
             </div>
             <div class="config-box">
                 <label>BPM: <span id="bpmVal">100</span></label>
-                <input type="range" id="bpmSlider" min="60" max="200" value="100" oninput="updateBPM()">
+                <input type="range" id="bpmSlider" min="20" max="220" value="100" oninput="updateBPM()">
+                <button id="audio-toggle" class="audio-toggle" onclick="toggleAudio()">SNARE: OFF</button>
             </div>
             <div class="config-box">
-                <label>SYNC_STATUS</label>
-                <span id="play-state" style="font-size: 0.6rem; color: var(--gold); font-weight: 900;">IDLE</span>
+                <label>METRONOME</label>
+                <button id="metronome-toggle" class="audio-toggle" onclick="toggleMetronome()">OFF</button>
+            </div>
+            <div class="config-box">
+                <label>TEST MODE</label>
+                <button id="testmode-toggle" class="audio-toggle" onclick="toggleTestMode()">OFF</button>
             </div>
         </div>
 
-        <div class="lane-container" id="lane-wrapper"></div>
+        <div class="lane-container" id="lane-wrapper">
+             <div id="combo-ui" class="combo-counter">0</div>
+        </div>
 
         <button class="btn-start" id="start-btn" onclick="toggleGame()">INITIALIZE_DRILL</button>
-        <div class="status-msg" id="msg">TAP THE ZONES WHEN NOTES ALIGN</div>
+        <div class="status-msg" id="msg">STRIKE ZONES WHEN NOTES ALIGN</div>
     </div>
 
     <script>
         let isPlaying = false;
+        let audioEnabled = false;
+        let audioCtx;
         let gameLoop;
         let notes = [];
+        let masterInterval;
         let patternStep = 0;
-        let spawnTimeout;
+        let lastTime = 0;
+
+        let metronomeActive = false;
+        let testMode = false;
+        let hits = 0, totalHits = 0, streak = 0;
 
         const RUDIMENTS = {
             single_stroke_roll: ['L','R'],
             double_stroke_roll: ['L','L','R','R'],
-            five_stroke_roll: ['L','L','R','R','L','R'],
-            seven_stroke_roll: ['L','L','R','R','L','L','R','R'],
-            nine_stroke_roll: ['L','L','R','R','L','L','R','R','L','R'],
-            ten_stroke_roll: ['L','L','R','R','L','L','R','R','L','L'],
-            eleven_stroke_roll: ['L','L','R','R','L','L','R','R','L','L','R','R'],
-            thirteen_stroke_roll: ['L','L','R','R','L','L','R','R','L','L','R','R','L','R'],
-            fifteen_stroke_roll: ['L','L','R','R','L','L','R','R','L','L','R','R','L','L','R','R'],
-            seventeen_stroke_roll: ['L','L','R','R','L','L','R','R','L','L','R','R','L','L','R','R','L','R'],
-
             single_paradiddle: ['L','R','L','L','R','L','R','R'],
-            double_paradiddle: ['L','R','L','R','L','L','R','L','R','L','R','R'],
-            triple_paradiddle: ['L','R','L','R','L','R','L','L','R','L','R','L','R','L','R','R'],
-            paradiddle_diddle: ['L','R','L','L','R','R'],
-
-            flam: ['lR','rL'],
-            flam_accent: ['lR','L','R','lL','R','L'],
-            flam_tap: ['lR','R','rL','L'],
-            flamacue: ['lR','L','R','rL','R','L'],
-            pataflafla: ['lR','rL','R','L'],
-            swiss_army_triplet: ['lR','L','R'],
-            inverted_flam_tap: ['R','lL','L','rR'],
-            flam_drag: ['dR','L','dL','R'],
-
-            drag: ['dR','L'],
-            single_drag_tap: ['dR','L','R','dL','R','L'],
-            double_drag_tap: ['ddR','L','R','ddL','R','L'],
-            lesson_25: ['dR','L','dL','R'],
-            single_dragadiddle: ['dR','L','R','L','dL','R','L','R'],
-            drag_paradiddle_1: ['dR','L','R','R','dL','R','L','L'],
-            drag_paradiddle_2: ['R','dL','L','L','L','dR','R','R'],
-            single_ratamacue: ['dR','L','R'],
-            double_ratamacue: ['ddR','L','R'],
-            triple_ratamacue: ['dddR','L','R']
+            flam_tap: ['L','L','R','R']
         };
 
-        function initLanes() {
-            if(isPlaying) stopGame();
-            const wrapper = document.getElementById('lane-wrapper');
-            wrapper.innerHTML = '';
-            const count = parseInt(document.getElementById('fingerCount').value);
-            const layout = count === 2 ? ['D', 'J'] : ['S', 'D', 'J', 'K'];
-            
-            layout.forEach(key => {
-                const lane = document.createElement('div');
-                lane.className = 'lane'; lane.id = `lane-${key.toLowerCase()}`;
-                
-                const zone = document.createElement('div');
-                zone.className = 'hit-zone';
-                zone.id = `zone-${key.toLowerCase()}`;
-                zone.innerText = key;
-                
-                const handleHit = (e) => { e.preventDefault(); triggerHit(key.toLowerCase()); };
-                zone.addEventListener('touchstart', handleHit);
-                zone.addEventListener('mousedown', handleHit);
-                
-                lane.appendChild(zone);
-                wrapper.appendChild(lane);
-            });
-            refreshXP();
+        function playSnareSound() {
+            if (!audioEnabled || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(160, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
         }
 
-        function updateBPM() { document.getElementById('bpmVal').innerText = document.getElementById('bpmSlider').value; }
+        function toggleAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            audioEnabled = !audioEnabled;
+            const btn = document.getElementById('audio-toggle');
+            btn.innerText = audioEnabled ? "SNARE: ON" : "SNARE: OFF";
+            btn.classList.toggle('active', audioEnabled);
+        }
+
+        function toggleMetronome() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            metronomeActive = !metronomeActive;
+            const btn = document.getElementById('metronome-toggle');
+            btn.innerText = metronomeActive ? "ON" : "OFF";
+            btn.classList.toggle('active', metronomeActive);
+        }
+
+        function updateBPM() {
+            document.getElementById('bpmVal').innerText = document.getElementById('bpmSlider').value;
+            if (isPlaying) { clearInterval(masterInterval); startMasterClock(); }
+        }
+
+        function toggleTestMode() {
+            testMode = !testMode;
+            const btn = document.getElementById('testmode-toggle');
+            btn.innerText = testMode ? "ON" : "OFF";
+            btn.classList.toggle('active', testMode);
+            if (!testMode) { hits = 0; totalHits = 0; streak = 0; updateComboUI(); }
+        }
+
+        function initLanes() {
+            const laneWrapper = document.getElementById('lane-wrapper');
+            const comboUI = document.getElementById('combo-ui');
+            laneWrapper.innerHTML = ''; laneWrapper.appendChild(comboUI);
+            const count = parseInt(document.getElementById('fingerCount').value);
+            for (let i=0; i<count; i++){
+                const lane = document.createElement('div'); lane.className = 'lane';
+                const ghost = document.createElement('div'); ghost.className = 'ghost-indicator';
+                ghost.id = `ghost-${i}`;
+                const hitZone = document.createElement('div'); hitZone.className = 'hit-zone';
+                hitZone.id = `zone-${i}`; 
+                hitZone.innerText = count == 2 ? (i==0?'D':'J') : (['S','D','J','K'][i]);
+                lane.appendChild(ghost);
+                lane.appendChild(hitZone); 
+                laneWrapper.appendChild(lane);
+            }
+        }
+        initLanes();
+
         function resetPattern() { patternStep = 0; }
 
-        function toggleGame() { isPlaying ? stopGame() : startGame(); }
-
-        function startGame() {
-            isPlaying = true;
-            const btn = document.getElementById('start-btn');
-            btn.innerText = "TERMINATE_SESSION";
-            btn.classList.add('running');
-            document.getElementById('play-state').innerText = "LINKED";
-            document.getElementById('play-state').style.color = "var(--green)";
-            gameLoop = setInterval(updatePhysics, 16);
-            spawnNotes();
-        }
-
-        function stopGame() {
-            isPlaying = false;
-            clearInterval(gameLoop);
-            clearTimeout(spawnTimeout);
-            const btn = document.getElementById('start-btn');
-            btn.innerText = "INITIALIZE_DRILL";
-            btn.classList.remove('running');
-            document.getElementById('play-state').innerText = "IDLE";
-            document.getElementById('play-state').style.color = "var(--gold)";
-            notes.forEach(n => n.el.remove());
-            notes = [];
-        }
-
-        function createNote(hand) {
-            const count = parseInt(document.getElementById('fingerCount').value);
-            let targetKey;
-            if (count === 2) {
-                targetKey = (hand.toUpperCase() === 'L') ? 'd' : 'j';
-            } else {
-                const pool = (hand.toUpperCase() === 'L') ? ['s', 'd'] : ['j', 'k'];
-                targetKey = pool[Math.floor(Math.random() * pool.length)];
-            }
-            const laneEl = document.getElementById(`lane-${targetKey}`);
-            if (laneEl) {
-                const noteEl = document.createElement('div');
-                noteEl.className = 'note';
-                noteEl.style.top = '-20px';
-                if (hand === hand.toLowerCase()) noteEl.style.opacity = "0.4";
-                laneEl.appendChild(noteEl);
-                notes.push({ el: noteEl, top: -20, key: targetKey });
-            }
-        }
-
-        function spawnNotes() {
-            if (!isPlaying) return;
-            const pType = document.getElementById('patternType').value;
+        function startMasterClock() {
             const bpm = parseInt(document.getElementById('bpmSlider').value);
-            let nextSpawnDelay = (60000 / bpm) / 2;
-
-            if (pType === 'random') {
-                const keys = parseInt(document.getElementById('fingerCount').value) === 2 ? ['d','j'] : ['s','d','j','k'];
-                createNote(keys[Math.floor(Math.random()*keys.length)].toUpperCase());
-            } else {
-                const seq = RUDIMENTS[pType];
-                const command = seq[patternStep];
-
-                if (command.startsWith('ddd')) {
-                    createNote(command[3]);
-                    setTimeout(()=>createNote(command[3]), 60);
-                    setTimeout(()=>createNote(command[3]), 120);
+            const msPerBeat = 60000 / bpm;
+            
+            masterInterval = setInterval(() => {
+                if (metronomeActive) {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.frequency.value = 800;
+                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+                    const flash = document.getElementById('metronome-flash');
+                    flash.style.opacity = 1; setTimeout(() => flash.style.opacity = 0, 50);
                 }
-                else if (command.startsWith('dd')) {
-                    createNote(command[2]);
-                    setTimeout(()=>createNote(command[2]), 80);
-                }
-                else if (command.startsWith('d')) {
-                    createNote(command[1]);
-                }
-                else if (command.length > 1) {
-                    createNote(command[0]);
-                    setTimeout(() => createNote(command[1]), 100);
-                }
-                else {
-                    createNote(command);
-                }
-
-                patternStep = (patternStep + 1) % seq.length;
-            }
-            spawnTimeout = setTimeout(spawnNotes, nextSpawnDelay);
+                spawnNoteSync();
+            }, msPerBeat);
         }
 
-        function updatePhysics() {
+        function spawnNoteSync() {
+            const type = document.getElementById('patternType').value;
+            const lanes = document.querySelectorAll('.lane');
+            let laneIdx;
+
+            if (type === 'random') {
+                laneIdx = Math.floor(Math.random() * lanes.length);
+            } else {
+                const pat = RUDIMENTS[type];
+                const hand = pat[patternStep % pat.length];
+                laneIdx = hand === 'L' ? 0 : (lanes.length - 1);
+                patternStep++;
+            }
+
+            const ghost = document.getElementById(`ghost-${laneIdx}`);
+            if(ghost) {
+                ghost.classList.add('active');
+                setTimeout(() => ghost.classList.remove('active'), 100);
+            }
+
+            const noteEl = document.createElement('div'); noteEl.className = 'note';
+            noteEl.style.top = '-20px';
+            lanes[laneIdx].appendChild(noteEl);
+            notes.push({ el: noteEl, key: laneIdx, top: -20 });
+        }
+
+        function updateNotes(dt) {
+            const bpm = parseInt(document.getElementById('bpmSlider').value);
             const containerHeight = document.getElementById('lane-wrapper').offsetHeight;
-            const speed = (parseInt(document.getElementById('bpmSlider').value) / 60) * 4;
+            const targetPosCenter = containerHeight - 40; 
+            const speed = (targetPosCenter / (60000 / bpm)) * dt;
             
             for (let i = notes.length - 1; i >= 0; i--) {
-                notes[i].top += speed;
-                notes[i].el.style.top = notes[i].top + 'px';
+                const n = notes[i];
+                n.top += speed;
+                n.el.style.top = n.top + 'px';
                 
-                if (notes[i].top > containerHeight) {
-                    notes[i].el.remove();
+                if (n.top > containerHeight) {
+                    if (testMode) showFeedback(n.key, "MISS", "var(--red)");
+                    n.el.remove();
                     notes.splice(i, 1);
+                    streak = 0; 
+                    updateComboUI();
                 }
             }
         }
 
-        function triggerHit(key) {
-            if (!isPlaying) return;
+        function showFeedback(key, text, color) {
             const zone = document.getElementById(`zone-${key}`);
-            const containerHeight = document.getElementById('lane-wrapper').offsetHeight;
-            const hitZoneTop = containerHeight - 80;
-            const hitZoneBottom = containerHeight;
+            if (!zone) return;
+            const fb = document.createElement('div');
+            fb.className = 'hit-feedback';
+            fb.style.color = color;
+            const acc = totalHits > 0 ? Math.floor((hits/totalHits)*100) : 0;
+            fb.innerText = `${text} | ${acc}%`;
+            zone.appendChild(fb);
+            setTimeout(() => fb.remove(), 500);
+        }
 
-            zone.classList.add('active');
-            setTimeout(() => zone.classList.remove('active'), 100);
+        function gameTick(timestamp) {
+            if(!isPlaying) return;
+            const dt = timestamp - (lastTime || timestamp);
+            lastTime = timestamp;
+            updateNotes(dt);
+            gameLoop = requestAnimationFrame(gameTick);
+        }
 
-            const hitIndex = notes.findIndex(n => n.key === key && n.top > hitZoneTop && n.top < hitZoneBottom);
-            if (hitIndex !== -1) {
-                addXP(25);
-                notes[hitIndex].el.style.background = "var(--green)";
-                notes[hitIndex].el.style.boxShadow = "0 0 20px var(--green)";
-                setTimeout(() => {
-                    if(notes[hitIndex]) {
-                        notes[hitIndex].el.remove();
-                        notes.splice(hitIndex, 1);
-                    }
-                }, 50);
+        function toggleGame() {
+            isPlaying = !isPlaying;
+            lastTime = 0;
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            const btn = document.getElementById('start-btn');
+            btn.innerText = isPlaying ? "STOP_DRILL" : "INITIALIZE_DRILL";
+            btn.classList.toggle('running', isPlaying);
+            
+            if (isPlaying) {
+                notes.forEach(n => n.el.remove()); notes = [];
+                streak = 0; totalHits = 0; hits = 0; updateComboUI(); resetPattern();
+                startMasterClock();
+                gameTick(performance.now());
+            } else {
+                cancelAnimationFrame(gameLoop);
+                clearInterval(masterInterval);
+                document.getElementById('combo-ui').classList.remove('active');
             }
         }
 
-        window.addEventListener('keydown', (e) => {
-            if (e.code === "Space") { e.preventDefault(); toggleGame(); }
-            if (isPlaying) triggerHit(e.key.toLowerCase());
+        function updateComboUI() {
+            const el = document.getElementById('combo-ui');
+            if (streak > 0) {
+                el.innerText = `${streak}x`; el.classList.add('active');
+            } else { el.classList.remove('active'); }
+        }
+
+        document.addEventListener('keydown', e => {
+            if (!isPlaying) return;
+            const keyMap = parseInt(document.getElementById('fingerCount').value) === 2 ? {'d':0,'j':1} : {'s':0,'d':1,'j':2,'k':3};
+            const idx = keyMap[e.key.toLowerCase()];
+            if (idx !== undefined) triggerHit(idx);
         });
 
-        function addXP(amt) {
-            let total = parseInt(localStorage.getItem('totalXP') || 0) + amt;
-            localStorage.setItem('totalXP', total);
-            document.getElementById('xp-display').innerText = `XP: ${total.toString().padStart(5, '0')}`;
-        }
+        function triggerHit(key) {
+            playSnareSound();
+            const zone = document.getElementById(`zone-${key}`);
+            const containerHeight = document.getElementById('lane-wrapper').offsetHeight;
+            
+            // TARGET: The exact horizontal center line where 'D' and 'J' are located.
+            const targetCenter = containerHeight - 40; 
+            
+            zone.classList.add('active');
+            
+            // Search for notes where the yellow bar's center (n.top + 7.5) is crossing the visual line.
+            const hitIndex = notes.findIndex(n => n.key === key && Math.abs((n.top + 7.5) - targetCenter) < 50);
 
-        function refreshXP() {
-            document.getElementById('xp-display').innerText = `XP: ${(localStorage.getItem('totalXP') || '0').padStart(5, '0')}`;
-        }
+            if (testMode) {
+                totalHits++;
+                if (hitIndex !== -1) {
+                    hits++; streak++;
+                    const dist = Math.abs((notes[hitIndex].top + 7.5) - targetCenter);
+                    // Tightened "Perfect" window to align with the visual center line.
+                    if (dist < 15) showFeedback(key, "PERFECT", "var(--green)");
+                    else showFeedback(key, "GOOD", "var(--gold)");
+                } else { 
+                    streak = 0;
+                    showFeedback(key, "MISS", "var(--red)");
+                }
+                updateComboUI();
+            }
 
-        window.onload = initLanes;
+            if (hitIndex !== -1) {
+                notes[hitIndex].el.remove();
+                notes.splice(hitIndex, 1);
+            }
+            setTimeout(()=>zone.classList.remove('active'), 60);
+        }
     </script>
 </body>
 </html>
