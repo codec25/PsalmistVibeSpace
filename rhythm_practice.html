@@ -3,225 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PRACTICE_DRILLS // Neural_Ninja</title>
+    <title>PRACTICE_DRILLS // Neural_Ninja_Mobile</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg: #030508; --panel: #0a111a; --blue: #4facfe; 
-            --gold: #ffcc00; --green: #00ff88; --border: #1e2544; --red: #ff4b2b;
+            --bg: #030508; --blue: #4facfe; --gold: #ffcc00; 
+            --green: #00ff88; --border: #1e2544; --red: #ff4b2b;
         }
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
             display: flex; flex-direction: column; height: 100vh; overflow: hidden;
             background-image: radial-gradient(circle at center, #0b1426 0%, #030508 100%);
-            touch-action: none;
+            touch-action: none; -webkit-user-select: none; user-select: none;
         }
 
+        /* HUD */
         .hud-top {
             display: flex; justify-content: space-between; align-items: center; padding: 10px 15px;
-            font-size: 0.55rem; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.5);
-            z-index: 10; position: relative;
+            font-size: 0.6rem; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.8);
+            z-index: 100;
         }
-        .xp-display { color: var(--gold); font-weight: 900; letter-spacing: 1px; }
-        .metronome-flash {
-            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            width: 8px; height: 8px; border-radius: 50%; background: var(--blue);
-            opacity: 0; transition: opacity 0.05s;
-        }
+        .metronome-flash { width: 12px; height: 12px; border-radius: 50%; background: var(--blue); opacity: 0; transition: opacity 0.05s; }
 
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; align-items: center; position: relative; padding: 5px; }
 
+        /* Mobile Control Bar */
         .controls-row { 
-            display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 100%; max-width: 900px;
-            margin-bottom: 10px; z-index: 5;
+            display: flex; gap: 5px; width: 100%; overflow-x: auto; padding: 5px 0;
+            scrollbar-width: none; z-index: 50;
         }
-
-        .config-box { 
-            background: rgba(255,255,255,0.05); padding: 5px; border: 1px solid var(--border); 
-            display: flex; flex-direction: column; gap: 2px; border-radius: 4px;
-        }
-        .config-box label { font-size: 0.45rem; color: var(--blue); letter-spacing: 1px; font-weight: 900; }
+        .controls-row::-webkit-scrollbar { display: none; }
         
-        select, input[type="range"] { 
+        .config-box { 
+            flex: 0 0 90px; background: rgba(255,255,255,0.05); padding: 5px; 
+            border: 1px solid var(--border); border-radius: 4px; text-align: center;
+        }
+        .config-box label { font-size: 0.4rem; color: var(--blue); font-weight: 900; display: block; margin-bottom: 2px; }
+        
+        select, button.ui-btn { 
             background: #000; color: #fff; border: 1px solid var(--border); 
-            font-family: Orbitron; font-size: 0.55rem; width: 100%; height: 25px;
+            font-size: 0.5rem; width: 100%; height: 25px; font-family: 'Orbitron';
         }
+        button.ui-btn.active { color: var(--green); border-color: var(--green); }
 
-        .audio-toggle {
-            background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: #666;
-            font-family: 'Orbitron'; font-size: 0.45rem; padding: 4px; border-radius: 3px;
-            cursor: pointer; margin-top: 2px; transition: 0.2s;
-        }
-        .audio-toggle.active { color: var(--green); border-color: var(--green); box-shadow: 0 0 5px var(--green); }
-
+        /* Game Board */
         .lane-container { 
-            display: flex; gap: 8px; height: 55vh; width: 100%; max-width: 500px;
-            perspective: 800px; position: relative; padding-bottom: 80px;
+            display: flex; gap: 10px; flex-grow: 1; width: 100%; max-width: 600px;
+            position: relative; margin: 10px 0;
         }
         
         .lane { 
-            flex: 1; height: 100%; background: rgba(255,255,255,0.01); 
+            flex: 1; height: 100%; background: rgba(255,255,255,0.02); 
             border: 1px solid var(--border); position: relative; overflow: hidden;
-            border-radius: 8px;
+            border-radius: 12px;
         }
 
-        .ghost-indicator {
-            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-            width: 30px; height: 5px; background: var(--blue); opacity: 0;
-            filter: blur(2px); transition: opacity 0.1s; pointer-events: none;
-        }
-        .ghost-indicator.active { opacity: 0.8; box-shadow: 0 0 10px var(--blue); }
-
+        /* Responsive Hit Zone */
         .hit-zone {
-            position: absolute; bottom: 0; width: 100%; height: 80px;
-            border-top: 3px solid var(--blue); background: rgba(79, 172, 254, 0.15);
+            position: absolute; bottom: 0; width: 100%; height: 140px; 
+            background: rgba(79, 172, 254, 0.05); border-top: 2px solid rgba(79, 172, 254, 0.3);
             display: flex; align-items: center; justify-content: center; 
-            font-size: 1.2rem; font-weight: 900; color: var(--blue);
-            transition: 0.05s; pointer-events: auto; z-index: 10;
+            font-size: 2rem; font-weight: 900; color: rgba(79, 172, 254, 0.3);
+            pointer-events: auto; z-index: 10;
         }
         
+        /* The Target Line - Match this visually */
         .hit-zone::after {
-            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 2px;
-            background: rgba(79, 172, 254, 0.4); box-shadow: 0 0 10px var(--blue);
-            pointer-events: none; transform: translateY(-50%);
+            content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 3px;
+            background: var(--blue); box-shadow: 0 0 15px var(--blue); transform: translateY(-50%);
         }
 
-        .hit-zone.active { background: var(--blue); color: #000; box-shadow: 0 0 30px var(--blue); transform: scale(0.98); }
+        .hit-zone.active { background: var(--blue); color: #000; }
 
         .note {
-            position: absolute; width: 90%; left: 5%; height: 15px; background: var(--gold);
-            box-shadow: 0 0 10px var(--gold); border-radius: 4px;
-            pointer-events: none; z-index: 2;
+            position: absolute; width: 90%; left: 5%; height: 20px; background: var(--gold);
+            box-shadow: 0 0 15px var(--gold); border-radius: 4px; z-index: 5;
         }
 
-        .combo-counter {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 3rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px var(--gold);
-            pointer-events: none; opacity: 0; transition: transform 0.1s, opacity 0.2s; z-index: 20;
-            text-align: center; font-style: italic;
+        .feedback {
+            position: absolute; top: 30%; width: 100%; text-align: center;
+            font-size: 0.8rem; font-weight: 900; z-index: 20; pointer-events: none;
+            animation: feedUp 0.4s ease-out forwards;
         }
-        .combo-counter.active { opacity: 0.6; }
-
-        .hit-feedback {
-            position: absolute; top: -40px; left: 0; width: 100%; text-align: center;
-            font-size: 0.6rem; font-weight: 900; pointer-events: none;
-            animation: feedbackFloat 0.5s ease-out forwards;
-            text-shadow: 0 0 5px #000; z-index: 30;
-        }
-
-        @keyframes feedbackFloat {
-            0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-30px); opacity: 0; }
-        }
+        @keyframes feedUp { 0% { opacity: 1; transform: scale(1.5); } 100% { opacity: 0; transform: translateY(-50px); } }
 
         .btn-start {
-            width: 90%; max-width: 400px; padding: 18px; background: var(--blue); 
-            border: none; font-family: 'Orbitron'; font-weight: 900; cursor: pointer;
-            margin-top: 10px; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0% 100%);
-            font-size: 0.8rem; letter-spacing: 2px;
+            width: 100%; height: 70px; background: var(--blue); border: none; 
+            font-family: 'Orbitron'; font-weight: 900; font-size: 1.2rem; color: #000;
+            clip-path: polygon(0 20%, 5% 0, 95% 0, 100% 20%, 100% 80%, 95% 100%, 5% 100%, 0 80%);
+            margin-bottom: 20px;
         }
         .btn-start.running { background: var(--red); color: #fff; }
-        .status-msg { margin-top: 5px; color: var(--gold); font-size: 0.5rem; font-weight: 700; text-align: center; }
     </style>
 </head>
 <body>
 
     <div class="hud-top">
-        <div class="xp-display" id="xp-display">XP: 00000</div>
-        <div style="color:var(--blue); font-weight: 900;">DRILL_PROTOCOL_v4_SYNC</div>
-        <div class="metronome-flash" id="metronome-flash"></div>
-        <a href="rhythm_hub.html" style="color:var(--red); text-decoration:none;">[ EXIT ]</a>
+        <div id="xp-display" style="color:var(--gold)">XP: 0000</div>
+        <div id="m-flash" class="metronome-flash"></div>
+        <div id="acc-display">ACCURACY: 100%</div>
     </div>
 
     <div class="main-stage">
         <div class="controls-row">
-            <div class="config-box">
-                <label>FINGERS</label>
-                <select id="fingerCount" onchange="initLanes()">
-                    <option value="2" selected>2 (D / J)</option>
-                    <option value="4">4 (S D J K)</option>
-                </select>
-            </div>
-            <div class="config-box">
-                <label>RUDIMENT</label>
+            <div class="config-box"><label>PATTERN</label>
                 <select id="patternType" onchange="resetPattern()">
-                    <option value="random">RANDOM_FLUX</option>
-                    <option value="single_stroke_roll">Single Stroke Roll</option>
-                    <option value="double_stroke_roll">Double Stroke Roll</option>
-                    <option value="single_paradiddle">Single Paradiddle</option>
-                    <option value="flam_tap">Flam Tap</option>
+                    <option value="random">RANDOM</option>
+                    <option value="single_stroke_roll">SINGLE</option>
+                    <option value="double_stroke_roll">DOUBLE</option>
+                    <option value="single_paradiddle">PARA</option>
                 </select>
             </div>
-            <div class="config-box">
-                <label>BPM: <span id="bpmVal">100</span></label>
-                <input type="range" id="bpmSlider" min="20" max="220" value="100" oninput="updateBPM()">
-                <button id="audio-toggle" class="audio-toggle" onclick="toggleAudio()">SNARE: OFF</button>
+            <div class="config-box"><label>BPM: <span id="bpmVal">100</span></label>
+                <input type="range" id="bpmSlider" min="40" max="220" value="100" oninput="updateBPM()" style="width:100%">
             </div>
-            <div class="config-box">
-                <label>METRONOME</label>
-                <button id="metronome-toggle" class="audio-toggle" onclick="toggleMetronome()">OFF</button>
+            <div class="config-box"><label>SNARE</label>
+                <button onclick="toggleAudio()" id="audio-btn" class="ui-btn">OFF</button>
             </div>
-            <div class="config-box">
-                <label>TEST MODE</label>
-                <button id="testmode-toggle" class="audio-toggle" onclick="toggleTestMode()">OFF</button>
+            <div class="config-box"><label>FEEDBACK</label>
+                <button onclick="toggleTest()" id="test-btn" class="ui-btn">OFF</button>
             </div>
         </div>
 
-        <div class="lane-container" id="lane-wrapper">
-             <div id="combo-ui" class="combo-counter">0</div>
-        </div>
+        <div class="lane-container" id="lane-wrapper"></div>
 
-        <button class="btn-start" id="start-btn" onclick="toggleGame()">INITIALIZE_DRILL</button>
-        <div class="status-msg" id="msg">STRIKE ZONES WHEN NOTES ALIGN</div>
+        <button class="btn-start" id="start-btn" onclick="toggleGame()">START_PROTOCOL</button>
     </div>
 
     <script>
-        let isPlaying = false;
-        let audioEnabled = false;
-        let audioCtx;
-        let gameLoop;
-        let notes = [];
-        let masterInterval;
-        let patternStep = 0;
-        let lastTime = 0;
-
-        let metronomeActive = false;
-        let testMode = false;
-        let hits = 0, totalHits = 0, streak = 0;
+        let isPlaying = false, audioEnabled = false, testMode = false, audioCtx, gameLoop;
+        let notes = [], masterInterval, patternStep = 0, lastTime = 0;
+        let hits = 0, totalHits = 0;
 
         const RUDIMENTS = {
             single_stroke_roll: ['L','R'],
             double_stroke_roll: ['L','L','R','R'],
-            single_paradiddle: ['L','R','L','L','R','L','R','R'],
-            flam_tap: ['L','L','R','R']
+            single_paradiddle: ['L','R','L','L','R','L','R','R']
         };
 
-        function playSnareSound() {
-            if (!audioEnabled || !audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(160, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        function initLanes() {
+            const wrapper = document.getElementById('lane-wrapper');
+            wrapper.innerHTML = '';
+            ['D', 'J'].forEach((key, i) => {
+                const lane = document.createElement('div'); lane.className = 'lane';
+                const zone = document.createElement('div'); zone.className = 'hit-zone';
+                zone.id = `zone-${i}`; zone.innerText = key;
+                
+                // Mobile-First Touch
+                zone.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    triggerHit(i);
+                });
+                
+                lane.appendChild(zone);
+                wrapper.appendChild(lane);
+            });
         }
+        initLanes();
 
         function toggleAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             audioEnabled = !audioEnabled;
-            const btn = document.getElementById('audio-toggle');
-            btn.innerText = audioEnabled ? "SNARE: ON" : "SNARE: OFF";
-            btn.classList.toggle('active', audioEnabled);
+            document.getElementById('audio-btn').classList.toggle('active', audioEnabled);
+            document.getElementById('audio-btn').innerText = audioEnabled ? "ON" : "OFF";
         }
 
-        function toggleMetronome() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            metronomeActive = !metronomeActive;
-            const btn = document.getElementById('metronome-toggle');
-            btn.innerText = metronomeActive ? "ON" : "OFF";
-            btn.classList.toggle('active', metronomeActive);
+        function toggleTest() {
+            testMode = !testMode;
+            document.getElementById('test-btn').classList.toggle('active', testMode);
+            document.getElementById('test-btn').innerText = testMode ? "ON" : "OFF";
         }
 
         function updateBPM() {
@@ -229,189 +179,130 @@
             if (isPlaying) { clearInterval(masterInterval); startMasterClock(); }
         }
 
-        function toggleTestMode() {
-            testMode = !testMode;
-            const btn = document.getElementById('testmode-toggle');
-            btn.innerText = testMode ? "ON" : "OFF";
-            btn.classList.toggle('active', testMode);
-            if (!testMode) { hits = 0; totalHits = 0; streak = 0; updateComboUI(); }
-        }
-
-        function initLanes() {
-            const laneWrapper = document.getElementById('lane-wrapper');
-            const comboUI = document.getElementById('combo-ui');
-            laneWrapper.innerHTML = ''; laneWrapper.appendChild(comboUI);
-            const count = parseInt(document.getElementById('fingerCount').value);
-            for (let i=0; i<count; i++){
-                const lane = document.createElement('div'); lane.className = 'lane';
-                const ghost = document.createElement('div'); ghost.className = 'ghost-indicator';
-                ghost.id = `ghost-${i}`;
-                const hitZone = document.createElement('div'); hitZone.className = 'hit-zone';
-                hitZone.id = `zone-${i}`; 
-                hitZone.innerText = count == 2 ? (i==0?'D':'J') : (['S','D','J','K'][i]);
-                lane.appendChild(ghost);
-                lane.appendChild(hitZone); 
-                laneWrapper.appendChild(lane);
-            }
-        }
-        initLanes();
-
-        function resetPattern() { patternStep = 0; }
-
         function startMasterClock() {
-            const bpm = parseInt(document.getElementById('bpmSlider').value);
-            const msPerBeat = 60000 / bpm;
-            
+            const msPerBeat = 60000 / document.getElementById('bpmSlider').value;
             masterInterval = setInterval(() => {
-                if (metronomeActive) {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.frequency.value = 800;
-                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.05);
-                    const flash = document.getElementById('metronome-flash');
-                    flash.style.opacity = 1; setTimeout(() => flash.style.opacity = 0, 50);
-                }
                 spawnNoteSync();
+                const flash = document.getElementById('m-flash');
+                flash.style.opacity = 1; setTimeout(() => flash.style.opacity = 0, 50);
             }, msPerBeat);
         }
 
         function spawnNoteSync() {
             const type = document.getElementById('patternType').value;
-            const lanes = document.querySelectorAll('.lane');
-            let laneIdx;
-
-            if (type === 'random') {
-                laneIdx = Math.floor(Math.random() * lanes.length);
-            } else {
+            let laneIdx = Math.floor(Math.random() * 2);
+            if (type !== 'random') {
                 const pat = RUDIMENTS[type];
-                const hand = pat[patternStep % pat.length];
-                laneIdx = hand === 'L' ? 0 : (lanes.length - 1);
+                laneIdx = pat[patternStep % pat.length] === 'L' ? 0 : 1;
                 patternStep++;
             }
-
-            const ghost = document.getElementById(`ghost-${laneIdx}`);
-            if(ghost) {
-                ghost.classList.add('active');
-                setTimeout(() => ghost.classList.remove('active'), 100);
-            }
-
             const noteEl = document.createElement('div'); noteEl.className = 'note';
             noteEl.style.top = '-20px';
-            lanes[laneIdx].appendChild(noteEl);
+            document.querySelectorAll('.lane')[laneIdx].appendChild(noteEl);
             notes.push({ el: noteEl, key: laneIdx, top: -20 });
         }
 
+        function triggerHit(key) {
+            if (!isPlaying) return;
+            if (window.navigator.vibrate) window.navigator.vibrate(20); // Haptic
+
+            const zone = document.getElementById(`zone-${key}`);
+            const laneHeight = document.getElementById('lane-wrapper').offsetHeight;
+            const targetCenter = laneHeight - 70; // Middle of hit zone line
+            
+            zone.classList.add('active');
+            setTimeout(() => zone.classList.remove('active'), 80);
+
+            if (audioEnabled && audioCtx) {
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                osc.connect(g); g.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            }
+
+            // Accuracy check: (n.top + half-note-height) vs target line
+            const hitIdx = notes.findIndex(n => n.key === key && Math.abs((n.top + 10) - targetCenter) < 70);
+            
+            if (testMode) {
+                totalHits++;
+                if (hitIdx !== -1) {
+                    hits++;
+                    const dist = Math.abs((notes[hitIdx].top + 10) - targetCenter);
+                    showFeedback(key, dist < 20 ? "PERFECT" : "GOOD", dist < 20 ? "var(--green)" : "var(--gold)");
+                } else {
+                    showFeedback(key, "MISS", "var(--red)");
+                }
+                document.getElementById('acc-display').innerText = `ACCURACY: ${Math.floor((hits/totalHits)*100)}%`;
+            }
+
+            if (hitIdx !== -1) {
+                notes[hitIdx].el.remove();
+                notes.splice(hitIdx, 1);
+            }
+        }
+
+        function showFeedback(key, text, color) {
+            const zone = document.getElementById(`zone-${key}`);
+            const fb = document.createElement('div');
+            fb.className = 'feedback'; fb.style.color = color; fb.innerText = text;
+            zone.appendChild(fb); setTimeout(() => fb.remove(), 400);
+        }
+
         function updateNotes(dt) {
-            const bpm = parseInt(document.getElementById('bpmSlider').value);
-            const containerHeight = document.getElementById('lane-wrapper').offsetHeight;
-            const targetPosCenter = containerHeight - 40; 
-            const speed = (targetPosCenter / (60000 / bpm)) * dt;
+            const wrapper = document.getElementById('lane-wrapper');
+            const laneHeight = wrapper.offsetHeight;
+            const targetCenter = laneHeight - 70;
+            const bpm = document.getElementById('bpmSlider').value;
+            
+            // Speed = Distance to target / Time per beat
+            const speed = (targetCenter / (60000 / bpm)) * dt;
             
             for (let i = notes.length - 1; i >= 0; i--) {
                 const n = notes[i];
                 n.top += speed;
                 n.el.style.top = n.top + 'px';
                 
-                if (n.top > containerHeight) {
-                    if (testMode) showFeedback(n.key, "MISS", "var(--red)");
+                if (n.top > laneHeight) {
+                    if (testMode) { totalHits++; showFeedback(n.key, "MISS", "var(--red)"); }
                     n.el.remove();
                     notes.splice(i, 1);
-                    streak = 0; 
-                    updateComboUI();
                 }
             }
         }
 
-        function showFeedback(key, text, color) {
-            const zone = document.getElementById(`zone-${key}`);
-            if (!zone) return;
-            const fb = document.createElement('div');
-            fb.className = 'hit-feedback';
-            fb.style.color = color;
-            const acc = totalHits > 0 ? Math.floor((hits/totalHits)*100) : 0;
-            fb.innerText = `${text} | ${acc}%`;
-            zone.appendChild(fb);
-            setTimeout(() => fb.remove(), 500);
-        }
-
-        function gameTick(timestamp) {
+        function gameTick(t) {
             if(!isPlaying) return;
-            const dt = timestamp - (lastTime || timestamp);
-            lastTime = timestamp;
+            const dt = t - (lastTime || t);
+            lastTime = t;
             updateNotes(dt);
             gameLoop = requestAnimationFrame(gameTick);
         }
 
         function toggleGame() {
-            isPlaying = !isPlaying;
-            lastTime = 0;
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            isPlaying = !isPlaying; lastTime = 0;
             const btn = document.getElementById('start-btn');
-            btn.innerText = isPlaying ? "STOP_DRILL" : "INITIALIZE_DRILL";
+            btn.innerText = isPlaying ? "TERMINATE_DRILL" : "START_PROTOCOL";
             btn.classList.toggle('running', isPlaying);
             
             if (isPlaying) {
+                if (audioCtx) audioCtx.resume();
                 notes.forEach(n => n.el.remove()); notes = [];
-                streak = 0; totalHits = 0; hits = 0; updateComboUI(); resetPattern();
-                startMasterClock();
-                gameTick(performance.now());
+                hits = 0; totalHits = 0; patternStep = 0;
+                startMasterClock(); gameTick(performance.now());
             } else {
-                cancelAnimationFrame(gameLoop);
-                clearInterval(masterInterval);
-                document.getElementById('combo-ui').classList.remove('active');
+                clearInterval(masterInterval); cancelAnimationFrame(gameLoop);
             }
         }
 
-        function updateComboUI() {
-            const el = document.getElementById('combo-ui');
-            if (streak > 0) {
-                el.innerText = `${streak}x`; el.classList.add('active');
-            } else { el.classList.remove('active'); }
-        }
-
+        function resetPattern() { patternStep = 0; }
+        
+        // Keyboard support for desktop testing
         document.addEventListener('keydown', e => {
-            if (!isPlaying) return;
-            const keyMap = parseInt(document.getElementById('fingerCount').value) === 2 ? {'d':0,'j':1} : {'s':0,'d':1,'j':2,'k':3};
-            const idx = keyMap[e.key.toLowerCase()];
-            if (idx !== undefined) triggerHit(idx);
+            if (e.key.toLowerCase() === 'd') triggerHit(0);
+            if (e.key.toLowerCase() === 'j') triggerHit(1);
         });
-
-        function triggerHit(key) {
-            playSnareSound();
-            const zone = document.getElementById(`zone-${key}`);
-            const containerHeight = document.getElementById('lane-wrapper').offsetHeight;
-            
-            // TARGET: The exact horizontal center line where 'D' and 'J' are located.
-            const targetCenter = containerHeight - 40; 
-            
-            zone.classList.add('active');
-            
-            // Search for notes where the yellow bar's center (n.top + 7.5) is crossing the visual line.
-            const hitIndex = notes.findIndex(n => n.key === key && Math.abs((n.top + 7.5) - targetCenter) < 50);
-
-            if (testMode) {
-                totalHits++;
-                if (hitIndex !== -1) {
-                    hits++; streak++;
-                    const dist = Math.abs((notes[hitIndex].top + 7.5) - targetCenter);
-                    // Tightened "Perfect" window to align with the visual center line.
-                    if (dist < 15) showFeedback(key, "PERFECT", "var(--green)");
-                    else showFeedback(key, "GOOD", "var(--gold)");
-                } else { 
-                    streak = 0;
-                    showFeedback(key, "MISS", "var(--red)");
-                }
-                updateComboUI();
-            }
-
-            if (hitIndex !== -1) {
-                notes[hitIndex].el.remove();
-                notes.splice(hitIndex, 1);
-            }
-            setTimeout(()=>zone.classList.remove('active'), 60);
-        }
     </script>
 </body>
 </html>
