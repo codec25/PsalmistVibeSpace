@@ -20,18 +20,21 @@
         /* --- HEADER & TICKER --- */
         .header-fx {
             width: 100%; padding: 20px; text-align: center; border-bottom: 1px solid var(--border);
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 10;
         }
         h1 { margin: 0; letter-spacing: 10px; font-size: 1.8rem; color: var(--blue); text-shadow: 0 0 15px var(--blue); }
 
         #broadcast-ticker {
-            background: rgba(255, 75, 43, 0.1); color: var(--red); padding: 5px;
-            font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px;
+            background: rgba(255, 75, 43, 0.1); color: var(--red); padding: 10px;
+            font-size: 0.8rem; text-transform: uppercase; letter-spacing: 4px;
             border-bottom: 1px solid var(--red); display: none; text-align: center;
+            animation: pulse-red 2s infinite;
         }
 
+        @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
         /* --- MAIN LAYOUT --- */
-        .main-display { display: grid; grid-template-columns: 1fr 350px; flex-grow: 1; padding: 20px; gap: 20px; }
+        .main-display { display: grid; grid-template-columns: 1fr 400px; flex-grow: 1; padding: 20px; gap: 20px; position: relative; }
 
         /* Tournament Section */
         .bracket-arena {
@@ -43,7 +46,7 @@
         .slot {
             width: 220px; background: rgba(7, 10, 17, 0.9); border: 1px solid var(--border);
             padding: 15px; text-align: center; border-radius: 8px; font-size: 1rem;
-            position: relative; transition: all 0.5s ease; margin: 10px 0;
+            position: relative; transition: all 0.5s ease; margin: 10px 0; color: #444;
         }
         .slot.filled { border-color: var(--blue); box-shadow: 0 0 15px rgba(79, 172, 254, 0.2); color: white; }
         .slot.final { border-color: var(--gold); transform: scale(1.1); box-shadow: 0 0 30px rgba(255, 204, 0, 0.3); }
@@ -52,19 +55,29 @@
         /* Leaderboard Section */
         .leaderboard-panel {
             background: rgba(10, 15, 25, 0.8); border: 1px solid var(--border);
-            border-radius: 20px; padding: 20px; display: flex; flex-direction: column;
+            border-radius: 20px; padding: 25px; display: flex; flex-direction: column;
         }
         .board-title { font-size: 0.8rem; color: var(--green); letter-spacing: 3px; margin-bottom: 20px; border-bottom: 1px solid #111; padding-bottom: 10px; }
         
         .ninja-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 12px; border-bottom: 1px solid #111; font-size: 0.8rem;
+            padding: 12px 0; border-bottom: 1px solid #111; font-size: 0.85rem;
         }
-        .ninja-row:last-child { border: none; }
-        .xp-bar-bg { width: 100%; height: 4px; background: #111; margin-top: 5px; border-radius: 2px; }
-        .xp-bar-fill { height: 100%; background: var(--green); box-shadow: 0 0 10px var(--green); transition: width 1s ease; }
+        .xp-bar-bg { width: 100%; height: 4px; background: #111; margin-top: 8px; border-radius: 2px; }
+        .xp-bar-fill { height: 100%; transition: width 1s ease; }
 
-        .rank { color: var(--gold); font-weight: 900; margin-right: 10px; }
+        /* --- DUEL OVERLAY (NEW) --- */
+        #duel-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+            z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center;
+            backdrop-filter: blur(20px); border: 10px solid var(--border);
+        }
+        .duel-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 50px; align-items: center; width: 80%; }
+        .duel-card { text-align: center; }
+        .duel-name { font-size: 4rem; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; }
+        .duel-xp { font-size: 2rem; color: var(--green); letter-spacing: 5px; }
+        .vs-text { font-size: 5rem; color: var(--red); font-style: italic; font-weight: 900; text-shadow: 0 0 20px var(--red); }
+        .timer-display { font-size: 6rem; color: var(--gold); margin-top: 40px; text-shadow: 0 0 30px var(--gold); }
     </style>
 </head>
 <body>
@@ -72,8 +85,8 @@
     <div id="broadcast-ticker">SYSTEM_ALERT: [MESSAGE_HERE]</div>
 
     <div class="header-fx">
-        <h1>SPECTATOR_OVERWATCH_v5</h1>
-        <div style="color:var(--green); font-size:0.6rem; margin-top:5px; letter-spacing: 2px;">LIVE_DATA_STREAM // STATUS: ENCRYPTED</div>
+        <h1>SPECTATOR_OVERWATCH_v6</h1>
+        <div style="color:var(--green); font-size:0.6rem; margin-top:5px; letter-spacing: 2px;">LIVE_DATA_STREAM // STATUS: STABLE</div>
     </div>
 
     <div class="main-display">
@@ -84,12 +97,10 @@
                 <div class="slot" id="view-q3"><span class="label">MATCH_03</span>EMPTY</div>
                 <div class="slot" id="view-q4"><span class="label">MATCH_04</span>EMPTY</div>
             </div>
-
             <div class="round">
                 <div class="slot" id="view-s1" style="border-color: var(--purple);"><span class="label">SEMI_FINAL_A</span>TBD</div>
                 <div class="slot" id="view-s2" style="border-color: var(--purple);"><span class="label">SEMI_FINAL_B</span>TBD</div>
             </div>
-
             <div class="round">
                 <div class="slot final" id="view-f1"><span class="label">CHAMPION_RANK</span>TBD</div>
             </div>
@@ -97,9 +108,24 @@
 
         <div class="leaderboard-panel">
             <div class="board-title">TOP_RANKED_NINJAS</div>
-            <div id="leaderboard-content">
-                </div>
+            <div id="leaderboard-content"></div>
         </div>
+    </div>
+
+    <div id="duel-overlay">
+        <div class="duel-grid">
+            <div class="duel-card">
+                <div class="duel-name" id="d1-name" style="color: var(--blue);">NINJA_A</div>
+                <div class="duel-xp" id="d1-xp">0 XP</div>
+            </div>
+            <div class="vs-text">VS</div>
+            <div class="duel-card">
+                <div class="duel-name" id="d2-name" style="color: var(--gold);">NINJA_B</div>
+                <div class="duel-xp" id="d2-xp">0 XP</div>
+            </div>
+        </div>
+        <div class="timer-display" id="duel-timer">00:00</div>
+        <button onclick="document.getElementById('duel-overlay').style.display='none'" style="margin-top:20px; background:none; border:1px solid #333; color:#333; cursor:pointer;">CLOSE_OVERLAY</button>
     </div>
 
     <script>
@@ -113,59 +139,95 @@
                 const label = element.querySelector('.label').outerHTML;
                 const name = data[id] || (id.startsWith('q') ? "EMPTY" : "TBD");
                 
-                if (element.innerText.replace("MATCH_0", "").replace("SEMI_FINAL_", "").replace("CHAMPION_RANK", "").trim() !== name) {
+                if (element.innerText.replace(/MATCH_0\d|SEMI_FINAL_[A-B]|CHAMPION_RANK/g, "").trim() !== name) {
                     element.innerHTML = label + name;
                     if(name !== "EMPTY" && name !== "TBD") element.classList.add('filled');
+                    else element.classList.remove('filled');
                 }
             });
         }
 
         // --- 2. SYNC LEADERBOARD ---
         function syncLeaderboard() {
-            const roster = JSON.parse(localStorage.getItem('ninja_roster')) || [];
-            // Sort by XP descending
-            const top5 = roster.sort((a, b) => b.xp - a.xp).slice(0, 6);
-            
+            const masterRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
             const container = document.getElementById('leaderboard-content');
-            container.innerHTML = "";
+            
+            const players = Object.keys(masterRoster).map(id => ({
+                id, xp: masterRoster[id].xp || 0, status: masterRoster[id].status || "LEVEL 01"
+            })).sort((a,b) => b.xp - a.xp).slice(0, 8);
 
-            top5.forEach((ninja, index) => {
-                const xpPercent = Math.min((ninja.xp / 1000) * 100, 100); // Assuming 1000 is level cap
-                container.innerHTML += `
+            container.innerHTML = players.map((n, i) => {
+                const isElite = n.status !== "LEVEL 01 ACADEMY";
+                const xpPercent = Math.min((n.xp / 10000) * 100, 100);
+                return `
                     <div class="ninja-row">
                         <div style="flex-grow:1;">
-                            <div><span class="rank">#${index + 1}</span> ${ninja.id}</div>
-                            <div class="xp-bar-bg"><div class="xp-bar-fill" style="width:${xpPercent}%"></div></div>
+                            <div style="display:flex; justify-content:space-between;">
+                                <span><span style="color:var(--gold); font-weight:900;">#${i+1}</span> ${n.id}</span>
+                                <span style="color:var(--green); font-weight:bold;">${n.xp.toLocaleString()}</span>
+                            </div>
+                            <div class="xp-bar-bg">
+                                <div class="xp-bar-fill" style="width:${xpPercent}%; background:${isElite ? 'var(--blue)' : 'var(--green)'}; box-shadow:0 0 10px ${isElite ? 'var(--blue)' : 'var(--green)'};"></div>
+                            </div>
                         </div>
-                        <div style="margin-left:15px; color:var(--green); font-weight:bold;">${ninja.xp}XP</div>
-                    </div>
-                `;
-            });
+                    </div>`;
+            }).join('');
         }
 
-        // --- 3. SYNC BROADCASTS ---
-        function syncBroadcasts() {
-            const broadcast = JSON.parse(localStorage.getItem('system_broadcast'));
-            const ticker = document.getElementById('broadcast-ticker');
-            
-            if (broadcast && (Date.now() - broadcast.timestamp < 30000)) { // Show for 30 seconds
-                ticker.innerText = `[${broadcast.type}] ${broadcast.sender}: ${broadcast.message}`;
-                ticker.style.display = 'block';
-                if(broadcast.type === 'CRITICAL') ticker.style.background = 'rgba(255,0,0,0.4)';
+        // --- 3. SYNC DUEL & TIMER ---
+        function syncDuel() {
+            const timerData = JSON.parse(localStorage.getItem('active_timer')) || { active: false };
+            const overlay = document.getElementById('duel-overlay');
+            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+
+            // We use the timer being active as the trigger for the overlay
+            if (timerData.active) {
+                overlay.style.display = 'flex';
+                document.getElementById('duel-timer').innerText = timerData.timeString;
+
+                // Sync the names and XP from the roster based on whatever sensei dash is showing (simulated via broadcast or status)
+                // Note: To make this perfect, sensei_dash.html should save 'current_duelists': ['NAME1', 'NAME2']
+                const duelists = JSON.parse(localStorage.getItem('current_duelists')) || [];
+                if(duelists.length === 2) {
+                    document.getElementById('d1-name').innerText = duelists[0];
+                    document.getElementById('d1-xp').innerText = (roster[duelists[0]]?.xp || 0).toLocaleString() + " XP";
+                    document.getElementById('d2-name').innerText = duelists[1];
+                    document.getElementById('d2-xp').innerText = (roster[duelists[1]]?.xp || 0).toLocaleString() + " XP";
+                }
             } else {
-                ticker.style.display = 'none';
+                overlay.style.display = 'none';
             }
         }
 
-        // --- MASTER REFRESH ---
-        function refresh() {
-            syncBracket();
-            syncLeaderboard();
-            syncBroadcasts();
+        // --- 4. SYNC BROADCASTS ---
+        function syncBroadcasts() {
+            const b = JSON.parse(localStorage.getItem('system_broadcast'));
+            const ticker = document.getElementById('broadcast-ticker');
+            if (b && (Date.now() - b.timestamp < 15000)) {
+                ticker.innerText = `[${b.type}] : ${b.message}`;
+                ticker.style.display = 'block';
+            } else { ticker.style.display = 'none'; }
         }
 
-        setInterval(refresh, 2000);
-        window.onload = refresh;
+        // --- 5. SFX ENGINE ---
+        const sfx_horn = new Audio('https://www.myinstants.com/media/sounds/air-horn.mp3');
+        const sfx_battle = new Audio('https://www.myinstants.com/media/sounds/battle-start.mp3');
+
+        function checkSFX() {
+            const trigger = localStorage.getItem('sfx_trigger');
+            if (trigger === 'horn') { sfx_horn.play(); localStorage.removeItem('sfx_trigger'); }
+            if (trigger === 'battle') { sfx_battle.play(); localStorage.removeItem('sfx_trigger'); }
+        }
+
+        setInterval(() => {
+            syncBracket();
+            syncLeaderboard();
+            syncDuel();
+            syncBroadcasts();
+            checkSFX();
+        }, 1000);
+
+        window.onload = () => { syncBracket(); syncLeaderboard(); };
     </script>
 </body>
 </html>
