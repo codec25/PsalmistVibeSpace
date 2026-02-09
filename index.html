@@ -32,7 +32,7 @@
         .musical-header { font-size: 1.5rem; color: var(--gold); margin-bottom: 10px; letter-spacing: 15px; opacity: 0.8; }
         h2 { font-size: 1.1rem; letter-spacing: 8px; margin-bottom: 40px; color: var(--green); transition: 0.4s; }
 
-        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group { margin-bottom: 20px; text-align: left; position: relative; }
         .input-group label { display: block; font-size: 0.55rem; color: #444; margin-bottom: 8px; letter-spacing: 1px; }
         
         input {
@@ -41,6 +41,12 @@
             font-size: 0.85rem; transition: 0.3s;
         }
         input:focus { border-color: var(--green); box-shadow: 0 0 15px rgba(0, 255, 136, 0.2); }
+
+        .toggle-pass {
+            position: absolute; right: 15px; bottom: 15px; cursor: pointer;
+            color: #444; font-size: 0.8rem; transition: 0.3s;
+        }
+        .toggle-pass:hover { color: var(--green); }
 
         .btn {
             width: 100%; padding: 20px; border: none; border-radius: 15px; font-family: 'Orbitron';
@@ -88,11 +94,13 @@
         <div class="input-group">
             <label>SECURITY_KEY</label>
             <input type="password" id="u-pass" placeholder="••••••••">
+            <span class="toggle-pass" onclick="togglePassView()">👁</span>
         </div>
 
         <button class="btn btn-main" id="main-btn" onclick="executeAuth()">INITIALIZE</button>
 
         <div class="sub-links">
+            <a class="link" onclick="requestHelp()" style="color: var(--red); font-size: 0.5rem; margin-bottom: 5px;">FORGOT_ID?_SIGNAL_SENSEI</a>
             <a class="link" onclick="guestEntry()" style="color: var(--gold); border: 1px solid rgba(255,204,0,0.2); padding: 5px; border-radius: 5px;">GUEST_ENTRY (TEMP)</a>
             <a class="link sensei-toggle" id="mode-toggle" onclick="toggleSenseiMode()">ARE YOU A SENSEI?</a>
         </div>
@@ -116,16 +124,31 @@
             }
         });
 
+        function togglePassView() {
+            const passInput = document.getElementById('u-pass');
+            passInput.type = passInput.type === "password" ? "text" : "password";
+        }
+
+        function requestHelp() {
+            const name = prompt("ENTER YOUR FULL NAME TO ALERT SENSEI:");
+            if(name) {
+                const helpMsg = { 
+                    message: `SOS: ${name.toUpperCase()} HAS FORGOTTEN THEIR IDENTITY_CODE.`, 
+                    type: 'ALERT', 
+                    timestamp: Date.now() 
+                };
+                localStorage.setItem('system_broadcast', JSON.stringify(helpMsg));
+                alert("SIGNAL_SENT. WAIT FOR SENSEI INSTRUCTIONS.");
+            }
+        }
+
         function guestEntry() {
             const guestID = "GUEST_" + Math.floor(1000 + Math.random() * 9000);
             const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-            
-            // Create temporary guest in roster
             roster[guestID] = { xp: 0, status: "LEVEL 01 ACADEMY", type: "GUEST" };
             localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
             localStorage.setItem('ninjaUser', guestID);
             localStorage.setItem('userType', 'GUEST');
-            
             window.location.href = 'hub.html';
         }
 
@@ -153,7 +176,8 @@
                     window.location.href = 'sensei_dash.html';
                 } else showError();
             } else {
-                if (ninjaRoster[id] && ninjaRoster[id] === pass) {
+                // Verified check for .pass property
+                if (ninjaRoster[id] && ninjaRoster[id].pass === pass) {
                     localStorage.setItem('ninjaUser', id);
                     localStorage.setItem('userType', 'MEMBER');
                     window.location.href = 'hub.html';
