@@ -53,6 +53,7 @@
         <button id="auth-btn" class="btn-access" onclick="handleAuth()">AUTHORIZE</button>
         <div id="decrypt-loader">DECRYPTING: <span id="percent">0%</span></div>
         <p id="error-msg" style="color:red; display:none; font-size:0.7rem; margin-top:10px;"></p>
+        <p id="recovery-trigger" style="display:none; color:var(--syntax-str); cursor:pointer; font-size:0.5rem; margin-top:10px; text-decoration:underline;" onclick="sendRecoveryHint()">[ SIGNAL_RECOVERY_HINT_TO_DASH ]</p>
     </div>
 </div>
 
@@ -77,12 +78,13 @@
             </div>
             <div style="margin-top:15px; display:flex; gap:10px;">
                 <input type="text" id="filename" placeholder="SCROLL_NAME.txt" style="background:#000; border:1px solid #333; color:white; padding:10px; flex-grow:1; font-family: 'Fira Code';">
+                <button class="btn-ui" style="border-color: #00d4ff; color: #00d4ff;" onclick="broadcastToLink()">NEURAL_LINK</button>
                 <button class="btn-ui" style="border-color: var(--syntax-str); color: var(--syntax-str);" onclick="saveSnippet()">COMMIT_TO_VAULT</button>
             </div>
         </div>
 
         <div class="panel">
-            <div style="font-size:0.7rem; margin-bottom:10px; letter-spacing: 2px;">VAULT_LOG</div>
+            <div style="font-size:0.7rem; margin-bottom:10px; letter-spacing: 2px;">VAULT_LOG <span id="ghost-status" style="color:red; display:none;">[GHOST_ACTIVE]</span></div>
             <div id="log-feed"></div>
             <input type="text" id="term-cmd" placeholder="root@vault:~#" style="width:100%; background:#000; border:1px solid var(--neon); color:white; padding:8px; font-size:0.7rem; margin-top:10px;" onkeydown="if(event.key==='Enter') runTerminal(this.value)">
         </div>
@@ -91,32 +93,42 @@
 
 <script>
     let activeUser = "";
+    let ghostMode = false;
 
-    // --- 1. AUDIT REPORTING ---
+    // --- 1. AUDIT & DASHBOARD UPLINK ---
     function reportToIT(status) {
         let db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
-        db.AUDIT_LOG.unshift({ 
+        const entry = { 
             time: new Date().toLocaleTimeString(), 
             user: activeUser || "UNKNOWN_SENSEI", 
             status: `VAULT: ${status}` 
-        });
+        };
+        db.AUDIT_LOG.unshift(entry);
         localStorage.setItem('vault_users', JSON.stringify(db));
+
+        localStorage.setItem('system_broadcast', JSON.stringify({ 
+            message: `SECURITY_ALERT: ${activeUser || 'UNKNOWN'} -> ${status}`, 
+            type: 'VAULT_NOTIFY', 
+            timestamp: Date.now() 
+        }));
     }
 
-    // --- 2. AUTHENTICATION (Synced with IT Manager) ---
+    // --- 2. AUTHENTICATION & HINT PROTOCOL ---
     async function handleAuth() {
         const u = document.getElementById('user-id').value.trim().toUpperCase();
         const p = document.getElementById('user-pass').value.trim();
         const loader = document.getElementById('decrypt-loader');
         const btn = document.getElementById('auth-btn');
         const err = document.getElementById('error-msg');
+        const rec = document.getElementById('recovery-trigger');
 
-        // Get actual teachers from the main database
         const db = JSON.parse(localStorage.getItem('vault_users')) || {};
         const teachers = db.teachers || {};
 
         btn.style.display = 'none';
         loader.style.display = 'block';
+        err.style.display = 'none';
+        rec.style.display = 'none';
         
         let pct = 0;
         let iv = setInterval(() => { 
@@ -137,16 +149,31 @@
             logSystem(`[SECURE_CONNECTION_ESTABLISHED]`);
             reportToIT("ACCESS_GRANTED");
             loadList();
+            startLockdownListener();
+            startRemotePurgeListener();
         } else {
             loader.style.display = 'none';
             btn.style.display = 'block';
             err.innerText = "INVALID_ENCRYPTION_KEY";
             err.style.display = 'block';
+            rec.style.display = 'block';
             reportToIT(`LOGIN_FAILED: ${u}`);
         }
     }
 
-    // --- 3. SESSION & TERMINAL ---
+    function sendRecoveryHint() {
+        const u = document.getElementById('user-id').value.trim().toUpperCase();
+        if(!u) return alert("ENTER_SENSEI_ID_FIRST");
+        
+        localStorage.setItem('system_broadcast', JSON.stringify({ 
+            message: `RECOVERY_PROTOCOL: SENSEI [${u}] REQUESTED A KEY_HINT.`, 
+            type: 'RECOVERY', 
+            timestamp: Date.now() 
+        }));
+        alert("SIGNAL_TRANSMITTED_TO_DASH_FEED.");
+    }
+
+    // --- 3. SESSION & LOCKDOWN PROTOCOLS ---
     let sessionTime = 300;
     function startTimer() {
         setInterval(() => {
@@ -161,17 +188,54 @@
     }
     function resetTimer() { sessionTime = 300; }
 
+    function startLockdownListener() {
+        setInterval(() => {
+            if(localStorage.getItem('it_active') === 'true') {
+                reportToIT("SURVEILLANCE_INTERCEPT_LOCKDOWN");
+                alert("WARNING: SYSTEM SURVEILLANCE DETECTED. EMERGENCY LOGOUT INITIATED.");
+                location.reload();
+            }
+        }, 2000);
+    }
+
+    function startRemotePurgeListener() {
+        window.addEventListener('storage', (e) => {
+            if(e.key === 'remote_vault_purge' && e.newValue === 'true') {
+                localStorage.removeItem('vault_snippets');
+                localStorage.setItem('remote_vault_purge', 'false');
+                reportToIT("REMOTE_EMERGENCY_PURGE_EXECUTED");
+                alert("DANGER: REMOTE PURGE SIGNAL RECEIVED. WIPING DATA.");
+                location.reload();
+            }
+        });
+    }
+
+    // --- 4. TERMINAL & GHOST PROTOCOLS ---
     function runTerminal(val) {
         document.getElementById('term-cmd').value = '';
         logSystem(`> ${val}`);
-        if(val === 'help') logSystem("CMDS: help, clear, status, purge");
+        if(val === 'help') logSystem("CMDS: help, clear, status, reveal --ghost, hide, purge, broadcast");
         else if(val === 'clear') document.getElementById('log-feed').innerHTML = '';
-        else if(val === 'status') logSystem("KERNEL: OPTIMAL\nINTEGRITY: 100%\nUPLINK: ENCRYPTED");
+        else if(val === 'status') logSystem("KERNEL: OPTIMAL\nINTEGRITY: 100%\nGHOST_PROTO: READY\nNEURAL_LINK: ACTIVE");
+        else if(val === 'reveal --ghost') {
+            ghostMode = true;
+            document.getElementById('ghost-status').style.display = 'inline';
+            loadList();
+            logSystem("DEEP_STORAGE_REVEALED");
+            reportToIT("GHOST_ACCESS_INITIATED");
+        }
+        else if(val === 'hide') {
+            ghostMode = false;
+            document.getElementById('ghost-status').style.display = 'none';
+            loadList();
+            logSystem("GHOST_FILES_ENCRYPTED");
+        }
         else if(val === 'purge') clearAll();
+        else if(val === 'broadcast') broadcastToLink();
         else logSystem(`ERR: COMMAND_${val.toUpperCase()}_NOT_FOUND`);
     }
 
-    // --- 4. EDITOR & STORAGE ---
+    // --- 5. EDITOR, STORAGE & NEURAL LINK ---
     function updateEditor() {
         let code = document.getElementById('code-input').value;
         code = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -197,13 +261,38 @@
         updateEditor();
     }
 
+    function broadcastToLink() {
+        const code = document.getElementById('code-input').value;
+        const name = document.getElementById('filename').value || "ANONYMOUS_SCROLL";
+        if(!code) return alert("CANNOT_BROADCAST_EMPTY_SCROLL");
+
+        let feed = JSON.parse(localStorage.getItem('student_announcements')) || [];
+        feed.unshift({
+            title: `NEURAL_LINK: ${name}`,
+            content: code,
+            sender: activeUser,
+            time: new Date().toLocaleTimeString(),
+            type: 'CODE_DROP'
+        });
+        localStorage.setItem('student_announcements', JSON.stringify(feed));
+        
+        logSystem(`Neural Link: Broadcasted ${name}`);
+        reportToIT(`BROADCAST_SCROLL: ${name}`);
+    }
+
     function loadList() {
         const list = document.getElementById('snippet-list');
         list.innerHTML = '';
         const snips = JSON.parse(localStorage.getItem('vault_snippets')) || [];
         snips.reverse().forEach((s, i) => {
+            const isGhost = s.name.startsWith("GHOST_");
+            if(isGhost && !ghostMode) return;
+
             const d = document.createElement('div');
-            d.style = "padding:10px; border-left:2px solid var(--neon); background:rgba(0,255,0,0.05); margin-bottom:8px; cursor:pointer; font-size:0.6rem;";
+            const borderCol = isGhost ? "var(--syntax-kw)" : "var(--neon)";
+            const bgCol = isGhost ? "rgba(255,0,127,0.1)" : "rgba(0,255,0,0.05)";
+            
+            d.style = `padding:10px; border-left:2px solid ${borderCol}; background:${bgCol}; margin-bottom:8px; cursor:pointer; font-size:0.6rem;`;
             d.innerHTML = `<div style="color:white;">${s.name}</div><div style="color:#444; font-size:0.5rem;">BY: ${s.author} | ${s.date}</div>`;
             d.onclick = () => { 
                 document.getElementById('code-input').value = s.code; 
@@ -230,7 +319,7 @@
         } 
     }
 
-    // --- MATRIX BACKGROUND ---
+    // --- 6. MATRIX FX ---
     const canvas = document.getElementById('matrix-canvas');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
