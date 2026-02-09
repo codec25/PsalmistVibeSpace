@@ -43,6 +43,14 @@
             color: #fff; padding: 10px; font-family: 'Orbitron'; font-size: 0.7rem; margin-bottom: 10px; border-radius: 8px;
         }
 
+        .tactical-search {
+            border-color: var(--blue);
+            margin-bottom: 15px;
+            background: rgba(79, 172, 254, 0.05);
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
         .btn {
             width: 100%; padding: 12px; background: transparent; border: 1px solid var(--blue);
             color: var(--blue); font-family: 'Orbitron'; cursor: pointer; border-radius: 8px;
@@ -56,7 +64,6 @@
         .btn-green:hover { background: var(--green); color: #000; box-shadow: 0 0 10px var(--green); }
         .btn-gold { border-color: var(--gold); color: var(--gold); }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #000; }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
@@ -94,21 +101,46 @@
 
         <div class="panel">
             <h3>NINJA_ROSTER_OVERWATCH</h3>
+            <input type="text" id="roster-search" class="tactical-search" placeholder="[ SCAN_FOR_NINJA_ID ]" onkeyup="refreshUI()">
+            
             <div id="leaderboard-list" style="height: 250px; overflow-y: auto; background: #000; padding: 10px; border-radius: 8px; border: 1px solid #111;"></div>
             <div id="total-xp-pool" style="font-size:0.55rem; color:var(--gold); margin-top:10px; text-align:right;">TOTAL_POWER: 0</div>
+            <button class="btn btn-purple" style="margin-top:10px; font-size:0.5rem;" onclick="generateAcademyReport()">GENERATE_MISSION_REPORT</button>
         </div>
 
         <div class="panel">
             <h3>ENROLLMENT_OFFICE</h3>
             <input type="text" id="new-ninja-id" placeholder="NEW_STUDENT_ID">
             <input type="password" id="new-ninja-pass" placeholder="SET_TEMP_PASSWORD">
-            <button class="btn btn-green" onclick="enrollNinja()">ENROLL_STUDENT</button>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:5px;">
+                <button class="btn btn-green" onclick="enrollNinja()">ENROLL</button>
+                <button class="btn btn-blue" style="border-color: var(--purple); color: var(--purple);" onclick="bulkEnrollPrompt()">BULK_DEPLOY</button>
+            </div>
             
+            <hr style="border:0; border-top:1px solid #111; margin: 15px 0;">
+            
+            <h3 style="color: var(--gold);">NINJA_CREDENTIAL_OVERRIDE</h3>
+            <select id="edit-ninja-select" onchange="loadNinjaData()">
+                <option value="">-- SELECT STUDENT --</option>
+            </select>
+            <input type="text" id="edit-ninja-id" placeholder="UPDATE_ID">
+            <input type="password" id="edit-ninja-pass" placeholder="UPDATE_PASSWORD">
+            <button class="btn btn-gold" onclick="updateNinjaCredentials()">APPLY_OVERRIDE</button>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:5px;">
+                <button class="btn btn-red" style="font-size: 0.5rem;" onclick="freezeNinja()">FREEZE_ACCOUNT</button>
+                <button class="btn btn-red" style="font-size: 0.5rem; background: rgba(255, 75, 43, 0.1);" onclick="terminateNinja()">WIPE_NINJA_DATA</button>
+            </div>
+
             <hr style="border:0; border-top:1px solid #111; margin: 20px 0;">
             
             <h3>CLASS_BROADCAST</h3>
             <textarea id="announcement-input" placeholder="SEND MESSAGE TO ALL HUBS..."></textarea>
-            <button class="btn btn-blue" onclick="postAnnouncement()">BROADCAST_NOW</button>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:5px;">
+                <button class="btn btn-blue" onclick="postAnnouncement()">BROADCAST</button>
+                <button class="btn btn-red" onclick="clearSOS()">CLEAR_SOS</button>
+            </div>
+            <button class="btn btn-green" onclick="bulkXP()">GRANT_CLASS_XP (+500)</button>
         </div>
 
         <div class="panel" style="grid-column: span 2;">
@@ -171,14 +203,12 @@
     const SENSEI_ID = localStorage.getItem('ninjaUser') || "SENSEI";
     let tInt;
 
-    // --- SYSTEM SYNC ---
     function checkITStatus() {
         const isWatched = localStorage.getItem('it_active') === 'true';
         document.getElementById('it-light').className = isWatched ? 'light watching' : 'light';
         document.getElementById('it-text').innerText = isWatched ? "IT_SURVEILLANCE: ACTIVE" : "IT_SURVEILLANCE: PASSIVE";
     }
 
-    // --- STUDENT ENROLLMENT ---
     function enrollNinja() {
         const id = document.getElementById('new-ninja-id').value.trim().toUpperCase();
         const pass = document.getElementById('new-ninja-pass').value.trim();
@@ -186,14 +216,8 @@
 
         let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
         if (!roster[id]) {
-            roster[id] = { 
-                pass: pass, 
-                xp: 0, 
-                status: "LEVEL 01 ACADEMY",
-                joined: new Date().toLocaleDateString()
-            };
+            roster[id] = { pass: pass, xp: 0, status: "LEVEL 01 ACADEMY", joined: new Date().toLocaleDateString(), lastLogin: "NEVER" };
             localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
-            
             document.getElementById('new-ninja-id').value = "";
             document.getElementById('new-ninja-pass').value = "";
             refreshUI();
@@ -203,33 +227,147 @@
         }
     }
 
-    // --- REFRESH INTERFACE ---
+    function bulkEnrollPrompt() {
+        const input = prompt("PASTE LIST OF NINJA IDs (Separated by commas or new lines):");
+        if (!input) return;
+        
+        const names = input.split(/[,\n]/).map(n => n.trim().toUpperCase()).filter(n => n.length > 0);
+        let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        let addedCount = 0;
+
+        names.forEach(id => {
+            if (!roster[id]) {
+                roster[id] = { 
+                    pass: "NINJA_START_2026", 
+                    xp: 0, 
+                    status: "LEVEL 01 ACADEMY", 
+                    joined: new Date().toLocaleDateString(), 
+                    lastLogin: "NEVER" 
+                };
+                addedCount++;
+            }
+        });
+
+        localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+        refreshUI();
+        alert(`MASS_DEPLOYMENT_COMPLETE: ${addedCount} NINJAS ENROLLED. DEFAULT_PASS: NINJA_START_2026`);
+    }
+
+    function loadNinjaData() {
+        const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        const selectedId = document.getElementById('edit-ninja-select').value;
+        if (selectedId && roster[selectedId]) {
+            document.getElementById('edit-ninja-id').value = selectedId;
+            document.getElementById('edit-ninja-pass').value = roster[selectedId].pass;
+        }
+    }
+
+    function updateNinjaCredentials() {
+        const oldId = document.getElementById('edit-ninja-select').value;
+        const newId = document.getElementById('edit-ninja-id').value.trim().toUpperCase();
+        const newPass = document.getElementById('edit-ninja-pass').value.trim();
+        if (!oldId || !newId || !newPass) return alert("SELECT STUDENT AND FILL ALL FIELDS");
+        let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        if (oldId !== newId && roster[newId]) return alert("ERROR: NEW ID ALREADY TAKEN");
+        const studentData = roster[oldId];
+        studentData.pass = newPass;
+        if (oldId !== newId) { roster[newId] = studentData; delete roster[oldId]; }
+        else { roster[oldId] = studentData; }
+        localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+        document.getElementById('edit-ninja-id').value = "";
+        document.getElementById('edit-ninja-pass').value = "";
+        document.getElementById('edit-ninja-select').value = "";
+        refreshUI();
+        alert("SUCCESS: CREDENTIALS UPDATED.");
+    }
+
+    function terminateNinja() {
+        const id = document.getElementById('edit-ninja-select').value;
+        if (!id) return alert("SELECT A NINJA TO TERMINATE.");
+        if (confirm(`PERMANENTLY WIPE ALL DATA FOR ${id}? THIS CANNOT BE UNDONE.`)) {
+            let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            delete roster[id];
+            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+            document.getElementById('edit-ninja-id').value = "";
+            document.getElementById('edit-ninja-pass').value = "";
+            document.getElementById('edit-ninja-select').value = "";
+            refreshUI();
+            alert(`NINJA ${id} HAS BEEN ERASED FROM THE ACADEMY.`);
+        }
+    }
+
+    function freezeNinja() {
+        const id = document.getElementById('edit-ninja-select').value;
+        if (!id) return alert("SELECT A NINJA TO FREEZE.");
+        if (confirm(`LOCK ACCOUNT FOR ${id}? STUDENT WILL BE UNABLE TO LOG IN.`)) {
+            let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            roster[id].pass = "FROZEN_" + Math.random().toString(36).substring(7) + "_SECURE";
+            roster[id].status = "FROZEN_BY_SENSEI";
+            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+            refreshUI();
+            alert(`NINJA ${id} ACCOUNT PROTOCOLS FROZEN.`);
+        }
+    }
+
+    function generateAcademyReport() {
+        const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        const ids = Object.keys(roster);
+        if (ids.length === 0) return alert("NO DATA TO REPORT.");
+
+        let report = `SENSEI_DASH ACADEMY STATUS REPORT\n`;
+        report += `TIMESTAMP: ${new Date().toLocaleString()}\n`;
+        report += `--------------------------------------------------\n`;
+        report += `ID | XP | STATUS | LAST_LOGIN\n`;
+        report += `--------------------------------------------------\n`;
+        
+        ids.sort().forEach(id => {
+            const n = roster[id];
+            report += `${id} | ${n.xp} | ${n.status} | ${n.lastLogin || "NEVER"}\n`;
+        });
+        report += `--------------------------------------------------\n`;
+        report += `END_OF_TRANSMISSION`;
+
+        navigator.clipboard.writeText(report).then(() => {
+            alert("REPORT COPIED TO CLIPBOARD:\n\n" + report);
+        });
+    }
+
     function refreshUI() {
         const list = document.getElementById('leaderboard-list');
+        const searchFilter = document.getElementById('roster-search').value.toUpperCase();
         const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
         const ids = Object.keys(roster);
         let totalXP = 0;
+
+        const editSelect = document.getElementById('edit-ninja-select');
+        const currentEditVal = editSelect.value;
+        editSelect.innerHTML = '<option value="">-- SELECT STUDENT --</option>' + 
+            ids.map(id => `<option value="${id}">${id}</option>`).join('');
+        editSelect.value = currentEditVal;
 
         if (ids.length === 0) {
             list.innerHTML = "<div style='color:#333; text-align:center; margin-top:100px;'>NO_STUDENTS_DETECTED</div>";
             return;
         }
 
-        // Generate Leaderboard
-        const sorted = ids.map(id => ({ id, ...roster[id] })).sort((a,b) => b.xp - a.xp);
+        const filtered = ids.filter(id => id.includes(searchFilter));
+        const sorted = filtered.map(id => ({ id, ...roster[id] })).sort((a,b) => b.xp - a.xp);
         
         list.innerHTML = sorted.map((n, i) => {
             totalXP += n.xp;
             const isElite = ["ELITE_STRIKER", "SHADOW_MASTER"].includes(n.status);
+            const isFrozen = n.status === "FROZEN_BY_SENSEI";
             const rowStyle = isElite ? 'border: 1px solid var(--blue); background: rgba(79,172,254,0.05);' : 'border-bottom: 1px solid #111;';
-            const badge = isElite ? `<span style="color:var(--blue); font-size:0.5rem;">[${n.status}]</span>` : '';
+            const frozenLabel = isFrozen ? '<span style="color:var(--red); font-size:0.5rem;">[FROZEN]</span>' : '';
+            const lastSeen = n.lastLogin || "NEVER";
 
             return `
                 <div style="padding:10px; margin-bottom:5px; border-radius:8px; ${rowStyle}">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:0.65rem;">#${i+1} ${n.id} ${badge}</span>
+                        <span style="font-size:0.65rem;">#${i+1} ${n.id} ${frozenLabel}</span>
                         <span style="color:var(--green); font-size:0.7rem; font-weight:900;">${n.xp.toLocaleString()} XP</span>
                     </div>
+                    <div style="font-size: 0.45rem; color: #444; margin-top: 5px;">LAST_SEEN: ${lastSeen}</div>
                     <div style="display:flex; gap:5px; margin-top:10px;">
                         <button class="btn" style="padding:5px; font-size:0.4rem;" onclick="modifyXP('${n.id}', 100)">+100</button>
                         <button class="btn" style="padding:5px; font-size:0.4rem;" onclick="modifyXP('${n.id}', 500)">+500</button>
@@ -239,14 +377,12 @@
         }).join('');
 
         document.getElementById('total-xp-pool').innerText = `TOTAL_POWER: ${totalXP.toLocaleString()}`;
-        
-        // Populate Duel Selects
         const s1 = document.getElementById('select-n1'), s2 = document.getElementById('select-n2');
         const oldS1 = s1.value, oldS2 = s2.value;
         const opts = ids.map(id => `<option value="${id}">${id}</option>`).join('');
         s1.innerHTML = opts; s2.innerHTML = opts;
         if(oldS1) s1.value = oldS1; if(oldS2) s2.value = oldS2;
-        updateDuel();
+        updateDuel()
     }
 
     function modifyXP(id, amt) {
@@ -258,13 +394,26 @@
         }
     }
 
-    // --- DUEL ARENA ---
+    function bulkXP() {
+        if(!confirm("GRANT 500 XP TO ALL REGISTERED NINJAS?")) return;
+        let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        Object.keys(roster).forEach(id => { roster[id].xp += 500; });
+        localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+        postAnnouncement("ACADEMY REWARD: ALL NINJAS GRANTED +500 XP!");
+        refreshUI();
+    }
+
+    function clearSOS() {
+        localStorage.removeItem('system_broadcast');
+        alert("SOS SIGNALS PURGED.");
+    }
+
     function updateDuel() {
         const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
         const n1 = document.getElementById('select-n1').value;
         const n2 = document.getElementById('select-n2').value;
-        if(n1) document.getElementById('stat-n1').innerText = (roster[n1].xp || 0).toLocaleString() + " XP";
-        if(n2) document.getElementById('stat-n2').innerText = (roster[n2].xp || 0).toLocaleString() + " XP";
+        if(n1 && roster[n1]) document.getElementById('stat-n1').innerText = (roster[n1].xp || 0).toLocaleString() + " XP";
+        if(n2 && roster[n2]) document.getElementById('stat-n2').innerText = (roster[n2].xp || 0).toLocaleString() + " XP";
     }
 
     function announceWinner() {
@@ -273,7 +422,6 @@
         fireSFX('horn');
     }
 
-    // --- TIMER & SFX ---
     function startTimer() {
         let s = parseInt(document.getElementById('timer-input').value);
         clearInterval(tInt);
@@ -282,37 +430,28 @@
             let str = Math.floor(s/60).toString().padStart(2,'0') + ":" + (s%60).toString().padStart(2,'0');
             localStorage.setItem('active_timer', JSON.stringify({ active: true, timeString: str }));
             document.getElementById('dash-timer-preview').innerText = str;
-            if (s<=0) { 
-                clearInterval(tInt); 
-                fireSFX('battle'); 
-                localStorage.setItem('active_timer', JSON.stringify({ active: false })); 
-            }
+            if (s<=0) { clearInterval(tInt); fireSFX('battle'); localStorage.setItem('active_timer', JSON.stringify({ active: false })); }
         }, 1000);
     }
 
-    function fireSFX(type) { 
-        localStorage.setItem('sfx_trigger', type); 
-        setTimeout(() => localStorage.removeItem('sfx_trigger'), 1000); 
-    }
+    function fireSFX(type) { localStorage.setItem('sfx_trigger', type); setTimeout(() => localStorage.removeItem('sfx_trigger'), 1000); }
 
-    // --- TOURNAMENT & MISSIONS ---
     function deployMission() {
         const name = document.getElementById('m-name').value;
         const goal = document.getElementById('m-goal').value;
         const type = document.getElementById('m-type').value;
         if(!name || !goal) return alert("MISSION_DATA_MISSING");
         localStorage.setItem('active_mission', JSON.stringify({ name, goal, type, active: true }));
-        alert("TRANSMISSION_COMPLETE: MISSION LIVE.");
+        alert("TRANSMISSION_COMPLETE.");
     }
 
     function cancelMission() { localStorage.removeItem('active_mission'); alert("MISSION_ABORTED."); }
 
-    function postAnnouncement() {
-        const msg = document.getElementById('announcement-input').value;
+    function postAnnouncement(custom) {
+        const msg = custom || document.getElementById('announcement-input').value;
         if(!msg) return;
         localStorage.setItem('system_broadcast', JSON.stringify({ message: msg, type: 'ALERT', timestamp: Date.now() }));
-        document.getElementById('announcement-input').value = "";
-        alert("BROADCAST_SENT");
+        if(!custom) document.getElementById('announcement-input').value = "";
     }
 
     function saveBracket() {
