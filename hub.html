@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PSALMIST_NINJA // Hero Hub</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Bangers&display=swap" rel="stylesheet">
     <style>
         :root { 
             --bg: #020406; 
@@ -75,6 +75,19 @@
             display: flex; align-items: center; gap: 20px; transition: 0.3s;
         }
         .card:hover { transform: translateY(-5px); border-color: var(--blue); background: rgba(79, 172, 254, 0.05); }
+        
+        /* Special Styling for Kids Dojo Card */
+        .card.kids-card {
+            background: rgba(255, 204, 0, 0.1);
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.1);
+        }
+        .card.kids-card:hover {
+            background: rgba(255, 204, 0, 0.2);
+            box-shadow: 0 0 25px rgba(255, 204, 0, 0.3);
+        }
+        .kids-title { font-family: 'Bangers', cursive; font-size: 1.7rem !important; color: var(--gold); letter-spacing: 2px !important; }
+
         .card-icon { width: 60px; height: 60px; border-radius: 16px; background: rgba(255,255,255,0.03); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; border: 1px solid var(--border); }
         .card-title { font-size: 0.8rem; font-weight: 900; letter-spacing: 1px; }
         .card-desc { font-size: 0.6rem; color: #777; margin-top: 5px; }
@@ -136,6 +149,14 @@
     </div>
 
     <div class="content-stack">
+        <a href="kids_ninja.html" class="card kids-card">
+            <div class="card-icon" style="background: rgba(255,204,0,0.1); border-color: var(--gold);">🥋</div>
+            <div class="card-content">
+                <div class="card-title kids-title">KIDS DOJO</div>
+                <div class="card-desc" style="color: #fff; opacity: 0.9;">Harmony Quest, Runner, and Chord Hero</div>
+            </div>
+        </a>
+
         <a href="pitch_hub.html" class="card">
             <div class="card-icon" style="color:var(--gold)">👂</div>
             <div class="card-content">
@@ -160,15 +181,7 @@
             </div>
         </a>
 
-        <a href="studio.html" class="card">
-            <div class="card-icon" style="color:var(--blue)">🎙️</div>
-            <div class="card-content">
-                <div class="card-title">STUDIO LAB</div>
-                <div class="card-desc">Advanced production & ear training dojo.</div>
-            </div>
-        </a>
-
-        <a href="#" onclick="checkVaultAccess()" class="card" id="theory-link">
+        <a href="theory_vault.html" class="card" id="theory-link">
             <div class="card-icon" style="color:var(--purple)">📓</div>
             <div class="card-content">
                 <div class="card-title">THEORY VAULT</div>
@@ -181,19 +194,15 @@
         const ninjaUser = localStorage.getItem('ninjaUser');
         if (!ninjaUser) window.location.href = 'index.html';
 
-        // --- 1. CORE DATA SYNC ---
         function syncHub() {
             const masterRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
             const myData = masterRoster[ninjaUser] || { xp: 0, status: "LEVEL 01 ACADEMY" };
 
-            // Update UI
             document.getElementById('display-name').innerText = ninjaUser.toUpperCase();
             
-            // Handle display rank text for Guest vs Member
             const typeLabel = localStorage.getItem('userType') === 'GUEST' ? "VISITOR" : "OFFICIAL";
             document.getElementById('display-rank').innerText = `${myData.status} // ${typeLabel} // XP: ${myData.xp.toLocaleString()}`;
 
-            // Sync Academy Announcement
             const msg = localStorage.getItem('academy_announcement');
             if (msg && msg.trim() !== "") {
                 document.getElementById('announcement-bar').style.display = 'block';
@@ -202,13 +211,12 @@
                 document.getElementById('announcement-bar').style.display = 'none';
             }
 
-            // Mission Logic
             const mission = JSON.parse(localStorage.getItem('active_mission'));
             const tracker = document.getElementById('mission-tracker');
             if (mission && mission.active) {
                 tracker.style.display = 'block';
                 document.getElementById('m-name').innerText = mission.name.toUpperCase();
-                document.getElementById('m-desc').innerText = `Objective: Reach ${mission.goal} XP in ${mission.type}`;
+                document.getElementById('m-desc').innerText = `Objective: Reach ${mission.goal} XP`;
                 
                 let progress = Math.min((myData.xp / mission.goal) * 100, 100);
                 document.getElementById('m-percent').innerText = Math.floor(progress) + "%";
@@ -217,7 +225,6 @@
                 tracker.style.display = 'none';
             }
 
-            // Timer Logic
             const timer = JSON.parse(localStorage.getItem('active_timer'));
             if (timer && timer.active) {
                 document.getElementById('active-timer').innerText = timer.timeString;
@@ -227,7 +234,6 @@
             }
         }
 
-        // --- 2. BROADCAST LISTENER ---
         function listenForBroadcast() {
             const data = localStorage.getItem('system_broadcast');
             if(!data) return;
@@ -244,14 +250,12 @@
             }
         }
 
-        // --- 3. SECURITY & SFX ---
         function checkITStatus() {
             if (localStorage.getItem('global_system_lock') === 'true') {
                 document.body.innerHTML = "<div style='color:red; text-align:center; padding-top:20%; font-family:Orbitron; background:black; height:100vh;'><h1>SYSTEM_LOCKED</h1><p>RESTRICTED BY IT_ADMIN</p></div>";
                 return;
             }
             
-            // Check if user is blacklisted
             const vault = JSON.parse(localStorage.getItem('vault_users')) || {};
             if (vault.BLACKLIST && vault.BLACKLIST.includes(ninjaUser)) {
                 alert("ACCESS_TERMINATED");
@@ -266,23 +270,15 @@
             }
         }
 
-        // UNLOCKED: Everyone can enter now
-        function checkVaultAccess() {
-            window.location.href = 'theory_vault.html';
-        }
-
         function acknowledgeBroadcast() { document.getElementById('broadcast-overlay').style.display = 'none'; }
         
         function logout() {
             const userType = localStorage.getItem('userType');
-            
-            // GUEST DATA DELETION LOGIC
             if (userType === 'GUEST') {
                 let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
                 delete roster[ninjaUser]; 
                 localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
             }
-
             localStorage.removeItem('ninjaUser');
             localStorage.removeItem('userType');
             window.location.href = 'index.html';
