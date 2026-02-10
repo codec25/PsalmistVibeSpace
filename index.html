@@ -111,8 +111,11 @@
     <script>
         let isSenseiMode = false;
 
+        // Key Listeners
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') executeAuth();
+            
+            // ADMIN BACKDOOR
             if (e.ctrlKey && e.shiftKey && e.key === 'I') {
                 e.preventDefault();
                 const itID = prompt("ENTER_IT_ID:");
@@ -171,12 +174,14 @@
             const ninjaRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
 
             if (isSenseiMode) {
+                // AUTHENTICATE SENSEI
                 if (vault.teachers && vault.teachers[id] === pass) {
                     localStorage.setItem('ninjaUser', id);
+                    localStorage.setItem('userType', 'SENSEI');
                     window.location.href = 'sensei_dash.html';
                 } else showError();
             } else {
-                // Verified check for .pass property
+                // AUTHENTICATE NINJA
                 if (ninjaRoster[id] && ninjaRoster[id].pass === pass) {
                     localStorage.setItem('ninjaUser', id);
                     localStorage.setItem('userType', 'MEMBER');
@@ -190,6 +195,7 @@
             setTimeout(() => { document.getElementById('err-log').style.display = "none"; }, 3000);
         }
 
+        // Particle FX
         setInterval(() => {
             const notes = ['♩', '♪', '♫', '♬'];
             const n = document.createElement('div');
