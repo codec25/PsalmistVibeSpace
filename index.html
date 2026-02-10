@@ -111,6 +111,21 @@
     <script>
         let isSenseiMode = false;
 
+        // --- NEW: SYSTEM INITIALIZER ---
+        // This ensures the database exists so IT_MANAGER can write to it!
+        window.onload = () => {
+            if (!localStorage.getItem('vault_users')) {
+                const initialVault = {
+                    teachers: {},
+                    AUDIT_LOG: [{time: new Date().toLocaleTimeString(), user: "SYSTEM", status: "KERNEL_INITIALIZED"}],
+                    IT_MASTER_ID: "ADMIN_1",
+                    IT_MASTER_PASS: "MASTER_ROOT_2026"
+                };
+                localStorage.setItem('vault_users', JSON.stringify(initialVault));
+                console.log("System Vault Initialized.");
+            }
+        };
+
         // Key Listeners
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') executeAuth();
@@ -118,11 +133,15 @@
             // ADMIN BACKDOOR
             if (e.ctrlKey && e.shiftKey && e.key === 'I') {
                 e.preventDefault();
+                const vault = JSON.parse(localStorage.getItem('vault_users'));
                 const itID = prompt("ENTER_IT_ID:");
                 const itPass = prompt("ENTER_IT_PASS:");
-                if (itID === "ADMIN_1" && itPass === "MASTER_ROOT_2026") {
+                
+                if (itID === vault.IT_MASTER_ID && itPass === vault.IT_MASTER_PASS) {
                     localStorage.setItem('it_active', 'true');
                     window.location.href = 'it_manager.html';
+                } else {
+                    alert("ACCESS_DENIED");
                 }
             }
         });
@@ -148,7 +167,7 @@
         function guestEntry() {
             const guestID = "GUEST_" + Math.floor(1000 + Math.random() * 9000);
             const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-            roster[guestID] = { xp: 0, status: "LEVEL 01 ACADEMY", type: "GUEST" };
+            roster[guestID] = { xp: 0, status: "LEVEL 01 ACADEMY", type: "GUEST", pass: "1234" };
             localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
             localStorage.setItem('ninjaUser', guestID);
             localStorage.setItem('userType', 'GUEST');
@@ -170,18 +189,16 @@
         function executeAuth() {
             const id = document.getElementById('u-id').value.trim().toUpperCase();
             const pass = document.getElementById('u-pass').value.trim();
-            const vault = JSON.parse(localStorage.getItem('vault_users')) || {};
+            const vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
             const ninjaRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
 
             if (isSenseiMode) {
-                // AUTHENTICATE SENSEI
                 if (vault.teachers && vault.teachers[id] === pass) {
                     localStorage.setItem('ninjaUser', id);
                     localStorage.setItem('userType', 'SENSEI');
                     window.location.href = 'sensei_dash.html';
                 } else showError();
             } else {
-                // AUTHENTICATE NINJA
                 if (ninjaRoster[id] && ninjaRoster[id].pass === pass) {
                     localStorage.setItem('ninjaUser', id);
                     localStorage.setItem('userType', 'MEMBER');
