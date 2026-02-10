@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IT_MANAGER // Central Oversight</title>
+    <title>IT_MANAGER // Central Overwatch</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -16,70 +16,58 @@
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
             display: flex; flex-direction: column; align-items: center; min-height: 100vh;
             background-image: radial-gradient(circle at 50% 50%, #0a1324 0%, #010204 100%);
-            padding: 40px;
+            padding: 30px; overflow-x: hidden;
         }
 
-        .manager-container { width: 100%; max-width: 1200px; }
+        .manager-container { width: 100%; max-width: 1300px; }
 
         header {
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 30px;
+            border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 25px;
         }
 
         .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
 
         .panel { 
             background: var(--panel); border: 1px solid var(--border); 
-            padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             display: flex; flex-direction: column;
         }
 
-        h3 { font-size: 0.7rem; color: var(--blue); letter-spacing: 3px; margin-top: 0; text-transform: uppercase; border-bottom: 1px solid #111; padding-bottom: 10px; margin-bottom: 15px;}
+        h3 { font-size: 0.7rem; color: var(--blue); letter-spacing: 3px; margin: 0 0 15px 0; text-transform: uppercase; border-bottom: 1px solid #111; padding-bottom: 10px; }
 
-        /* TERMINAL STYLING */
+        /* Terminal Styling */
         .terminal {
-            height: 350px; overflow-y: auto; background: #000; border: 1px solid #111;
+            height: 280px; overflow-y: auto; background: #000; border: 1px solid #111;
             padding: 15px; font-family: 'Courier New', monospace; font-size: 0.75rem;
-            line-height: 1.4; color: var(--green); margin-bottom: 15px;
+            line-height: 1.4; color: var(--green); margin-bottom: 10px;
             box-shadow: inset 0 0 10px rgba(0,255,136,0.1);
         }
 
-        .term-input-line { display: flex; align-items: center; background: #000; border: 1px solid var(--border); padding: 5px 10px; border-radius: 5px; }
-        .term-prompt { color: var(--blue); margin-right: 10px; font-family: monospace; font-weight: bold; }
-        .term-field { 
-            flex: 1; background: transparent; border: none; color: #fff; 
-            font-family: 'Courier New', monospace; font-size: 0.8rem; outline: none; 
-        }
+        .term-input-line { display: flex; align-items: center; background: #000; border: 1px solid var(--border); padding: 8px 12px; border-radius: 5px; }
+        .term-prompt { color: var(--blue); margin-right: 10px; font-weight: bold; }
+        .term-field { flex: 1; background: transparent; border: none; color: #fff; font-family: 'Courier New'; outline: none; }
 
-        .log-entry { margin-bottom: 8px; border-bottom: 1px solid #111; padding-bottom: 5px; }
-        .log-time { color: #555; margin-right: 10px; }
-        .log-user { color: var(--gold); font-weight: bold; }
-        .log-fail { color: var(--red); }
-
+        /* Buttons */
         .btn {
-            padding: 12px 15px; background: transparent; border: 1px solid var(--blue);
+            padding: 12px; background: transparent; border: 1px solid var(--blue);
             color: var(--blue); font-family: 'Orbitron'; cursor: pointer; border-radius: 8px;
-            font-size: 0.6rem; transition: 0.3s; margin-top: 10px; font-weight: 900;
+            font-size: 0.6rem; transition: 0.3s; font-weight: 900; margin-top: 5px;
         }
         .btn:hover { background: var(--blue); color: #000; box-shadow: 0 0 15px var(--blue); }
         .btn-red { border-color: var(--red); color: var(--red); }
         .btn-red:hover { background: var(--red); color: #fff; box-shadow: 0 0 15px var(--red); }
-        .btn-green { border-color: var(--green); color: var(--green); }
-        .btn-green:hover { background: var(--green); color: #000; box-shadow: 0 0 15px var(--green); }
+        .btn-gold { border-color: var(--gold); color: var(--gold); }
+        .btn-gold:hover { background: var(--gold); color: #000; }
 
-        input, textarea, select {
+        input, textarea {
             width: 100%; background: #000; border: 1px solid var(--border); 
-            color: #fff; padding: 10px; font-family: 'Orbitron'; font-size: 0.65rem; border-radius: 5px; margin-bottom: 10px;
+            color: #fff; padding: 10px; font-family: 'Orbitron'; font-size: 0.7rem; border-radius: 5px; margin-bottom: 10px;
         }
 
-        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #111; transition: .4s; border-radius: 34px; border: 1px solid var(--blue); }
-        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 4px; bottom: 3px; background-color: var(--blue); transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #001a33; border-color: var(--green); }
-        input:checked + .slider:before { transform: translateX(18px); background-color: var(--green); }
-
         .stat-line { display: flex; justify-content: space-between; font-size: 0.65rem; margin-bottom: 8px; color: #7788aa; }
+        .log-sos { color: var(--red); font-weight: 900; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
@@ -87,280 +75,192 @@
     <div class="manager-container">
         <header>
             <div>
-                <h1 style="font-size: 1.2rem; letter-spacing: 5px; margin:0;">SYSTEM_OVERWATCH_v5</h1>
-                <div id="ghost-indicator" style="font-size: 0.6rem; color: #555; margin-top:5px;">STEALTH_STATUS: VISIBLE</div>
+                <h1 style="font-size: 1.2rem; letter-spacing: 5px; margin:0;">SYSTEM_OVERWATCH_v6</h1>
+                <div id="status-tag" style="font-size: 0.6rem; color: var(--green); margin-top:5px;">ROOT_ACCESS_GRANTED</div>
             </div>
-            <button class="btn btn-red" onclick="window.location.href='index.html'">TERMINATE_SESSION</button>
+            <button class="btn btn-red" onclick="terminateSession()">TERMINATE_SESSION</button>
         </header>
 
         <div class="grid">
-            <div class="panel" style="grid-column: span 1;">
-                <h3>SENSEI_PROVISIONING_v2</h3>
+            <div class="panel">
+                <h3>SENSEI_TERMINAL</h3>
                 <div class="terminal" id="term-display">
-                    <div>-- ROOT_PROVISION_TERMINAL --</div>
-                    <div>TYPE 'help' FOR PROTOCOLS</div>
-                    <br>
+                    <div>-- ROOT_PROVISION_SYSTEM --</div>
+                    <div style="color: #555;">Type 'help' for commands</div>
                 </div>
                 <div class="term-input-line">
-                    <span class="term-prompt">admin@overwatch:~$</span>
-                    <input type="text" id="term-input" class="term-field" placeholder="..." onkeydown="handleTerminal(event)">
+                    <span class="term-prompt">></span>
+                    <input type="text" id="term-input" class="term-field" placeholder="Enter Command..." onkeydown="handleTerminal(event)">
                 </div>
             </div>
 
             <div class="panel" style="grid-column: span 2;">
-                <h3>LIVE_AUDIT_LOG</h3>
-                <div class="terminal" id="audit-log"></div>
+                <h3>LIVE_AUDIT_LOG // SYSTEM_PULSE</h3>
+                <div class="terminal" id="audit-log" style="height: 335px;"></div>
                 <div style="display:flex; gap:10px;">
-                    <button class="btn" onclick="renderLogs()">REFRESH_FEED</button>
-                    <button class="btn btn-red" onclick="clearLogs()">WIPE_HISTORY</button>
+                    <button class="btn" style="flex:1" onclick="renderLogs()">REFRESH</button>
+                    <button class="btn btn-red" style="flex:1" onclick="clearLogs()">WIPE_LOGS</button>
                 </div>
+            </div>
+
+            <div class="panel">
+                <h3>REMOTE_INTERVENTION</h3>
+                <button class="btn btn-red" style="width:100%" onclick="toggleSystemLock()">TOGGLE_GLOBAL_LOCK</button>
+                <div style="margin-top:15px; border-top: 1px solid #111; padding-top:15px;">
+                    <button class="btn btn-gold" style="width:100%" onclick="triggerSFX('horn')">AIR_HORN_BLAST</button>
+                    <button class="btn btn-gold" style="width:100%" onclick="triggerSFX('battle')">BATTLE_ALARM</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>NINJA_INTERDICTION</h3>
+                <input type="text" id="target-id" placeholder="NINJA_ID (e.g. USER_123)">
+                <button class="btn btn-red" style="width:100%" onclick="freezeUser()">FREEZE_USER</button>
+                <button class="btn" style="width:100%" onclick="unfreezeUser()">RESTORE_USER</button>
             </div>
 
             <div class="panel">
                 <h3>NEURAL_BROADCAST</h3>
                 <textarea id="broadcast-msg" placeholder="MESSAGE_CONTENT..."></textarea>
-                <button class="btn" style="width:100%; border-color:var(--gold); color:var(--gold);" onclick="sendBroadcast('ALERT')">SEND_ALERT</button>
-                <button class="btn btn-green" style="width:100%" onclick="bulkXPGrant()">GRANT_BULK_XP</button>
-                <button class="btn" style="width:100%; border-color:var(--red); color:var(--red);" onclick="sendBroadcast('CRITICAL')">CRITICAL_OVERRIDE</button>
-            </div>
-
-            <div class="panel">
-                <h3>SECURITY_INTERDICTION</h3>
-                <div id="blacklist-display" style="height: 180px; overflow-y:auto; background:#000; padding:10px; font-size:0.6rem; margin-bottom:10px; border:1px solid #111;"></div>
-                <div style="display:flex; gap:5px;">
-                    <input type="text" id="ban-id" placeholder="SEARCH_OR_BAN_ID" onkeyup="searchStudent()">
-                    <button class="btn" style="margin:0;" onclick="toggleBan()">BAN</button>
-                </div>
-            </div>
-
-            <div class="panel">
-                <h3>CORE_STATUS</h3>
-                
-                <div id="hall-of-fame" style="margin-bottom:15px; padding:10px; background:rgba(255, 204, 0, 0.05); border:1px solid rgba(255, 204, 0, 0.2); border-radius:8px; text-align:center;">
-                    <div style="font-size:0.5rem; color:var(--gold); letter-spacing:2px;">ACADEMY_TOTAL_POWER</div>
-                    <div id="total-academy-xp" style="font-size:1.2rem; font-weight:900; color:#fff; text-shadow:0 0 10px var(--gold);">0</div>
-                </div>
-
-                <div id="stats-content"></div>
-
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid #111;">
-                    <span style="font-size:0.6rem; color:var(--blue)">GHOST_STEALTH</span>
-                    <label class="switch">
-                        <input type="checkbox" id="ghost-toggle" onclick="toggleGhostMode()">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid #111;">
-                    <span style="font-size:0.6rem; color:var(--red)">STREAK_PROTECTION</span>
-                    <label class="switch">
-                        <input type="checkbox" id="streak-freeze-toggle" onclick="toggleStreakFreeze()">
-                        <span class="slider" style="border-color:var(--red)"></span>
-                    </label>
-                </div>
-                
-                <button class="btn" style="width:100%; margin-top:15px;" onclick="exportData()">EXPORT_VAULT_BACKUP</button>
+                <button class="btn btn-gold" style="width:100%" onclick="sendBroadcast('ALERT')">SEND_ALERT</button>
+                <button class="btn btn-red" style="width:100%" onclick="sendBroadcast('CRITICAL')">CRITICAL_OVERRIDE</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- NEW TERMINAL HANDLER ---
+        // Security Gate
+        if (localStorage.getItem('it_active') !== 'true') {
+            window.location.href = 'index.html';
+        }
+
         const termDisplay = document.getElementById('term-display');
 
-        function logToTerm(msg, color = 'var(--green)') {
+        function writeToTerm(msg, color = 'var(--green)') {
             termDisplay.innerHTML += `<div style="color:${color}">${msg}</div>`;
             termDisplay.scrollTop = termDisplay.scrollHeight;
         }
 
+        // Terminal Logic
         function handleTerminal(e) {
             if (e.key === 'Enter') {
                 const input = e.target.value.trim();
                 e.target.value = "";
                 if (!input) return;
 
-                logToTerm(`<span style="color:var(--blue)">admin@overwatch:~$</span> ${input}`, '#fff');
+                writeToTerm(`admin@root:~$ ${input}`, '#fff');
                 const parts = input.split(' ');
                 const cmd = parts[0].toLowerCase();
 
+                let vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+
                 switch(cmd) {
                     case 'help':
-                        logToTerm("AVAILABLE PROTOCOLS:");
-                        logToTerm(" provision [id] [pass] - CREATE ACCOUNT");
-                        logToTerm(" revoke [id]           - DELETE ACCOUNT");
-                        logToTerm(" list                  - SHOW ALL SENSEI");
-                        logToTerm(" clear                 - WIPE SCREEN");
+                        writeToTerm("COMMANDS: provision [id] [pass], list, clear, revoke [id]");
                         break;
                     case 'clear':
                         termDisplay.innerHTML = "";
                         break;
                     case 'list':
-                        const db = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
-                        const teachers = db.teachers || {};
-                        if(Object.keys(teachers).length === 0) logToTerm("NO ACTIVE SENSEI", 'var(--red)');
-                        for (let id in teachers) logToTerm(`> ${id}`);
+                        const teachers = vault.teachers || {};
+                        Object.keys(teachers).forEach(t => writeToTerm(`> SENSEI: ${t}`));
                         break;
                     case 'provision':
-                        if(parts.length < 3) return logToTerm("ERROR: [ID] [PASS] REQUIRED", 'var(--red)');
-                        addTeacher(parts[1].toUpperCase(), parts[2]);
+                        if(parts.length < 3) return writeToTerm("ERROR: [ID] [PASS] REQ", 'var(--red)');
+                        vault.teachers[parts[1].toUpperCase()] = parts[2];
+                        localStorage.setItem('vault_users', JSON.stringify(vault));
+                        writeToTerm(`SUCCESS: ${parts[1]} PROVISIONED`, 'var(--gold)');
+                        logAction(`NEW_SENSEI_CREATED: ${parts[1]}`);
                         break;
                     case 'revoke':
-                        if(parts.length < 2) return logToTerm("ERROR: [ID] REQUIRED", 'var(--red)');
-                        removeTeacher(parts[1].toUpperCase());
+                        delete vault.teachers[parts[1].toUpperCase()];
+                        localStorage.setItem('vault_users', JSON.stringify(vault));
+                        writeToTerm(`REVOKED: ${parts[1]}`, 'var(--red)');
                         break;
                     default:
-                        logToTerm(`COMMAND NOT FOUND: ${cmd}`, 'var(--red)');
+                        writeToTerm("UNKNOWN COMMAND", 'var(--red)');
                 }
             }
         }
 
-        // Modified Teacher Logic for Terminal
-        function addTeacher(id, pass) {
-            let db = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
-            if(!db.teachers) db.teachers = {};
-            db.teachers[id] = pass;
+        // Action Logic
+        function toggleSystemLock() {
+            const current = localStorage.getItem('global_system_lock') === 'true';
+            localStorage.setItem('global_system_lock', !current);
+            logAction(`SYSTEM_LOCK: ${!current ? 'ENGAGED' : 'DISENGAGED'}`);
+        }
+
+        function triggerSFX(type) {
+            localStorage.setItem('sfx_trigger', type);
+            logAction(`REMOTE_SFX: ${type.toUpperCase()}`);
+        }
+
+        function freezeUser() {
+            const id = document.getElementById('target-id').value.trim().toUpperCase();
+            if(!id) return;
+            localStorage.setItem(`freeze_${id}`, 'true');
+            logAction(`USER_FROZEN: ${id}`);
+        }
+
+        function unfreezeUser() {
+            const id = document.getElementById('target-id').value.trim().toUpperCase();
+            if(!id) return;
+            localStorage.removeItem(`freeze_${id}`);
+            logAction(`USER_UNFROZEN: ${id}`);
+        }
+
+        function sendBroadcast(type) {
+            const msg = document.getElementById('broadcast-msg').value;
+            if(!msg) return;
+            localStorage.setItem('system_broadcast', JSON.stringify({ message: msg, type: type, timestamp: Date.now() }));
+            logAction(`BROADCAST: ${type}`);
+            document.getElementById('broadcast-msg').value = "";
+        }
+
+        function logAction(status) {
+            let db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
             db.AUDIT_LOG = db.AUDIT_LOG || [];
-            db.AUDIT_LOG.unshift({time: new Date().toLocaleTimeString(), user: "IT_ADMIN", status: `PROVISIONED_TEACHER: ${id}`});
+            db.AUDIT_LOG.unshift({ time: new Date().toLocaleTimeString(), user: "ROOT", status: status });
             localStorage.setItem('vault_users', JSON.stringify(db));
-            logToTerm(`SUCCESS: ${id} PROVISIONED`, 'var(--gold)');
             renderLogs();
         }
 
-        function removeTeacher(id) {
-            let db = JSON.parse(localStorage.getItem('vault_users'));
-            if(db && db.teachers && db.teachers[id]) {
-                delete db.teachers[id];
-                localStorage.setItem('vault_users', JSON.stringify(db));
-                logToTerm(`REVOKED: ${id} ACCESS TERMINATED`, 'var(--red)');
-            } else {
-                logToTerm(`ERROR: ${id} NOT FOUND`, 'var(--red)');
-            }
-        }
-
-        // --- SEARCH & PROMOTION & SHADOW ---
-        function searchStudent() {
-            const id = document.getElementById('ban-id').value.trim().toUpperCase();
-            const display = document.getElementById('blacklist-display');
-            const rawRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-            if (!id) { renderBlacklist(); return; }
-            const student = rawRoster[id];
-            if (student) {
-                const isModern = typeof student === 'object';
-                const currentStatus = student.status || "LEVEL 01 ACADEMY";
-                display.innerHTML = `
-                    <div style="border: 1px solid var(--blue); padding: 5px; border-radius: 4px; background: rgba(79,172,254,0.1);">
-                        <div style="color:var(--gold); font-weight:bold; margin-bottom:5px;">DATA_FOUND: ${id}</div>
-                        <div style="font-size:0.55rem; color:#aaa; margin-bottom:8px;">
-                            RANK: <span style="color:var(--blue)">${currentStatus}</span><br>
-                            XP: <span style="color:var(--green)">${isModern ? student.xp : '0'}</span>
-                        </div>
-                        <select id="rank-select" style="margin-bottom:5px;">
-                            <option value="">-- PROMOTION --</option>
-                            <option value="ACADEMY_NINJA">ACADEMY_NINJA</option>
-                            <option value="ELITE_STRIKER">ELITE_STRIKER</option>
-                            <option value="SHADOW_MASTER">SHADOW_MASTER</option>
-                        </select>
-                        <div style="display:flex; gap:5px;">
-                            <button class="btn btn-green" style="flex:1; margin:0; padding:5px; font-size:0.45rem;" onclick="promoteStudent('${id}')">RANK</button>
-                            <button class="btn" style="flex:1; margin:0; padding:5px; font-size:0.45rem; border-color:var(--blue); color:var(--blue);" onclick="shadowLogin('${id}')">SHADOW</button>
-                        </div>
-                    </div>`;
-            } else { display.innerHTML = `<span style='color:var(--red)'>NOT_FOUND</span>`; }
-        }
-
-        function promoteStudent(id) {
-            const newRank = document.getElementById('rank-select').value;
-            if(!newRank) return;
-            let roster = JSON.parse(localStorage.getItem('ninja_roster_full'));
-            if(roster[id] && typeof roster[id] === 'object') {
-                roster[id].status = newRank;
-                localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
-                searchStudent();
-            }
-        }
-
-        function shadowLogin(id) {
-            localStorage.setItem('ninjaUser', id);
-            window.location.href = 'hub.html';
-        }
-
-        // --- BULK XP & STREAK ---
-        function bulkXPGrant() {
-            const baseAmount = parseInt(prompt("BASE_XP_AMOUNT:", "500"));
-            if (isNaN(baseAmount) || baseAmount <= 0) return;
-            const streakData = JSON.parse(localStorage.getItem('academy_streak_stats')) || { count: 0 };
-            const isHot = streakData.count >= 7;
-            const finalAmount = isHot ? Math.floor(baseAmount * 1.1) : baseAmount;
-            let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-            for (let id in roster) if (typeof roster[id] === 'object') roster[id].xp = (roster[id].xp || 0) + finalAmount;
-            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
-            sendBroadcast(isHot ? 'SUCCESS' : 'REWARD', `XP_DISTRIBUTED: +${finalAmount} ${isHot ? '(10%_BONUS)' : ''}`);
-            renderLogs();
-        }
-
-        function toggleStreakFreeze() {
-            const isFrozen = document.getElementById('streak-freeze-toggle').checked;
-            localStorage.setItem('streak_freeze_active', isFrozen);
-        }
-
-        // --- SYSTEM CORE ---
         function renderLogs() {
             const logContainer = document.getElementById('audit-log');
             const db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
-            logContainer.innerHTML = "";
-            if(db.AUDIT_LOG) {
-                db.AUDIT_LOG.slice(0, 50).forEach(entry => {
-                    logContainer.innerHTML += `<div class="log-entry"><span class="log-time">[${entry.time}]</span><span class="log-user">${entry.user}</span>: ${entry.status}</div>`;
-                });
+            
+            // Catch SOS from index.html
+            const sos = JSON.parse(localStorage.getItem('system_broadcast'));
+            if(sos && sos.message.includes("SOS:")) {
+                const alreadyLogged = db.AUDIT_LOG.some(l => l.status.includes(sos.message));
+                if(!alreadyLogged) {
+                    db.AUDIT_LOG.unshift({ time: new Date().toLocaleTimeString(), user: "SYSTEM", status: `<span class="log-sos">${sos.message}</span>` });
+                    localStorage.setItem('vault_users', JSON.stringify(db));
+                }
             }
 
-            const rawRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-            let totalPower = 0, legacyCount = 0;
-            for (let id in rawRoster) {
-                if (typeof rawRoster[id] === 'object') totalPower += (rawRoster[id].xp || 0);
-                else legacyCount++;
-            }
-            document.getElementById('total-academy-xp').innerText = totalPower.toLocaleString();
-            document.getElementById('stats-content').innerHTML = `
-                <div class="stat-line"><span>ACTIVE_NINJAS:</span><span>${Object.keys(rawRoster).length}</span></div>
-                <div class="stat-line"><span>LEGACY_DATA:</span><span style="color:${legacyCount > 0 ? 'var(--red)' : 'var(--green)'}">${legacyCount}</span></div>
-            `;
+            logContainer.innerHTML = (db.AUDIT_LOG || []).map(entry => `
+                <div style="margin-bottom:8px; border-bottom:1px solid #111; padding-bottom:4px; font-size:0.7rem;">
+                    <span style="color:#444;">[${entry.time}]</span> 
+                    <span style="color:var(--blue); font-weight:bold;">${entry.user}</span>: ${entry.status}
+                </div>
+            `).join('');
         }
 
-        function sendBroadcast(type, customMsg) {
-            const msg = customMsg || document.getElementById('broadcast-msg').value;
-            localStorage.setItem('system_broadcast', JSON.stringify({ message: msg, type: type, timestamp: Date.now() }));
+        function terminateSession() {
+            localStorage.removeItem('it_active');
+            window.location.href = 'index.html';
+        }
+
+        function clearLogs() {
+            let db = JSON.parse(localStorage.getItem('vault_users')) || {};
+            db.AUDIT_LOG = [];
+            localStorage.setItem('vault_users', JSON.stringify(db));
             renderLogs();
         }
 
-        function toggleBan() {
-            const id = document.getElementById('ban-id').value.trim().toUpperCase();
-            let db = JSON.parse(localStorage.getItem('vault_users')) || { BLACKLIST: [] };
-            if(!db.BLACKLIST) db.BLACKLIST = [];
-            db.BLACKLIST.push(id);
-            localStorage.setItem('vault_users', JSON.stringify(db));
-            renderBlacklist();
-        }
-
-        function renderBlacklist() {
-            const db = JSON.parse(localStorage.getItem('vault_users')) || { BLACKLIST: [] };
-            document.getElementById('blacklist-display').innerHTML = (db.BLACKLIST || []).map(id => `<div>${id}</div>`).join('');
-        }
-
-        function toggleGhostMode() {
-            const active = document.getElementById('ghost-toggle').checked;
-            localStorage.setItem('ghost_enabled', active);
-            document.getElementById('ghost-indicator').innerText = active ? "STEALTH_STATUS: STEALTH_ACTIVE" : "STEALTH_STATUS: VISIBLE";
-        }
-
-        function clearLogs() { if(confirm("WIPE?")) { let db = JSON.parse(localStorage.getItem('vault_users')); db.AUDIT_LOG = []; localStorage.setItem('vault_users', JSON.stringify(db)); renderLogs(); } }
-        function exportData() { const blob = new Blob([JSON.stringify(localStorage)], { type: 'text/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'backup.json'; a.click(); }
-
-        window.onload = () => {
-            renderLogs(); renderBlacklist();
-            document.getElementById('ghost-toggle').checked = localStorage.getItem('ghost_enabled') === 'true';
-            document.getElementById('streak-freeze-toggle').checked = localStorage.getItem('streak_freeze_active') === 'true';
-        };
+        setInterval(renderLogs, 3000);
+        window.onload = renderLogs;
     </script>
 </body>
 </html>
