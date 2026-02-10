@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Harmony Quest — Music Adventure World</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --purple:#7c5cff;
+    --cyan:#00e5ff;
+    --yellow:#ffe066;
+    --pink:#ff6ec7;
+    --green:#6cff9b;
+    --red:#ff6b6b;
+    --bg:#140726;
+    --panel:rgba(255,255,255,0.12);
+}
+
+body {
+    margin:0;
+    font-family:'Quicksand',sans-serif;
+    background:radial-gradient(circle at top,#402080 0%,#140726 100%);
+    color:white;
+    overflow-x:hidden;
+}
+
+/* ---------------- UI CORE ---------------- */
+.top-bar {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 16px;
+    background:rgba(0,0,0,0.35);
+    border-bottom:3px solid var(--purple);
+}
+.logo {
+    font-family:'Orbitron';
+    font-weight:900;
+    font-size:0.9rem;
+    color:var(--cyan);
+}
+.xp {
+    background:var(--yellow);
+    color:black;
+    padding:6px 14px;
+    border-radius:20px;
+    font-weight:900;
+    font-family:'Orbitron';
+    font-size:0.65rem;
+}
+
+.game-wrap {
+    padding:16px;
+    max-width:1100px;
+    margin:auto;
+}
+
+/* ---------------- WORLD MAP ---------------- */
+.map {
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:18px;
+    margin-bottom:24px;
+}
+
+.node {
+    aspect-ratio:1;
+    background:rgba(255,255,255,0.12);
+    border-radius:22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:2.2rem;
+    cursor:pointer;
+    transition:0.2s;
+    position:relative;
+    border:2px solid transparent;
+}
+.node.locked {
+    filter:grayscale(1);
+    opacity:0.4;
+}
+.node.unlocked {
+    border-color:var(--cyan);
+    box-shadow:0 0 14px var(--cyan);
+}
+.node.boss {
+    background:linear-gradient(135deg,#ff6b6b,#c0392b);
+    box-shadow:0 0 18px #ff6b6b;
+}
+.node:active { transform:scale(0.9); }
+
+.node-label {
+    position:absolute;
+    bottom:-18px;
+    font-size:0.6rem;
+    font-weight:900;
+}
+
+/* ---------------- GAME CARD ---------------- */
+.card {
+    background:linear-gradient(135deg,var(--purple),#a29bfe);
+    padding:20px;
+    border-radius:26px;
+    box-shadow:0 12px 0 #3c2bbf;
+    text-align:center;
+}
+.avatar {
+    font-size:5rem;
+    margin-bottom:10px;
+    filter:drop-shadow(0 0 20px var(--cyan));
+}
+.status {
+    font-weight:900;
+    font-size:1.1rem;
+    margin:8px 0;
+}
+
+/* ---------------- BUTTONS ---------------- */
+.btn {
+    border:none;
+    border-radius:50px;
+    padding:10px 18px;
+    font-family:'Orbitron';
+    font-weight:900;
+    cursor:pointer;
+    transition:0.15s;
+}
+.btn:active { transform:scale(0.95); }
+.btn-main { background:var(--yellow); box-shadow:0 6px 0 #cfae38; }
+.btn-blue { background:var(--cyan); box-shadow:0 6px 0 #009bb5; }
+.btn-pink { background:var(--pink); box-shadow:0 6px 0 #c43fa0; }
+.btn-red { background:var(--red); box-shadow:0 6px 0 #b23434; }
+
+/* ---------------- PAD GRID ---------------- */
+.pad-grid {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    margin-top:16px;
+}
+.pad {
+    aspect-ratio:1;
+    background:rgba(0,0,0,0.35);
+    border-radius:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:2rem;
+    cursor:pointer;
+    transition:0.15s;
+    box-shadow:0 6px 0 rgba(0,0,0,0.3);
+}
+.pad:active { transform:scale(0.9); box-shadow:0 2px 0 rgba(0,0,0,0.3); }
+
+/* ---------------- OVERLAYS ---------------- */
+.overlay {
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.85);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:2000;
+}
+.overlay-card {
+    background:#2b1452;
+    border-radius:28px;
+    padding:24px;
+    width:360px;
+    border:4px solid var(--yellow);
+    text-align:center;
+}
+
+/* ---------------- BADGES ---------------- */
+.badge-row {
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-top:10px;
+}
+.badge {
+    font-size:1.5rem;
+    filter:drop-shadow(0 0 6px var(--cyan));
+}
+
+/* ---------------- FX ---------------- */
+.spark {
+    position:absolute;
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    animation:boom 1s ease-out forwards;
+    pointer-events:none;
+}
+@keyframes boom {
+    from { transform:scale(1); opacity:1; }
+    to { transform:scale(20); opacity:0; }
+}
+
+/* ---------------- MOBILE ---------------- */
+@media(max-width:800px){
+    .map { grid-template-columns:repeat(3,1fr); }
+}
+</style>
+</head>
+
+<body>
+
+<!-- AUDIO UNLOCK -->
+<div id="audio-overlay" class="overlay" style="display:flex;">
+    <div class="overlay-card" style="border-color:var(--cyan);">
+        <h2 style="font-family:'Orbitron';">🎧 SOUND POWER</h2>
+        <p style="font-size:0.9rem;">Tap to start your music adventure!</p>
+        <button class="btn btn-blue" style="width:100%;" onclick="unlockAudio()">START</button>
+    </div>
+</div>
+
+<!-- AVATAR SELECT -->
+<div id="avatar-overlay" class="overlay" style="display:flex;">
+    <div class="overlay-card">
+        <h2 style="font-family:'Orbitron';">🧑‍🚀 CHOOSE HERO</h2>
+        <div style="display:flex; justify-content:space-around; font-size:3rem; margin:14px 0;">
+            <span style="cursor:pointer;" onclick="selectAvatar('🧑‍🎤')">🧑‍🎤</span>
+            <span style="cursor:pointer;" onclick="selectAvatar('🧑‍🚀')">🧑‍🚀</span>
+            <span style="cursor:pointer;" onclick="selectAvatar('🧙‍♂️')">🧙‍♂️</span>
+            <span style="cursor:pointer;" onclick="selectAvatar('🧝‍♀️')">🧝‍♀️</span>
+        </div>
+        <p style="font-size:0.75rem;">Pick your music hero!</p>
+    </div>
+</div>
+
+<div class="top-bar">
+    <div class="logo">🎵 HARMONY QUEST</div>
+    <div class="xp">XP <span id="xp-val">0</span></div>
+</div>
+
+<div class="game-wrap">
+
+    <!-- WORLD MAP -->
+    <div class="map" id="world-map"></div>
+
+    <!-- GAME CARD -->
+    <div class="card" id="game-card" style="display:none;">
+        <div class="avatar" id="avatar">🧑‍🎤</div>
+        <div class="status" id="status">Listen carefully!</div>
+        <button class="btn btn-main" id="start-btn" style="width:100%;" onclick="startLevel()">▶️ START</button>
+        <button class="btn btn-pink" id="replay-btn" style="width:100%; display:none; margin-top:8px;" onclick="replaySequence()">🔁 HEAR AGAIN (-10 XP)</button>
+        <div class="pad-grid" id="pad-grid"></div>
+        <div class="badge-row" id="badge-row"></div>
+    </div>
+
+</div>
+
+<script>
+/* ===================================
+   HARMONY QUEST — WORLD ENGINE
+   =================================== */
+
+/* -------- STATE -------- */
+let audioCtx = null;
+let soundOn = false;
+let avatar = "🧑‍🎤";
+
+let level = 1;
+let streak = 0;
+let gameSeq = [];
+let userSeq = [];
+let isLocked = false;
+let activeLevel = 1;
+let round = 1;
+const roundsPerLevel = 3;
+
+const freqs = {
+    '🎹':261.63,'🎸':329.63,'🎷':392,'🥁':150,
+    '🎻':440,'🎺':523.25,'🔔':784,'🎺2':659
+};
+
+const sampleMap = {
+    '🎹': { url: "https://cdn.jsdelivr.net/npm/tonejs-instrument-piano-mp3@1.1.2/C4.mp3", gain: 0.9, maxDur: 1.2 },
+    '🎸': { url: "https://cdn.jsdelivr.net/npm/tonejs-instrument-guitar-acoustic-mp3@1.1.2/C4.mp3", gain: 0.85, maxDur: 1.1 },
+    '🎷': { url: "https://cdn.jsdelivr.net/npm/tonejs-instrument-saxophone-mp3@1.1.2/C4.mp3", gain: 0.9, maxDur: 1.2 },
+    '🥁': { url: "https://tonejs.github.io/audio/drum-samples/loops/ominous.mp3", gain: 0.7, maxDur: 0.5 },
+    '🎻': { url: "https://cdn.jsdelivr.net/npm/tonejs-instrument-violin-mp3@1.1.1/C4.mp3", gain: 0.9, maxDur: 1.2 },
+    '🎺': { url: "https://cdn.jsdelivr.net/npm/tonejs-instrument-trumpet-mp3@1.1.2/C4.mp3", gain: 0.95, maxDur: 1.2 },
+    '🔔': { url: "https://cdn.jsdelivr.net/npm/tonejs-instrument-organ-mp3@1.1.1/C4.mp3", gain: 0.85, maxDur: 1.2 },
+    '🎺2': { url: "https://cdn.jsdelivr.net/npm/tonejs-instrument-bass-electric-mp3@1.1.2/E2.mp3", gain: 0.9, maxDur: 1.0 }
+};
+
+const sampleBuffers = {};
+
+const pads = ['🎹','🎸','🎷','🥁','🎻','🎺','🔔','🎺2'];
+
+const worlds = [
+    {id:1, icon:'🌱', boss:false},
+    {id:2, icon:'🎵', boss:false},
+    {id:3, icon:'🎼', boss:false},
+    {id:4, icon:'🎧', boss:false},
+    {id:5, icon:'👾', boss:true},
+    {id:6, icon:'🌟', boss:false},
+    {id:7, icon:'🎷', boss:false},
+    {id:8, icon:'🎸', boss:false},
+    {id:9, icon:'🔥', boss:false},
+    {id:10, icon:'🐲', boss:true}
+];
+
+/* -------- AUDIO -------- */
+async function unlockAudio() {
+    const btn = document.querySelector("#audio-overlay .btn");
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "LOADING...";
+    }
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    await audioCtx.resume();
+    await preloadSamples();
+    soundOn = true;
+    document.getElementById("audio-overlay").style.display = "none";
+}
+
+async function loadSampleFor(pad) {
+    if (!sampleMap[pad] || sampleBuffers[pad]) return;
+    const res = await fetch(sampleMap[pad].url);
+    const arrayBuffer = await res.arrayBuffer();
+    sampleBuffers[pad] = await audioCtx.decodeAudioData(arrayBuffer);
+}
+
+async function preloadSamples() {
+    const tasks = Object.keys(sampleMap).map(async (pad) => {
+        try {
+            await loadSampleFor(pad);
+        } catch (err) {
+            console.warn("Sample load failed:", pad, err);
+        }
+    });
+    await Promise.all(tasks);
+}
+
+function playOsc(freq, type="triangle", dur=0.4) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = freq === 150 ? "square" : type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + dur);
+}
+
+function playPad(pad, opts = {}) {
+    if (!soundOn || !audioCtx) return;
+    if (audioCtx.state === "suspended") audioCtx.resume();
+
+    const buffer = sampleBuffers[pad];
+    if (!buffer) {
+        const fallbackFreq = freqs[pad] || 440;
+        playOsc(fallbackFreq, "triangle", opts.dur || 0.4);
+        return;
+    }
+
+    const { gain: baseGain, maxDur } = sampleMap[pad] || {};
+    const volume = Math.min(1, (baseGain || 0.85) + (opts.accent ? 0.15 : 0));
+    const duration = opts.dur || maxDur || 0.9;
+
+    const src = audioCtx.createBufferSource();
+    const gain = audioCtx.createGain();
+    src.buffer = buffer;
+    src.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    const now = audioCtx.currentTime;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(volume, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    src.start();
+    src.stop(now + duration + 0.02);
+}
+
+/* -------- STORAGE -------- */
+function getData() {
+    return JSON.parse(localStorage.getItem("hq_world") || "{}");
+}
+function saveData(d) {
+    localStorage.setItem("hq_world", JSON.stringify(d));
+}
+
+/* -------- AVATAR -------- */
+function selectAvatar(a) {
+    avatar = a;
+    document.getElementById("avatar-overlay").style.display = "none";
+    renderWorld();
+}
+
+/* -------- WORLD MAP -------- */
+function renderWorld() {
+    const map = document.getElementById("world-map");
+    const data = getData();
+    level = data.level || 1;
+    const xp = data.xp || 0;
+    document.getElementById("xp-val").textContent = xp;
+
+    map.innerHTML = worlds.map(w=>{
+        const locked = w.id > level;
+        return `
+            <div class="node ${locked?'locked':'unlocked'} ${w.boss?'boss':''}"
+                 onclick="${locked?'':'enterLevel('+w.id+')'}">
+                ${w.icon}
+                <div class="node-label">${w.boss?'BOSS':'LEVEL '+w.id}</div>
+            </div>
+        `;
+    }).join("");
+}
+
+/* -------- LEVEL ENTRY -------- */
+function enterLevel(lvl) {
+    activeLevel = lvl;
+    round = 1;
+    document.getElementById("game-card").style.display = "block";
+    document.getElementById("status").textContent = `🎧 Round ${round} of ${roundsPerLevel} — Listen to the pattern!`;
+    document.getElementById("replay-btn").style.display = "none";
+    document.getElementById("avatar").textContent = avatar;
+    buildPads(lvl);
+}
+
+/* -------- PADS -------- */
+function buildPads(lvl) {
+    const grid = document.getElementById("pad-grid");
+    const count = lvl < 4 ? 4 : lvl < 7 ? 6 : 8;
+    const usable = pads.slice(0, count);
+
+    grid.innerHTML = usable.map(p=>`
+        <div class="pad" onclick="pressPad('${p}')">${p}</div>
+    `).join("");
+}
+
+/* -------- GAME LOGIC -------- */
+function startLevel() {
+    userSeq = [];
+    gameSeq = [];
+    isLocked = true;
+
+    const data = getData();
+    const current = activeLevel || (data.level || 1);
+    const baseLen = current < 4 ? 3 : current < 7 ? 4 : 5;
+    const len = baseLen + (round - 1);
+    const baseSpeed = current < 4 ? 700 : current < 7 ? 600 : 520;
+    const speed = Math.max(360, baseSpeed - (round - 1) * 90);
+
+    const usable = pads.slice(0, current < 4 ? 4 : current < 7 ? 6 : 8);
+
+    for (let i=0;i<len;i++) {
+        gameSeq.push(usable[Math.floor(Math.random()*usable.length)]);
+    }
+
+    document.getElementById("status").textContent = `🎧 Round ${round} — Listen!`;
+    gameSeq.forEach((e,i)=>{
+        setTimeout(()=>{
+            flashAvatar(e);
+            playPad(e);
+            if (i===gameSeq.length-1) {
+                setTimeout(()=>{
+                    document.getElementById("status").textContent = "👉 Your turn, music hero!";
+                    isLocked = false;
+                },300);
+            }
+        }, (i+1)*speed);
+    });
+}
+
+function replaySequence() {
+    const data = getData();
+    if ((data.xp||0) < 10) return;
+    data.xp -= 10;
+    saveData(data);
+    renderWorld();
+
+    isLocked = true;
+    document.getElementById("status").textContent = `🔁 Round ${round} — Listen again!`;
+    gameSeq.forEach((e,i)=>{
+        setTimeout(()=>{
+            flashAvatar(e);
+            playPad(e);
+            if (i===gameSeq.length-1) {
+                setTimeout(()=>{
+                    document.getElementById("status").textContent = "👉 Your turn, superstar!";
+                    isLocked = false;
+                },300);
+            }
+        }, (i+1)*650);
+    });
+}
+
+/* -------- INPUT -------- */
+function pressPad(p) {
+    if (isLocked) return;
+    playPad(p);
+    userSeq.push(p);
+    flashAvatar(p);
+
+    const idx = userSeq.length-1;
+    if (userSeq[idx] !== gameSeq[idx]) {
+        failLevel(idx);
+        return;
+    }
+    if (userSeq.length === gameSeq.length) {
+        winLevel();
+    }
+}
+
+/* -------- RESULTS -------- */
+function winLevel() {
+    isLocked = true;
+    const data = getData();
+    const current = data.level || 1;
+    data.xp = (data.xp || 0) + 60;
+
+    if (round < roundsPerLevel) {
+        round += 1;
+        saveData(data);
+        document.getElementById("replay-btn").style.display = "none";
+        cheerBurst();
+        document.getElementById("status").textContent = `🎉 Great job! Round ${round - 1} cleared!`;
+        setTimeout(() => {
+            document.getElementById("status").textContent = `🎧 Round ${round} of ${roundsPerLevel} — Ready?`;
+            setTimeout(startLevel, 400);
+        }, 700);
+        return;
+    }
+
+    data.xp += 120;
+    if (current === data.level || !data.level) data.level = current + 1;
+    saveData(data);
+
+    document.getElementById("status").textContent = "🏆 LEVEL COMPLETE! You are a music star!";
+    document.getElementById("replay-btn").style.display = "none";
+    cheerBurst();
+    fireworks();
+    renderWorld();
+}
+
+function failLevel(i) {
+    isLocked = true;
+    document.getElementById("status").textContent = "❌ Oops! You can do it! Try again!";
+    const correct = gameSeq[i];
+    setTimeout(()=>{
+        flashAvatar(correct,"var(--green)");
+        playPad(correct, { accent: true, dur: 0.7 });
+    },300);
+}
+
+/* -------- FX -------- */
+function flashAvatar(e,color="white") {
+    const a = document.getElementById("avatar");
+    a.textContent = e;
+    a.style.color = color;
+    setTimeout(()=>{
+        a.textContent = avatar;
+        a.style.color = "white";
+    },250);
+}
+
+function fireworks() {
+    const arena = document.getElementById("game-card");
+    for (let i=0;i<10;i++) {
+        setTimeout(()=>{
+            const s = document.createElement("div");
+            s.className = "spark";
+            s.style.left = Math.random()*80+10+"%";
+            s.style.top = Math.random()*50+20+"%";
+            s.style.background = i%2===0?"var(--cyan)":"var(--yellow)";
+            arena.appendChild(s);
+            setTimeout(()=>s.remove(),1000);
+        }, i*70);
+    }
+}
+
+function cheerBurst() {
+    const cheers = [
+        "🎉 Yay! Music hero!",
+        "✨ Woo-hoo! Super sounds!",
+        "🌈 Awesome! Keep the beat!",
+        "🎈 Hooray! You nailed it!",
+        "🦄 Magical! Great ears!"
+    ];
+    const msg = cheers[Math.floor(Math.random()*cheers.length)];
+    document.getElementById("status").textContent = msg;
+
+    const seq = [523.25, 659.25, 783.99];
+    seq.forEach((f, i) => {
+        setTimeout(()=>playOsc(f, "triangle", 0.25), i * 140);
+    });
+}
+
+/* -------- INIT -------- */
+window.onload = renderWorld;
+</script>
+
+</body>
+</html>

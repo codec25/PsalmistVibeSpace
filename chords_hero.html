@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hero Chord Academy | Study Challenge</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Quicksand:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --hero-red: #ff3e3e; --hero-gold: #ffcc00; --hero-blue: #00d2ff;
+            --key-white: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%);
+            --key-black: linear-gradient(180deg, #333 0%, #000 100%);
+        }
+
+        body {
+            margin: 0; font-family: 'Quicksand', sans-serif;
+            background: radial-gradient(circle, #1a1a2e 0%, #080810 100%);
+            color: white; min-height: 100vh; overflow-y: auto; display: flex; flex-direction: column;
+        }
+
+        .header {
+            background: rgba(20, 20, 35, 0.9); border-bottom: 5px solid var(--hero-gold);
+            padding: 20px; position: sticky; top: 0; z-index: 100;
+        }
+
+        .grid-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .grid { display: grid; gap: 10px; }
+        .roots-grid { grid-template-columns: repeat(6, 1fr); }
+        .types-grid { grid-template-columns: repeat(8, 1fr); }
+
+        .btn-tile {
+            width: 45px; height: 45px; border: 3px solid white; border-radius: 50%;
+            font-family: 'Bangers'; font-size: 1rem; cursor: pointer; color: white;
+            transition: all 0.2s; display: flex; align-items: center; justify-content: center; text-shadow: 2px 2px 0 #000;
+        }
+
+        .r-c { background: #ff3e3e; } .r-cs { background: #3a86ff; } .r-d { background: #fb5607; }
+        .r-ds { background: #ffbe0b; } .r-e { background: #8338ec; } .r-f { background: #06d6a0; }
+        .r-fs { background: #ff006e; } .r-g { background: #2ec4b6; } .r-gs { background: #ff9f1c; }
+        .r-a { background: #118ab2; } .r-as { background: #ef476f; } .r-b { background: #073b4c; }
+
+        .btn-tile.selected { transform: scale(1.15); border-color: var(--hero-gold); box-shadow: 0 0 15px var(--hero-gold); }
+        .type-btn { background: #2a2a3a; border-radius: 10px; width: 60px; height: 35px; font-size: 0.7rem; border: 2px solid #444; }
+
+        .stage { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        
+        .challenge-box {
+            background: #283593; border: 4px solid var(--hero-blue); padding: 10px 30px;
+            border-radius: 20px; margin-bottom: 20px; text-align: center;
+        }
+        #challenge-msg { font-family: 'Bangers'; font-size: 1.5rem; color: var(--hero-gold); margin: 0; }
+        #challenge-target { font-size: 2rem; color: #fff; display: block; }
+
+        #hero-signal {
+            font-family: 'Bangers'; font-size: 2.8rem; color: var(--hero-gold);
+            text-shadow: 3px 3px 0 var(--hero-red); margin-bottom: 15px;
+        }
+
+        .piano-outer {
+            background: #800000; padding: 10px 10px 30px 10px; border-radius: 15px;
+            box-shadow: 0 10px 0 #4d0000, 0 20px 40px rgba(0,0,0,0.6);
+            width: 100%; max-width: 900px; border: 4px solid #a00000;
+        }
+
+        .piano { 
+            position: relative; height: 240px;
+            background: #0a0a0a; border-radius: 8px; overflow: hidden;
+            padding: 10px 8px 8px; box-shadow: inset 0 10px 20px rgba(255,255,255,0.05);
+        }
+
+        .white-keys {
+            position: relative; display: flex; height: 100%; z-index: 1;
+        }
+
+        .black-keys {
+            position: absolute; left: 8px; right: 8px; top: 10px;
+            height: 62%; z-index: 3; pointer-events: none;
+        }
+
+        .key {
+            position: relative; cursor: pointer; transition: transform 0.08s, box-shadow 0.08s;
+            display: flex; align-items: flex-end; justify-content: center;
+            font-size: 0.75rem; font-weight: bold; color: #777;
+        }
+
+        .key.white {
+            flex: 1; background: var(--key-white); border: 1px solid #bdbdbd;
+            border-radius: 0 0 8px 8px; margin: 0 1px;
+            box-shadow: inset 0 -12px 0 #e3e3e3, 0 6px 8px rgba(0,0,0,0.25);
+            padding-bottom: 12px;
+        }
+
+        .key.black {
+            background: var(--key-black); height: 100%;
+            position: absolute; z-index: 4; border-radius: 0 0 6px 6px;
+            box-shadow: -2px 8px 8px rgba(0,0,0,0.55), inset 0 -8px 0 #1a1a1a;
+            padding-bottom: 0; color: #ddd;
+            pointer-events: auto;
+        }
+
+        .key.active { background: var(--hero-blue) !important; transform: translateY(4px); box-shadow: inset 0 -2px 0 #008eb0; color: white; }
+        .key.crunch { background: var(--hero-red) !important; transform: translateY(6px); box-shadow: none; color: white; }
+
+        .metro-circle {
+            position: fixed; bottom: 80px; left: 20px; background: rgba(0,0,0,0.7);
+            padding: 10px; border-radius: 40px; border: 2px solid var(--hero-gold);
+            display: flex; gap: 6px; align-items: center; z-index: 50;
+        }
+        .dot { width: 10px; height: 10px; background: #333; border-radius: 50%; }
+        .dot.lit { background: #ff0000; box-shadow: 0 0 10px #ff0000; }
+
+        .footer { background: #0a0a0f; padding: 20px; display: flex; justify-content: center; border-top: 1px solid #222; }
+        .check-btn { 
+            background: var(--hero-gold); color: #000; font-family: 'Bangers'; 
+            font-size: 1.5rem; padding: 10px 40px; border-radius: 50px; border: none; 
+            cursor: pointer; box-shadow: 0 5px 0 #b38f00; transition: 0.1s;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="grid-container">
+        <div class="grid roots-grid" id="roots-box"></div>
+        <div class="grid types-grid" id="types-box"></div>
+    </div>
+</div>
+
+<div class="stage">
+    <div class="challenge-box">
+        <span id="challenge-msg">HERO MISSION: CAN YOU FIND...</span>
+        <span id="challenge-target">C Major</span>
+    </div>
+
+    <div id="hero-signal">SELECT POWER</div>
+    
+    <div class="piano-outer">
+        <div class="piano" id="piano">
+            <div class="white-keys" id="white-keys"></div>
+            <div class="black-keys" id="black-keys"></div>
+        </div>
+    </div>
+</div>
+
+<div class="metro-circle">
+    <div id="t1" class="dot"></div><div id="t2" class="dot"></div>
+    <div id="t3" class="dot"></div><div id="t4" class="dot"></div>
+    <input type="range" id="bpm" min="60" max="180" value="120" oninput="updateBPM()" style="width:60px;">
+</div>
+
+<div class="footer">
+    <button class="check-btn" onclick="checkChallenge()">CHECK MY CHORD ⭐</button>
+</div>
+
+<script>
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const freqs = { 
+        "C": 261.63, "C#": 277.18, "D": 293.66, "D#": 311.13, "E": 329.63, "F": 349.23, "F#": 369.99, "G": 392.00, "G#": 415.30, "A": 440.00, "A#": 466.16, "B": 493.88,
+        "C2": 523.25, "C#2": 554.37, "D2": 587.33, "D#2": 622.25, "E2": 659.25, "F2": 698.46, "F#2": 739.99, "G2": 783.99, "G#2": 830.61, "A2": 880.00, "A#2": 932.33, "B2": 987.77
+    };
+    
+    let state = { root: 'C', type: 'ma', bpm: 120, beat: 0 };
+    let currentChallenge = { root: 'C', type: 'ma' };
+
+    function init() {
+        const rBox = document.getElementById('roots-box');
+        notes.forEach((n, i) => {
+            const b = document.createElement('button');
+            b.className = `btn-tile r-${n.toLowerCase().replace('#','s')}`; b.innerText = n;
+            b.onclick = () => { state.root = n; updateUI(); playChord(); };
+            rBox.appendChild(b);
+        });
+
+        const types = ['ma', 'm', '7', 'ma7', 'm7', 'dim', 'sus4', 'sus2'];
+        const tBox = document.getElementById('types-box');
+        types.forEach(t => {
+            const b = document.createElement('button');
+            b.className = 'btn-tile type-btn'; b.innerText = t;
+            b.onclick = () => { state.type = t; updateUI(); playChord(); };
+            tBox.appendChild(b);
+        });
+
+        buildPiano();
+        startMetro();
+        newChallenge();
+    }
+
+    function newChallenge() {
+        const r = notes[Math.floor(Math.random() * notes.length)];
+        const t = ['ma', 'm', '7'][Math.floor(Math.random() * 3)];
+        currentChallenge = { root: r, type: t };
+        document.getElementById('challenge-target').innerText = `${r} ${t.toUpperCase()}`;
+    }
+
+    function checkChallenge() {
+        if (state.root === currentChallenge.root && state.type === currentChallenge.type) {
+            alert("CORRECT! MISSION ACCOMPLISHED! ⭐");
+            newChallenge();
+        } else {
+            alert(`Not quite! That was ${state.root} ${state.type.toUpperCase()}. Try to find ${currentChallenge.root} ${currentChallenge.type.toUpperCase()}!`);
+        }
+    }
+
+    function buildPiano() {
+        const whiteBox = document.getElementById('white-keys');
+        const blackBox = document.getElementById('black-keys');
+        whiteBox.innerHTML = '';
+        blackBox.innerHTML = '';
+
+        const whiteKeys = ["C","D","E","F","G","A","B","C2","D2","E2","F2","G2","A2","B2"];
+        const blackKeys = [
+            { n: "C#", pos: 0 }, { n: "D#", pos: 1 },
+            { n: "F#", pos: 3 }, { n: "G#", pos: 4 }, { n: "A#", pos: 5 },
+            { n: "C#2", pos: 7 }, { n: "D#2", pos: 8 },
+            { n: "F#2", pos: 10 }, { n: "G#2", pos: 11 }, { n: "A#2", pos: 12 }
+        ];
+
+        const totalWhiteKeys = whiteKeys.length;
+        const whiteWidth = 100 / totalWhiteKeys;
+        const blackWidth = whiteWidth * 0.62;
+
+        whiteKeys.forEach(n => {
+            const d = document.createElement('div');
+            d.className = 'key white';
+            d.id = 'k-' + n.replace('#', 's');
+            d.innerText = n.replace('2', '');
+            whiteBox.appendChild(d);
+        });
+
+        blackKeys.forEach(k => {
+            const d = document.createElement('div');
+            d.className = 'key black';
+            d.id = 'k-' + k.n.replace('#', 's');
+            d.style.width = blackWidth + '%';
+            d.style.left = ((k.pos + 1) * whiteWidth - (blackWidth / 2)) + '%';
+            blackBox.appendChild(d);
+        });
+    }
+
+    function playChord(isCrunch = false) {
+        if(!audioCtx) audioCtx = new AudioContext();
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        document.querySelectorAll('.key').forEach(k => k.classList.remove('active', 'crunch'));
+        
+        const formulas = { 'ma': [0, 4, 7], 'm': [0, 3, 7], '7': [0, 4, 7, 10], 'ma7': [0, 4, 7, 11], 'm7': [0, 3, 7, 10], 'dim': [0, 3, 6], 'sus4': [0, 5, 7], 'sus2': [0, 2, 7] };
+        const intervals = formulas[state.type] || [0, 4, 7];
+        const rootIdx = notes.indexOf(state.root);
+        const allNoteNames = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B","C2","C#2","D2","D#2","E2","F2","F#2","G2","G#2","A2","A#2","B2"];
+
+        intervals.forEach(interval => {
+            const targetNote = allNoteNames[rootIdx + interval];
+            if(targetNote && freqs[targetNote]) {
+                const keyEl = document.getElementById('k-' + targetNote.replace('#', 's'));
+                if(keyEl) keyEl.classList.add(isCrunch ? 'crunch' : 'active');
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.type = isCrunch ? 'sawtooth' : 'sine';
+                osc.frequency.value = freqs[targetNote];
+                g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1);
+                osc.connect(g).connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 1);
+            }
+        });
+    }
+
+    function updateUI() {
+        document.getElementById('hero-signal').innerText = `${state.root} ${state.type.toUpperCase()}`;
+        document.querySelectorAll('.btn-tile').forEach(b => {
+            b.classList.remove('selected');
+            if(b.innerText === state.root || b.innerText === state.type) b.classList.add('selected');
+        });
+    }
+
+    function startMetro() {
+        setInterval(() => {
+            document.querySelectorAll('.dot').forEach(d => d.classList.remove('lit'));
+            state.beat = (state.beat % 4) + 1;
+            const dot = document.getElementById('t' + state.beat);
+            if(dot) dot.classList.add('lit');
+        }, 60000 / state.bpm);
+    }
+
+    function updateBPM() { state.bpm = document.getElementById('bpm').value; }
+    window.onkeydown = (e) => { if(e.key === "ArrowDown") { e.preventDefault(); playChord(true); } };
+    init();
+</script>
+</body>
+</html>
