@@ -30,7 +30,7 @@
         }
 
         .musical-header { font-size: 1.5rem; color: var(--gold); margin-bottom: 10px; letter-spacing: 15px; opacity: 0.8; }
-        h2 { font-size: 1.1rem; letter-spacing: 8px; margin-bottom: 40px; color: var(--green); transition: 0.4s; }
+        h2 { font-size: 1.1rem; letter-spacing: 8px; margin-bottom: 40px; color: var(--green); transition: 0.4s; text-transform: uppercase; }
 
         .input-group { margin-bottom: 20px; text-align: left; position: relative; }
         .input-group label { display: block; font-size: 0.55rem; color: #444; margin-bottom: 8px; letter-spacing: 1px; }
@@ -57,15 +57,19 @@
         .btn-main { background: var(--green); color: #000; }
         .btn-main:hover { background: #fff; transform: scale(1.02); }
 
-        .sub-links { margin-top: 30px; display: flex; flex-direction: column; gap: 15px; }
+        .sub-links { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
         
         .link { 
             color: #444; font-size: 0.6rem; text-decoration: none; cursor: pointer; 
             letter-spacing: 2px; transition: 0.3s; text-transform: uppercase;
         }
         .link:hover { color: var(--gold); }
-        .link.sensei-toggle { color: #2a3a5a; font-weight: bold; padding: 10px; border: 1px solid #111; border-radius: 10px; display: inline-block; }
-        .link.sensei-toggle:hover { color: var(--blue); border-color: var(--blue); }
+        
+        /* Specialized Link Styles */
+        .sensei-toggle { color: #2a3a5a; font-weight: bold; padding: 10px; border: 1px solid #111; border-radius: 10px; margin-top: 10px; }
+        .sensei-toggle:hover { color: var(--blue); border-color: var(--blue); }
+        .guest-link { color: var(--gold); border: 1px solid rgba(255,204,0,0.2); padding: 8px; border-radius: 8px; }
+        .guest-link:hover { background: rgba(255,204,0,0.1); }
 
         #err-log { color: var(--red); font-size: 0.65rem; margin-top: 20px; display: none; font-weight: bold; text-shadow: 0 0 5px var(--red); }
 
@@ -76,7 +80,6 @@
 
         @keyframes floatUp {
             0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-            50% { opacity: 0.2; }
             100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
         }
     </style>
@@ -100,48 +103,43 @@
         <button class="btn btn-main" id="main-btn" onclick="executeAuth()">INITIALIZE</button>
 
         <div class="sub-links">
-            <a class="link" onclick="requestHelp()" style="color: var(--red); font-size: 0.5rem; margin-bottom: 5px;">FORGOT_ID?_SIGNAL_SENSEI</a>
-            <a class="link" onclick="guestEntry()" style="color: var(--gold); border: 1px solid rgba(255,204,0,0.2); padding: 5px; border-radius: 5px;">GUEST_ENTRY (TEMP)</a>
+            <a class="link" onclick="requestHelp()" style="color: var(--red);">FORGOT_ID?_SIGNAL_SENSEI</a>
+            <a class="link guest-link" onclick="guestEntry()">GUEST_ENTRY (TEMP)</a>
             <a class="link sensei-toggle" id="mode-toggle" onclick="toggleSenseiMode()">ARE YOU A SENSEI?</a>
         </div>
 
-        <div id="err-log">INVALID_CREDENTIALS // ACCESS_DENIED</div>
+        <div id="err-log">ACCESS_DENIED // INVALID_CREDENTIALS</div>
     </div>
 
     <script>
         let isSenseiMode = false;
 
-        // --- NEW: SYSTEM INITIALIZER ---
-        // This ensures the database exists so IT_MANAGER can write to it!
+        // --- HARD-CODED MASTER OVERRIDE ---
+        const MASTER_ID = "ADMIN_1";
+        const MASTER_PASS = "MASTER_ROOT_2026";
+
+        // Initialize Database on load to prevent login failures
         window.onload = () => {
-            if (!localStorage.getItem('vault_users')) {
-                const initialVault = {
-                    teachers: {},
-                    AUDIT_LOG: [{time: new Date().toLocaleTimeString(), user: "SYSTEM", status: "KERNEL_INITIALIZED"}],
-                    IT_MASTER_ID: "ADMIN_1",
-                    IT_MASTER_PASS: "MASTER_ROOT_2026"
-                };
-                localStorage.setItem('vault_users', JSON.stringify(initialVault));
-                console.log("System Vault Initialized.");
+            let vault = JSON.parse(localStorage.getItem('vault_users')) || {};
+            if (!vault.teachers) {
+                vault.teachers = {};
+                vault.AUDIT_LOG = vault.AUDIT_LOG || [];
+                localStorage.setItem('vault_users', JSON.stringify(vault));
             }
         };
 
-        // Key Listeners
+        // Keyboard Listener
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') executeAuth();
             
-            // ADMIN BACKDOOR
-            if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+            // Secret IT Shortcut: CTRL + SHIFT + L
+            if (e.ctrlKey && e.shiftKey && (e.key === 'L' || e.key === 'l')) {
                 e.preventDefault();
-                const vault = JSON.parse(localStorage.getItem('vault_users'));
-                const itID = prompt("ENTER_IT_ID:");
-                const itPass = prompt("ENTER_IT_PASS:");
-                
-                if (itID === vault.IT_MASTER_ID && itPass === vault.IT_MASTER_PASS) {
+                const itID = prompt("ROOT_AUTH_ID:");
+                const itPass = prompt("ROOT_AUTH_PASS:");
+                if (itID && itID.toUpperCase() === MASTER_ID && itPass === MASTER_PASS) {
                     localStorage.setItem('it_active', 'true');
                     window.location.href = 'it_manager.html';
-                } else {
-                    alert("ACCESS_DENIED");
                 }
             }
         });
@@ -151,65 +149,74 @@
             passInput.type = passInput.type === "password" ? "text" : "password";
         }
 
-        function requestHelp() {
-            const name = prompt("ENTER YOUR FULL NAME TO ALERT SENSEI:");
-            if(name) {
-                const helpMsg = { 
-                    message: `SOS: ${name.toUpperCase()} HAS FORGOTTEN THEIR IDENTITY_CODE.`, 
-                    type: 'ALERT', 
-                    timestamp: Date.now() 
-                };
-                localStorage.setItem('system_broadcast', JSON.stringify(helpMsg));
-                alert("SIGNAL_SENT. WAIT FOR SENSEI INSTRUCTIONS.");
+        function toggleSenseiMode() {
+            isSenseiMode = !isSenseiMode;
+            const title = document.getElementById('portal-title');
+            const btn = document.getElementById('main-btn');
+            
+            title.innerText = isSenseiMode ? "SENSEI_VAULT" : "NINJA_PORTAL";
+            title.style.color = isSenseiMode ? "var(--blue)" : "var(--green)";
+            btn.innerText = isSenseiMode ? "DECRYPT_SENSEI" : "INITIALIZE";
+            btn.style.background = isSenseiMode ? "var(--blue)" : "var(--green)";
+        }
+
+        function executeAuth() {
+            const rawId = document.getElementById('u-id').value.trim();
+            const passInput = document.getElementById('u-pass').value.trim();
+            const id = rawId.toUpperCase();
+
+            // 1. MASTER ADMIN BYPASS
+            if (id === MASTER_ID && passInput === MASTER_PASS) {
+                localStorage.setItem('it_active', 'true');
+                window.location.href = 'it_manager.html';
+                return;
+            }
+
+            // 2. LOAD DATABASES
+            const vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+            const ninjaRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+
+            if (isSenseiMode) {
+                // SENSEI LOGIN CHECK
+                if (vault.teachers && vault.teachers[id] === passInput) {
+                    localStorage.setItem('ninjaUser', id);
+                    localStorage.setItem('userType', 'SENSEI');
+                    window.location.href = 'sensei_dash.html';
+                } else {
+                    showError();
+                }
+            } else {
+                // NINJA LOGIN CHECK
+                if (ninjaRoster[id] && ninjaRoster[id].pass === passInput) {
+                    localStorage.setItem('ninjaUser', id);
+                    localStorage.setItem('userType', 'MEMBER');
+                    window.location.href = 'hub.html';
+                } else {
+                    showError();
+                }
             }
         }
 
         function guestEntry() {
             const guestID = "GUEST_" + Math.floor(1000 + Math.random() * 9000);
-            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-            roster[guestID] = { xp: 0, status: "LEVEL 01 ACADEMY", type: "GUEST", pass: "1234" };
-            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
             localStorage.setItem('ninjaUser', guestID);
             localStorage.setItem('userType', 'GUEST');
             window.location.href = 'hub.html';
         }
 
-        function toggleSenseiMode() {
-            isSenseiMode = !isSenseiMode;
-            const title = document.getElementById('portal-title');
-            const btn = document.getElementById('main-btn');
-            const toggle = document.getElementById('mode-toggle');
-            title.innerText = isSenseiMode ? "SENSEI_VAULT" : "NINJA_PORTAL";
-            title.style.color = isSenseiMode ? "var(--blue)" : "var(--green)";
-            btn.style.background = isSenseiMode ? "var(--blue)" : "var(--green)";
-            btn.innerText = isSenseiMode ? "DECRYPT_SENSEI" : "INITIALIZE";
-            toggle.innerText = isSenseiMode ? "RETURN_TO_NINJA_PORTAL" : "ARE YOU A SENSEI?";
-        }
-
-        function executeAuth() {
-            const id = document.getElementById('u-id').value.trim().toUpperCase();
-            const pass = document.getElementById('u-pass').value.trim();
-            const vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
-            const ninjaRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-
-            if (isSenseiMode) {
-                if (vault.teachers && vault.teachers[id] === pass) {
-                    localStorage.setItem('ninjaUser', id);
-                    localStorage.setItem('userType', 'SENSEI');
-                    window.location.href = 'sensei_dash.html';
-                } else showError();
-            } else {
-                if (ninjaRoster[id] && ninjaRoster[id].pass === pass) {
-                    localStorage.setItem('ninjaUser', id);
-                    localStorage.setItem('userType', 'MEMBER');
-                    window.location.href = 'hub.html';
-                } else showError();
-            }
-        }
-
         function showError() {
-            document.getElementById('err-log').style.display = "block";
-            setTimeout(() => { document.getElementById('err-log').style.display = "none"; }, 3000);
+            const errorDiv = document.getElementById('err-log');
+            const card = document.getElementById('card');
+            errorDiv.style.display = "block";
+            // Visual Shake
+            card.style.transform = "translateX(8px)";
+            setTimeout(() => card.style.transform = "translateX(-8px)", 50);
+            setTimeout(() => card.style.transform = "translateX(0)", 100);
+            setTimeout(() => { errorDiv.style.display = "none"; }, 3000);
+        }
+
+        function requestHelp() {
+            alert("EMERGENCY SIGNAL SENT TO SENSEI NETWORK.");
         }
 
         // Particle FX
