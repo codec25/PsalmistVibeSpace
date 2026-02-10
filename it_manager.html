@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IT_MANAGER // Central Overwatch</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>IT_MANAGER // Bash Sovereign</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
     <style>
         :root { 
             --bg: #010204; --panel: rgba(7, 10, 17, 0.98); 
@@ -13,254 +13,288 @@
         }
 
         body { 
-            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Fira Code', monospace; 
             display: flex; flex-direction: column; align-items: center; min-height: 100vh;
             background-image: radial-gradient(circle at 50% 50%, #0a1324 0%, #010204 100%);
-            padding: 30px; overflow-x: hidden;
+            padding: 20px; overflow: hidden;
         }
 
-        .manager-container { width: 100%; max-width: 1300px; }
-
-        header {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 25px;
+        /* BOOT OVERLAY */
+        #boot-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: black; z-index: 1000; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; font-family: 'Fira Code';
+            color: var(--green); transition: opacity 1s ease;
         }
 
-        .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .manager-container { width: 100%; max-width: 1400px; display: grid; grid-template-columns: 1fr 350px; gap: 20px; height: 90vh; }
 
-        .panel { 
-            background: var(--panel); border: 1px solid var(--border); 
-            padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            display: flex; flex-direction: column;
+        .terminal-window {
+            background: #000; border: 1px solid var(--border); border-radius: 10px;
+            display: flex; flex-direction: column; height: 100%; box-shadow: 0 0 40px rgba(0,0,0,0.8);
         }
 
-        h3 { font-size: 0.7rem; color: var(--blue); letter-spacing: 3px; margin: 0 0 15px 0; text-transform: uppercase; border-bottom: 1px solid #111; padding-bottom: 10px; }
+        .term-header { background: #1a1a2e; padding: 10px 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        .term-body { flex: 1; padding: 20px; overflow-y: auto; font-size: 0.85rem; line-height: 1.5; color: #d1d1d1; }
+        .term-input-area { display: flex; background: #050505; padding: 15px 20px; border-top: 1px solid #222; }
 
-        /* Terminal Styling */
-        .terminal {
-            height: 280px; overflow-y: auto; background: #000; border: 1px solid #111;
-            padding: 15px; font-family: 'Courier New', monospace; font-size: 0.75rem;
-            line-height: 1.4; color: var(--green); margin-bottom: 10px;
-            box-shadow: inset 0 0 10px rgba(0,255,136,0.1);
-        }
+        .sidebar { display: flex; flex-direction: column; gap: 15px; }
+        .panel { background: var(--panel); border: 1px solid var(--border); padding: 15px; border-radius: 12px; }
+        h3 { font-family: 'Orbitron'; font-size: 0.65rem; color: var(--blue); letter-spacing: 2px; margin: 0 0 10px 0; border-bottom: 1px solid #111; padding-bottom: 5px; }
 
-        .term-input-line { display: flex; align-items: center; background: #000; border: 1px solid var(--border); padding: 8px 12px; border-radius: 5px; }
-        .term-prompt { color: var(--blue); margin-right: 10px; font-weight: bold; }
-        .term-field { flex: 1; background: transparent; border: none; color: #fff; font-family: 'Courier New'; outline: none; }
-
-        /* Buttons */
-        .btn {
-            padding: 12px; background: transparent; border: 1px solid var(--blue);
-            color: var(--blue); font-family: 'Orbitron'; cursor: pointer; border-radius: 8px;
-            font-size: 0.6rem; transition: 0.3s; font-weight: 900; margin-top: 5px;
-        }
-        .btn:hover { background: var(--blue); color: #000; box-shadow: 0 0 15px var(--blue); }
-        .btn-red { border-color: var(--red); color: var(--red); }
-        .btn-red:hover { background: var(--red); color: #fff; box-shadow: 0 0 15px var(--red); }
-        .btn-gold { border-color: var(--gold); color: var(--gold); }
-        .btn-gold:hover { background: var(--gold); color: #000; }
-
-        input, textarea {
-            width: 100%; background: #000; border: 1px solid var(--border); 
-            color: #fff; padding: 10px; font-family: 'Orbitron'; font-size: 0.7rem; border-radius: 5px; margin-bottom: 10px;
-        }
-
-        .stat-line { display: flex; justify-content: space-between; font-size: 0.65rem; margin-bottom: 8px; color: #7788aa; }
-        .log-sos { color: var(--red); font-weight: 900; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
+        .prompt { color: var(--green); font-weight: bold; margin-right: 8px; }
+        .path { color: var(--blue); margin-right: 5px; }
+        .cmd-input { flex: 1; background: transparent; border: none; color: #fff; font-family: 'Fira Code'; outline: none; }
+        .out-err { color: var(--red); }
+        .out-suc { color: var(--gold); }
+        .dir { color: var(--blue); font-weight: bold; }
+        
+        .btn { width: 100%; padding: 10px; margin-bottom: 5px; background: transparent; border: 1px solid var(--border); color: #fff; font-family: 'Orbitron'; font-size: 0.6rem; cursor: pointer; border-radius: 5px; transition: 0.3s; }
+        .btn:hover { background: var(--blue); color: #000; }
     </style>
 </head>
 <body>
 
+    <div id="boot-overlay">
+        <div id="boot-text" style="width: 400px; font-size: 0.8rem;"></div>
+    </div>
+
     <div class="manager-container">
-        <header>
-            <div>
-                <h1 style="font-size: 1.2rem; letter-spacing: 5px; margin:0;">SYSTEM_OVERWATCH_v6</h1>
-                <div id="status-tag" style="font-size: 0.6rem; color: var(--green); margin-top:5px;">ROOT_ACCESS_GRANTED</div>
+        <div class="terminal-window">
+            <div class="term-header">
+                <span style="font-family:'Orbitron'; font-size:0.6rem; letter-spacing:2px; color:var(--gold);">HARMONY_BASH_v7.1</span>
+                <span style="font-size: 0.7rem; color: #555;">AUDIO: ACTIVE // TAB: ENABLED // HIST: ENABLED</span>
             </div>
-            <button class="btn btn-red" onclick="terminateSession()">TERMINATE_SESSION</button>
-        </header>
+            <div class="term-body" id="term-body"></div>
+            <div class="term-input-area">
+                <span class="prompt">root@harmony:</span>
+                <span class="path" id="current-path">~</span>
+                <span style="color:white; margin-right:10px;">$</span>
+                <input type="text" id="cmd-field" class="cmd-input" autofocus autocomplete="off">
+            </div>
+        </div>
 
-        <div class="grid">
+        <div class="sidebar">
             <div class="panel">
-                <h3>SENSEI_TERMINAL</h3>
-                <div class="terminal" id="term-display">
-                    <div>-- ROOT_PROVISION_SYSTEM --</div>
-                    <div style="color: #555;">Type 'help' for commands</div>
-                </div>
-                <div class="term-input-line">
-                    <span class="term-prompt">></span>
-                    <input type="text" id="term-input" class="term-field" placeholder="Enter Command..." onkeydown="handleTerminal(event)">
-                </div>
+                <h3>SENSEI_PROVISION</h3>
+                <button class="btn" onclick="injectCmd('provision SENSEI_')">NEW_SENSEI_STUB</button>
             </div>
-
-            <div class="panel" style="grid-column: span 2;">
-                <h3>LIVE_AUDIT_LOG // SYSTEM_PULSE</h3>
-                <div class="terminal" id="audit-log" style="height: 335px;"></div>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn" style="flex:1" onclick="renderLogs()">REFRESH</button>
-                    <button class="btn btn-red" style="flex:1" onclick="clearLogs()">WIPE_LOGS</button>
-                </div>
-            </div>
-
             <div class="panel">
-                <h3>REMOTE_INTERVENTION</h3>
-                <button class="btn btn-red" style="width:100%" onclick="toggleSystemLock()">TOGGLE_GLOBAL_LOCK</button>
-                <div style="margin-top:15px; border-top: 1px solid #111; padding-top:15px;">
-                    <button class="btn btn-gold" style="width:100%" onclick="triggerSFX('horn')">AIR_HORN_BLAST</button>
-                    <button class="btn btn-gold" style="width:100%" onclick="triggerSFX('battle')">BATTLE_ALARM</button>
-                </div>
+                <h3>SYSTEM_STATE</h3>
+                <button class="btn" onclick="executeBash('top')">VIEW_LOGS</button>
+                <button class="btn" onclick="executeBash('clear')">CLEAR_SCREEN</button>
             </div>
-
-            <div class="panel">
-                <h3>NINJA_INTERDICTION</h3>
-                <input type="text" id="target-id" placeholder="NINJA_ID (e.g. USER_123)">
-                <button class="btn btn-red" style="width:100%" onclick="freezeUser()">FREEZE_USER</button>
-                <button class="btn" style="width:100%" onclick="unfreezeUser()">RESTORE_USER</button>
-            </div>
-
-            <div class="panel">
-                <h3>NEURAL_BROADCAST</h3>
-                <textarea id="broadcast-msg" placeholder="MESSAGE_CONTENT..."></textarea>
-                <button class="btn btn-gold" style="width:100%" onclick="sendBroadcast('ALERT')">SEND_ALERT</button>
-                <button class="btn btn-red" style="width:100%" onclick="sendBroadcast('CRITICAL')">CRITICAL_OVERRIDE</button>
-            </div>
+            <button class="btn" style="margin-top:auto; border-color:var(--red); color:var(--red);" onclick="terminate()">LOGOUT</button>
         </div>
     </div>
 
     <script>
-        // Security Gate
-        if (localStorage.getItem('it_active') !== 'true') {
-            window.location.href = 'index.html';
+        if (localStorage.getItem('it_active') !== 'true') window.location.href = 'index.html';
+
+        const termBody = document.getElementById('term-body');
+        const cmdField = document.getElementById('cmd-field');
+        const pathLabel = document.getElementById('current-path');
+        const bootOverlay = document.getElementById('boot-overlay');
+        const bootText = document.getElementById('boot-text');
+
+        // --- AUDIO ENGINE ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep(freq = 400, dur = 0.05, type = 'sine') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + dur);
         }
 
-        const termDisplay = document.getElementById('term-display');
+        // --- BOOT SEQUENCE ---
+        const bootLines = [
+            "INITIALIZING HARMONY_OS KERNEL...",
+            "LOADING VFS /ROOT... SUCCESS",
+            "ESTABLISHING NEURAL LINK... OK",
+            "BYPASSING SECURITY FIREWALLS...",
+            "ACCESS GRANTED: ROOT_USER",
+            "WELCOME BACK, MASTER."
+        ];
 
-        function writeToTerm(msg, color = 'var(--green)') {
-            termDisplay.innerHTML += `<div style="color:${color}">${msg}</div>`;
-            termDisplay.scrollTop = termDisplay.scrollHeight;
+        async function runBoot() {
+            for (let line of bootLines) {
+                bootText.innerHTML += `> ${line}<br>`;
+                playBeep(600, 0.03);
+                await new Promise(r => setTimeout(r, 400));
+            }
+            setTimeout(() => {
+                bootOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    bootOverlay.style.display = 'none';
+                    print("* Welcome to the Root Terminal.", 'suc');
+                    print("* [UP_ARROW] for history, [TAB] to complete names.", 'res');
+                    playBeep(800, 0.1, 'square');
+                }, 1000);
+            }, 500);
         }
 
-        // Terminal Logic
-        function handleTerminal(e) {
-            if (e.key === 'Enter') {
-                const input = e.target.value.trim();
-                e.target.value = "";
-                if (!input) return;
+        window.onload = runBoot;
 
-                writeToTerm(`admin@root:~$ ${input}`, '#fff');
-                const parts = input.split(' ');
-                const cmd = parts[0].toLowerCase();
+        // --- BASH MEMORY ---
+        let currentDir = "/root";
+        let commandHistory = [];
+        let historyIndex = -1;
 
-                let vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+        const VFS = {
+            "/": ["root", "home", "sys", "bin"],
+            "/root": ["config.sys", "master_key.pub", "passwords.txt"],
+            "/home": ["ninjas", "senseis"],
+            "/sys": ["logs", "kernel_v7", "lock_state"]
+        };
 
-                switch(cmd) {
-                    case 'help':
-                        writeToTerm("COMMANDS: provision [id] [pass], list, clear, revoke [id]");
-                        break;
-                    case 'clear':
-                        termDisplay.innerHTML = "";
-                        break;
-                    case 'list':
-                        const teachers = vault.teachers || {};
-                        Object.keys(teachers).forEach(t => writeToTerm(`> SENSEI: ${t}`));
-                        break;
-                    case 'provision':
-                        if(parts.length < 3) return writeToTerm("ERROR: [ID] [PASS] REQ", 'var(--red)');
-                        vault.teachers[parts[1].toUpperCase()] = parts[2];
-                        localStorage.setItem('vault_users', JSON.stringify(vault));
-                        writeToTerm(`SUCCESS: ${parts[1]} PROVISIONED`, 'var(--gold)');
-                        logAction(`NEW_SENSEI_CREATED: ${parts[1]}`);
-                        break;
-                    case 'revoke':
-                        delete vault.teachers[parts[1].toUpperCase()];
-                        localStorage.setItem('vault_users', JSON.stringify(vault));
-                        writeToTerm(`REVOKED: ${parts[1]}`, 'var(--red)');
-                        break;
-                    default:
-                        writeToTerm("UNKNOWN COMMAND", 'var(--red)');
+        const COMMANDS = ["help", "ls", "cd", "clear", "provision", "cat", "top", "sudo", "whoami"];
+
+        // --- KEYBOARD LOGIC (TAB & UP ARROW) ---
+        cmdField.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                playBeep(300, 0.02);
+                handleTabCompletion();
+            } 
+            else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (commandHistory.length > 0) {
+                    if (historyIndex < commandHistory.length - 1) {
+                        historyIndex++;
+                        cmdField.value = commandHistory[historyIndex];
+                        playBeep(500, 0.02);
+                    }
+                }
+            } 
+            else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    cmdField.value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = -1;
+                    cmdField.value = "";
+                }
+            }
+            else if (e.key === 'Enter') {
+                const val = cmdField.value.trim();
+                if (val) {
+                    commandHistory.unshift(val);
+                    historyIndex = -1;
+                    executeBash(val);
+                }
+                cmdField.value = "";
+            }
+        });
+
+        function handleTabCompletion() {
+            const input = cmdField.value.toLowerCase();
+            const parts = input.split(' ');
+            const lastPart = parts[parts.length - 1];
+
+            if (parts.length === 1) {
+                const matches = COMMANDS.filter(c => c.startsWith(lastPart));
+                if (matches.length === 1) cmdField.value = matches[0];
+            } else {
+                let pool = VFS[currentDir] || [];
+                if (currentDir === "/home/senseis") {
+                    const vault = JSON.parse(localStorage.getItem('vault_users')) || {teachers:{}};
+                    pool = Object.keys(vault.teachers);
+                }
+                const matches = pool.filter(item => item.toLowerCase().startsWith(lastPart));
+                if (matches.length === 1) {
+                    parts[parts.length - 1] = matches[0];
+                    cmdField.value = parts.join(' ');
                 }
             }
         }
 
-        // Action Logic
-        function toggleSystemLock() {
-            const current = localStorage.getItem('global_system_lock') === 'true';
-            localStorage.setItem('global_system_lock', !current);
-            logAction(`SYSTEM_LOCK: ${!current ? 'ENGAGED' : 'DISENGAGED'}`);
+        // --- CORE BASH ENGINE ---
+        function print(msg, type = 'res') {
+            const div = document.createElement('div');
+            div.className = `out-${type}`;
+            div.innerHTML = msg;
+            termBody.appendChild(div);
+            termBody.scrollTop = termBody.scrollHeight;
+            playBeep(450, 0.01);
         }
 
-        function triggerSFX(type) {
-            localStorage.setItem('sfx_trigger', type);
-            logAction(`REMOTE_SFX: ${type.toUpperCase()}`);
-        }
+        function executeBash(input) {
+            print(`root@harmony:${currentDir}$ ${input}`, 'cmd');
+            const parts = input.split(' ');
+            const cmd = parts[0].toLowerCase();
+            const args = parts.slice(1);
 
-        function freezeUser() {
-            const id = document.getElementById('target-id').value.trim().toUpperCase();
-            if(!id) return;
-            localStorage.setItem(`freeze_${id}`, 'true');
-            logAction(`USER_FROZEN: ${id}`);
-        }
+            let vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {}, AUDIT_LOG: [] };
 
-        function unfreezeUser() {
-            const id = document.getElementById('target-id').value.trim().toUpperCase();
-            if(!id) return;
-            localStorage.removeItem(`freeze_${id}`);
-            logAction(`USER_UNFROZEN: ${id}`);
-        }
+            switch(cmd) {
+                case 'ls':
+                    let items = VFS[currentDir] || [];
+                    if (currentDir === "/home/senseis") items = Object.keys(vault.teachers);
+                    const output = items.map(i => i.includes('.') ? `<span>${i}</span>` : `<span class="dir">${i}/</span>`).join('  ');
+                    print(output || "total 0");
+                    break;
 
-        function sendBroadcast(type) {
-            const msg = document.getElementById('broadcast-msg').value;
-            if(!msg) return;
-            localStorage.setItem('system_broadcast', JSON.stringify({ message: msg, type: type, timestamp: Date.now() }));
-            logAction(`BROADCAST: ${type}`);
-            document.getElementById('broadcast-msg').value = "";
-        }
+                case 'cd':
+                    const target = args[0];
+                    if (!target || target === "~") currentDir = "/root";
+                    else if (target === "..") {
+                        const bits = currentDir.split('/'); bits.pop();
+                        currentDir = bits.join('/') || "/";
+                    } else {
+                        const newPath = currentDir === "/" ? `/${target}` : `${currentDir}/${target}`;
+                        if (VFS[newPath] || newPath === "/home/senseis") currentDir = newPath;
+                        else print(`bash: cd: ${target}: No such directory`, 'err');
+                    }
+                    pathLabel.innerText = currentDir.replace("/root", "~");
+                    break;
 
-        function logAction(status) {
-            let db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
-            db.AUDIT_LOG = db.AUDIT_LOG || [];
-            db.AUDIT_LOG.unshift({ time: new Date().toLocaleTimeString(), user: "ROOT", status: status });
-            localStorage.setItem('vault_users', JSON.stringify(db));
-            renderLogs();
-        }
+                case 'provision':
+                    if(args.length < 2) return print("usage: provision <id> <pass>", 'err');
+                    vault.teachers[args[0].toUpperCase()] = args[1];
+                    localStorage.setItem('vault_users', JSON.stringify(vault));
+                    logAction(vault, `PROVISIONED: ${args[0]}`);
+                    print(`SENSEI ${args[0]} has been authorized.`, 'suc');
+                    playBeep(1000, 0.2);
+                    break;
 
-        function renderLogs() {
-            const logContainer = document.getElementById('audit-log');
-            const db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
-            
-            // Catch SOS from index.html
-            const sos = JSON.parse(localStorage.getItem('system_broadcast'));
-            if(sos && sos.message.includes("SOS:")) {
-                const alreadyLogged = db.AUDIT_LOG.some(l => l.status.includes(sos.message));
-                if(!alreadyLogged) {
-                    db.AUDIT_LOG.unshift({ time: new Date().toLocaleTimeString(), user: "SYSTEM", status: `<span class="log-sos">${sos.message}</span>` });
-                    localStorage.setItem('vault_users', JSON.stringify(db));
-                }
+                case 'top':
+                    print("--- SYSTEM_PULSE ---");
+                    vault.AUDIT_LOG.slice(0, 5).forEach(l => print(`[${l.time}] ${l.status}`));
+                    break;
+
+                case 'clear':
+                    termBody.innerHTML = "";
+                    break;
+
+                case 'help':
+                    print("Try: ls, cd, provision, top, cat, clear. Use [TAB] to finish names!");
+                    break;
+
+                default:
+                    print(`bash: ${cmd}: command not found`, 'err');
             }
-
-            logContainer.innerHTML = (db.AUDIT_LOG || []).map(entry => `
-                <div style="margin-bottom:8px; border-bottom:1px solid #111; padding-bottom:4px; font-size:0.7rem;">
-                    <span style="color:#444;">[${entry.time}]</span> 
-                    <span style="color:var(--blue); font-weight:bold;">${entry.user}</span>: ${entry.status}
-                </div>
-            `).join('');
         }
 
-        function terminateSession() {
+        function logAction(vault, status) {
+            vault.AUDIT_LOG.unshift({ time: new Date().toLocaleTimeString(), user: "ROOT", status: status });
+            localStorage.setItem('vault_users', JSON.stringify(vault));
+        }
+
+        function injectCmd(txt) {
+            cmdField.value = txt;
+            cmdField.focus();
+        }
+
+        function terminate() {
             localStorage.removeItem('it_active');
             window.location.href = 'index.html';
         }
-
-        function clearLogs() {
-            let db = JSON.parse(localStorage.getItem('vault_users')) || {};
-            db.AUDIT_LOG = [];
-            localStorage.setItem('vault_users', JSON.stringify(db));
-            renderLogs();
-        }
-
-        setInterval(renderLogs, 3000);
-        window.onload = renderLogs;
     </script>
 </body>
 </html>
