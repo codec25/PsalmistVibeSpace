@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>IT_VAULT // Neural Repository v6</title>
+    <title>IT_VAULT // Neural Repository v6.5</title>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -19,10 +19,11 @@
         }
         .login-box { width: 350px; padding: 40px; border: 1px solid var(--neon); background: #000; text-align: center; box-shadow: 0 0 20px var(--neon); }
         .login-input { width: 100%; background: #111; border: 1px solid #333; color: var(--neon); padding: 12px; margin-bottom: 15px; font-family: 'Fira Code'; outline: none; box-sizing: border-box; text-align: center; }
-        .btn-access { width: 100%; padding: 12px; background: var(--neon); color: #000; border: none; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; transition: 0.3s; }
+        .btn-access { width: 100%; padding: 12px; background: var(--neon); color: #000; border: none; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; transition: 0.3s; margin-bottom: 10px; }
         .btn-access:hover { background: #fff; box-shadow: 0 0 20px #fff; }
         
-        #decrypt-loader { display: none; margin-top: 20px; font-size: 0.8rem; letter-spacing: 2px; }
+        /* Recovery Panel Styles */
+        #recovery-panel { display: none; margin-top: 20px; border-top: 1px dashed var(--neon); padding-top: 20px; }
 
         /* --- MAIN INTERFACE --- */
         #vault-interface { display: none; position: relative; z-index: 10; height: 100vh; flex-direction: column; }
@@ -46,29 +47,31 @@
 
 <canvas id="matrix-canvas"></canvas>
 
-<div id="lockout-screen" style="display:none; position:fixed; inset:0; background:black; color:red; z-index:10000; flex-direction:column; align-items:center; justify-content:center; text-align:center; font-family:Orbitron;">
-    <h1 style="font-size:3rem; letter-spacing:10px;">SYSTEM_LOCKED</h1>
-    <p>IT_ADMIN HAS TERMINATED ALL NEURAL LINKS</p>
-    <button class="btn-ui" onclick="location.reload()" style="border-color:red; color:red;">RETRY_CONNECTION</button>
-</div>
-
 <div id="login-gate">
     <div class="login-box">
-        <h2 style="font-family:'Orbitron';">VAULT_AUTH_v6</h2>
+        <h2 style="font-family:'Orbitron'; cursor: pointer;" onclick="toggleRecovery()">VAULT_AUTH_v6.5</h2>
         <p style="font-size: 0.6rem; color: #444; margin-bottom: 20px;">SENSEI CREDENTIALS REQUIRED</p>
-        <input type="text" id="user-id" class="login-input" placeholder="SENSEI_ID">
-        <input type="password" id="user-pass" class="login-input" placeholder="SECURITY_KEY">
-        <button id="auth-btn" class="btn-access" onclick="handleAuth()">AUTHORIZE</button>
-        <div id="decrypt-loader">DECRYPTING: <span id="percent">0%</span></div>
+        
+        <div id="auth-form">
+            <input type="text" id="user-id" class="login-input" placeholder="SENSEI_ID">
+            <input type="password" id="user-pass" class="login-input" placeholder="SECURITY_KEY">
+            <button id="auth-btn" class="btn-access" onclick="handleAuth()">AUTHORIZE</button>
+        </div>
+
+        <div id="recovery-panel">
+            <p style="font-size: 0.5rem; color: var(--syntax-str);">[ SYSTEM_SEED_PROTOCOL_ACTIVE ]</p>
+            <input type="text" id="seed-id" class="login-input" placeholder="NEW_TEACHER_ID">
+            <input type="text" id="seed-pass" class="login-input" placeholder="NEW_KEY">
+            <button class="btn-access" style="background: var(--syntax-str);" onclick="injectTeacher()">INJECT_CREDENTIALS</button>
+        </div>
+
         <p id="error-msg" style="color:red; display:none; font-size:0.7rem; margin-top:10px;"></p>
-        <p id="recovery-trigger" style="display:none; color:var(--syntax-str); cursor:pointer; font-size:0.5rem; margin-top:10px; text-decoration:underline;" onclick="sendRecoveryHint()">[ SIGNAL_RECOVERY_HINT_TO_DASH ]</p>
     </div>
 </div>
 
 <div id="vault-interface">
     <header>
         <div style="font-family:'Orbitron';">SENSEI: <span id="display-user" style="color:white;">---</span></div>
-        <div id="timer-display" style="color:var(--red); font-size:0.8rem;">SESSION: 05:00</div>
         <button class="btn-ui" onclick="window.location.href='sensei_dash.html'">CLOSE_VAULT</button>
     </header>
 
@@ -77,22 +80,22 @@
             <div style="font-size:0.7rem; margin-bottom:10px; letter-spacing: 2px;">NEURAL_STORAGE</div>
             <div id="snippet-list" style="flex-grow:1; overflow-y:auto;"></div>
             <button class="btn-ui" style="border-color:var(--red); color:var(--red);" onclick="clearAll()">PURGE_DRIVE</button>
+            <button class="btn-ui" style="margin-top: 5px;" onclick="downloadBackup()">BACKUP_DB</button>
         </div>
 
         <div class="panel">
             <div class="editor-container">
-                <textarea id="code-input" spellcheck="false" oninput="resetTimer(); updateEditor();" placeholder="// Enter code or secret scrolls here..."></textarea>
+                <textarea id="code-input" spellcheck="false" oninput="updateEditor();" placeholder="// Enter code or secret scrolls here..."></textarea>
                 <pre id="code-highlight"><code></code></pre>
             </div>
             <div style="margin-top:15px; display:flex; gap:10px;">
                 <input type="text" id="filename" placeholder="SCROLL_NAME.txt" style="background:#000; border:1px solid #333; color:white; padding:10px; flex-grow:1; font-family: 'Fira Code'; border-radius: 5px;">
-                <button class="btn-ui" style="border-color: #00d4ff; color: #00d4ff;" onclick="broadcastToLink()">NEURAL_LINK</button>
                 <button class="btn-ui" style="border-color: var(--syntax-str); color: var(--syntax-str);" onclick="saveSnippet()">COMMIT</button>
             </div>
         </div>
 
         <div class="panel">
-            <div style="font-size:0.7rem; margin-bottom:10px; letter-spacing: 2px;">VAULT_LOG <span id="ghost-status" style="color:var(--red); display:none;">[GHOST_ACTIVE]</span></div>
+            <div style="font-size:0.7rem; margin-bottom:10px; letter-spacing: 2px;">VAULT_LOG</div>
             <div id="log-feed"></div>
             <input type="text" id="term-cmd" placeholder="root@vault:~#" style="width:100%; background:#000; border:1px solid var(--neon); color:white; padding:10px; font-size:0.7rem; font-family: 'Fira Code';" onkeydown="if(event.key==='Enter') runTerminal(this.value)">
         </div>
@@ -101,55 +104,32 @@
 
 <script>
     let activeUser = "";
-    let ghostMode = false;
 
-    // --- 1. SYSTEM SYNC PROTOCOLS ---
-    function syncSystemStatus() {
-        // Respect IT Manager Global Lock
-        if(localStorage.getItem('global_system_lock') === 'true') {
-            document.getElementById('lockout-screen').style.display = 'flex';
-            document.getElementById('vault-interface').style.display = 'none';
-        } else {
-            document.getElementById('lockout-screen').style.display = 'none';
-            if(activeUser) document.getElementById('vault-interface').style.display = 'flex';
-        }
+    // Toggle the hidden recovery panel
+    function toggleRecovery() {
+        const panel = document.getElementById('recovery-panel');
+        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
     }
 
-    function reportToIT(status) {
-        let db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
-        db.AUDIT_LOG = db.AUDIT_LOG || [];
-        db.AUDIT_LOG.unshift({ 
-            time: new Date().toLocaleTimeString(), 
-            user: activeUser || "UNKNOWN_SENSEI", 
-            status: `VAULT: ${status}` 
-        });
+    // Force inject a teacher into the empty GitHub localStorage
+    function injectTeacher() {
+        const id = document.getElementById('seed-id').value.trim().toUpperCase();
+        const pass = document.getElementById('seed-pass').value.trim();
+        if(!id || !pass) return alert("FIELDS REQUIRED");
+
+        let db = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {}, AUDIT_LOG: [] };
+        db.teachers[id] = pass;
         localStorage.setItem('vault_users', JSON.stringify(db));
+        
+        alert(`TEACHER [${id}] INITIALIZED. Use these credentials to log in.`);
+        toggleRecovery();
     }
 
-    // --- 2. AUTHENTICATION ---
     async function handleAuth() {
         const u = document.getElementById('user-id').value.trim().toUpperCase();
         const p = document.getElementById('user-pass').value.trim();
-        const loader = document.getElementById('decrypt-loader');
-        const btn = document.getElementById('auth-btn');
-        const err = document.getElementById('error-msg');
-        
         const db = JSON.parse(localStorage.getItem('vault_users')) || {};
         const teachers = db.teachers || {};
-
-        btn.style.display = 'none';
-        loader.style.display = 'block';
-        err.style.display = 'none';
-        
-        let pct = 0;
-        let iv = setInterval(() => { 
-            pct += Math.floor(Math.random()*25); 
-            if(pct > 100) pct = 100; 
-            document.getElementById('percent').innerText = pct + "%"; 
-        }, 80);
-
-        await new Promise(r => setTimeout(r, 1000)); 
-        clearInterval(iv);
 
         if(teachers[u] && teachers[u] === p) {
             activeUser = u;
@@ -158,63 +138,23 @@
             document.getElementById('login-gate').style.display = 'none';
             document.getElementById('vault-interface').style.display = 'flex';
             document.getElementById('display-user').innerText = u;
-            startTimer();
             logSystem(`[SECURE_CONNECTION_ESTABLISHED]`);
-            reportToIT("ACCESS_GRANTED");
             loadList();
-            setInterval(syncSystemStatus, 2000);
         } else {
-            loader.style.display = 'none';
-            btn.style.display = 'block';
+            const err = document.getElementById('error-msg');
             err.innerText = "INVALID_ENCRYPTION_KEY";
             err.style.display = 'block';
-            document.getElementById('recovery-trigger').style.display = 'block';
-            reportToIT(`LOGIN_FAILED: ${u}`);
         }
     }
 
-    function sendRecoveryHint() {
-        const u = document.getElementById('user-id').value.trim().toUpperCase();
-        localStorage.setItem('system_broadcast', JSON.stringify({ 
-            message: `SOS: SENSEI [${u || 'UNKNOWN'}] KEY_RECOVERY_REQUESTED`, 
-            type: 'ALERT', 
-            timestamp: Date.now() 
-        }));
-        alert("SIGNAL_TRANSMITTED.");
-    }
-
-    // --- 3. SESSION LOGIC ---
-    let sessionTime = 300;
-    function startTimer() {
-        setInterval(() => {
-            sessionTime--;
-            let m = Math.floor(sessionTime/60), s = sessionTime%60;
-            document.getElementById('timer-display').innerText = `SESSION: ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-            if(sessionTime <= 0) location.reload();
-        }, 1000);
-    }
-    function resetTimer() { sessionTime = 300; }
-
-    // --- 4. TERMINAL & EDITOR ---
     function runTerminal(val) {
         document.getElementById('term-cmd').value = '';
         logSystem(`> ${val}`);
         const cmd = val.toLowerCase();
-        if(cmd === 'help') logSystem("CMDS: help, clear, reveal --ghost, hide, purge");
+        if(cmd === 'help') logSystem("CMDS: help, clear, purge, status");
         else if(cmd === 'clear') document.getElementById('log-feed').innerHTML = '';
-        else if(cmd === 'reveal --ghost') {
-            ghostMode = true;
-            document.getElementById('ghost-status').style.display = 'inline';
-            loadList();
-            logSystem("DEEP_STORAGE_REVEALED");
-        }
-        else if(cmd === 'hide') {
-            ghostMode = false;
-            document.getElementById('ghost-status').style.display = 'none';
-            loadList();
-        }
-        else if(cmd === 'purge') clearAll();
-        else logSystem(`ERR: CMD_${cmd.toUpperCase()}_NOT_FOUND`);
+        else if(cmd === 'status') logSystem("SYSTEM_ONLINE // STORAGE_ACTIVE");
+        else logSystem(`ERR: CMD_NOT_RECOGNIZED`);
     }
 
     function updateEditor() {
@@ -234,18 +174,6 @@
         localStorage.setItem('vault_snippets', JSON.stringify(snips));
         loadList();
         logSystem(`COMMITTED: ${name}`);
-        reportToIT(`SAVED: ${name}`);
-    }
-
-    function broadcastToLink() {
-        const code = document.getElementById('code-input').value;
-        const name = document.getElementById('filename').value || "SCROLL";
-        if(!code) return;
-        let feed = JSON.parse(localStorage.getItem('student_announcements')) || [];
-        feed.unshift({ title: `NEURAL_LINK: ${name}`, content: code, sender: activeUser, time: new Date().toLocaleTimeString(), type: 'CODE_DROP' });
-        localStorage.setItem('student_announcements', JSON.stringify(feed));
-        logSystem(`BROADCASTED: ${name}`);
-        reportToIT(`BROADCAST: ${name}`);
     }
 
     function loadList() {
@@ -253,10 +181,8 @@
         list.innerHTML = '';
         const snips = JSON.parse(localStorage.getItem('vault_snippets')) || [];
         snips.reverse().forEach((s) => {
-            const isGhost = s.name.startsWith("GHOST_");
-            if(isGhost && !ghostMode) return;
             const d = document.createElement('div');
-            d.style = `padding:10px; border-left:2px solid ${isGhost?'red':'var(--neon)'}; background:rgba(0,255,0,0.05); margin-bottom:8px; cursor:pointer; font-size:0.6rem;`;
+            d.style = `padding:10px; border-left:2px solid var(--neon); background:rgba(0,255,0,0.05); margin-bottom:8px; cursor:pointer; font-size:0.6rem;`;
             d.innerHTML = `<div style="color:white;">${s.name}</div><div style="color:#444;">${s.author}</div>`;
             d.onclick = () => { 
                 document.getElementById('code-input').value = s.code; 
@@ -267,6 +193,20 @@
         });
     }
 
+    function downloadBackup() {
+        const data = {
+            vault_users: JSON.parse(localStorage.getItem('vault_users')),
+            ninja_roster: JSON.parse(localStorage.getItem('ninja_roster_full')),
+            snippets: JSON.parse(localStorage.getItem('vault_snippets'))
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'psalmist_vibes_backup.json';
+        a.click();
+    }
+
     function logSystem(m) {
         const f = document.getElementById('log-feed');
         f.innerHTML += `<div style="margin-bottom:5px;">[${new Date().toLocaleTimeString()}] ${m}</div>`;
@@ -274,10 +214,9 @@
     }
 
     function clearAll() { 
-        if(confirm("WIPE VAULT?")) { 
+        if(confirm("WIPE VAULT SNIPPETS?")) { 
             localStorage.removeItem('vault_snippets'); 
             loadList(); 
-            reportToIT("PURGE_EXECUTED");
         } 
     }
 
