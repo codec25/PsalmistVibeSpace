@@ -9,7 +9,7 @@
         :root { 
             --bg: #010204; --panel: rgba(7, 10, 17, 0.98); 
             --blue: #4facfe; --gold: #ffcc00; --border: #1e2544; 
-            --green: #00ff88; --red: #ff4b2b; 
+            --green: #00ff88; --red: #ff4b2b; --purple: #a18cd1;
         }
 
         body { 
@@ -19,7 +19,6 @@
             padding: 20px; overflow: hidden;
         }
 
-        /* BOOT OVERLAY */
         #boot-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: black; z-index: 1000; display: flex; flex-direction: column;
@@ -32,6 +31,7 @@
         .terminal-window {
             background: #000; border: 1px solid var(--border); border-radius: 10px;
             display: flex; flex-direction: column; height: 100%; box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            border: 2px solid #111;
         }
 
         .term-header { background: #1a1a2e; padding: 10px 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
@@ -45,12 +45,19 @@
         .prompt { color: var(--green); font-weight: bold; margin-right: 8px; }
         .path { color: var(--blue); margin-right: 5px; }
         .cmd-input { flex: 1; background: transparent; border: none; color: #fff; font-family: 'Fira Code'; outline: none; }
-        .out-err { color: var(--red); font-weight: bold; }
-        .out-suc { color: var(--gold); font-weight: bold; }
+        
+        .out-err { color: var(--red); }
+        .out-suc { color: var(--green); text-shadow: 0 0 5px var(--green); }
+        .out-cmd { color: #888; }
+        .out-res { color: #bbb; }
+        .out-gold { color: var(--gold); font-weight: bold; }
         .dir { color: var(--blue); font-weight: bold; }
         
         .btn { width: 100%; padding: 10px; margin-bottom: 5px; background: transparent; border: 1px solid var(--border); color: #fff; font-family: 'Orbitron'; font-size: 0.6rem; cursor: pointer; border-radius: 5px; transition: 0.3s; }
         .btn:hover { background: var(--blue); color: #000; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -62,8 +69,8 @@
     <div class="manager-container">
         <div class="terminal-window">
             <div class="term-header">
-                <span style="font-family:'Orbitron'; font-size:0.6rem; letter-spacing:2px; color:var(--gold);">HARMONY_BASH_v7.5</span>
-                <span style="font-size: 0.7rem; color: #555;">ROOT@ADMIN_1 // VFS_ACTIVE</span>
+                <span style="font-family:'Orbitron'; font-size:0.6rem; letter-spacing:2px; color:var(--gold);">HARMONY_BASH_v8.5</span>
+                <span style="font-size: 0.7rem; color: #555;">ROOT@ADMIN_1 // SOVEREIGN_MODE</span>
             </div>
             <div class="term-body" id="term-body"></div>
             <div class="term-input-area">
@@ -77,12 +84,14 @@
         <div class="sidebar">
             <div class="panel">
                 <h3>SENSEI_PROVISION</h3>
-                <button class="btn" onclick="injectCmd('provision SENSEI_')">NEW_SENSEI_STUB</button>
-                <button class="btn" style="border-color:var(--red);" onclick="injectCmd('delete ')">PURGE_SENSEI</button>
+                <button class="btn" onclick="injectCmd('provision ID PASS IT_SENSEI')">NEW_IT_SENSEI</button>
+                <button class="btn" onclick="injectCmd('provision ID PASS BASIC_SENSEI')">NEW_REG_SENSEI</button>
+                <button class="btn" style="border-color:var(--red);" onclick="injectCmd('delete ')">PURGE_USER</button>
             </div>
             <div class="panel">
-                <h3>SYSTEM_STATE</h3>
-                <button class="btn" onclick="executeBash('ls')">LIST_USERS</button>
+                <h3>GLOBAL_OVERRIDES</h3>
+                <button class="btn" style="border-color:var(--gold); color:var(--gold);" onclick="executeBash('godmode')">XP_OVERRIDE_ALL</button>
+                <button class="btn" onclick="executeBash('ls')">LIST_VAULT</button>
                 <button class="btn" onclick="executeBash('top')">VIEW_LOGS</button>
                 <button class="btn" onclick="executeBash('clear')">CLEAR_SCREEN</button>
             </div>
@@ -91,7 +100,6 @@
     </div>
 
     <script>
-        // Security Gate
         if (localStorage.getItem('it_active') !== 'true') window.location.href = 'index.html';
 
         const termBody = document.getElementById('term-body');
@@ -100,94 +108,39 @@
         const bootOverlay = document.getElementById('boot-overlay');
         const bootText = document.getElementById('boot-text');
 
-        // --- AUDIO ENGINE ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playBeep(freq = 400, dur = 0.05, type = 'sine') {
+        function playBeep(freq = 400, dur = 0.05) {
             try {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                osc.type = type;
                 osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
                 gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + dur);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + dur);
             } catch(e) {}
         }
 
-        // --- BOOT SEQUENCE ---
-        const bootLines = [
-            "INITIALIZING HARMONY_OS KERNEL...",
-            "LOADING VFS /ROOT... SUCCESS",
-            "MAPPING VAULT_USERS... OK",
-            "ESTABLISHING SECURE CONNECTION...",
-            "WELCOME, MASTER ADMIN."
-        ];
-
         async function runBoot() {
-            for (let line of bootLines) {
+            const lines = ["BOOTING_BASH...", "FILESYSTEM_CHECK: OK", "VAULT_SYNC: SUCCESS", "WELCOME MASTER."];
+            for (let line of lines) {
                 bootText.innerHTML += `> ${line}<br>`;
-                playBeep(600, 0.03);
-                await new Promise(r => setTimeout(r, 400));
+                playBeep(500, 0.04);
+                await new Promise(r => setTimeout(r, 300));
             }
-            setTimeout(() => {
-                bootOverlay.style.opacity = '0';
-                setTimeout(() => {
-                    bootOverlay.style.display = 'none';
-                    print("* BASH SOVEREIGN ONLINE.", 'suc');
-                    print("* Type 'help' for available commands.", 'res');
-                }, 1000);
-            }, 500);
+            bootOverlay.style.opacity = '0';
+            setTimeout(() => { bootOverlay.style.display = 'none'; }, 1000);
         }
-
         window.onload = runBoot;
 
         let currentDir = "/root";
-        let commandHistory = [];
-        let historyIndex = -1;
 
-        const VFS = {
-            "/": ["root", "home", "sys", "bin"],
-            "/root": ["config.sys", "master_key.pub"],
-            "/home": ["ninjas", "senseis"],
-            "/sys": ["logs", "kernel_v7"]
-        };
-
-        const COMMANDS = ["help", "ls", "cd", "clear", "provision", "delete", "top", "whoami", "exit"];
-
-        // --- KEYBOARD LOGIC ---
         cmdField.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                handleTabCompletion();
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                if (commandHistory.length > 0) {
-                    historyIndex = Math.min(historyIndex + 1, commandHistory.length - 1);
-                    cmdField.value = commandHistory[historyIndex];
-                }
-            } else if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                historyIndex = Math.max(historyIndex - 1, -1);
-                cmdField.value = historyIndex === -1 ? "" : commandHistory[historyIndex];
-            } else if (e.key === 'Enter') {
+            if (e.key === 'Enter') {
                 const val = cmdField.value.trim();
-                if (val) {
-                    commandHistory.unshift(val);
-                    executeBash(val);
-                }
+                if (val) executeBash(val);
                 cmdField.value = "";
-                historyIndex = -1;
             }
         });
-
-        function handleTabCompletion() {
-            const input = cmdField.value.toLowerCase();
-            const matches = COMMANDS.filter(c => c.startsWith(input));
-            if (matches.length === 1) cmdField.value = matches[0];
-            playBeep(300, 0.02);
-        }
 
         function print(msg, type = 'res') {
             const div = document.createElement('div');
@@ -197,7 +150,6 @@
             termBody.scrollTop = termBody.scrollHeight;
         }
 
-        // --- COMMAND HANDLER ---
         function executeBash(input) {
             print(`root@harmony:${currentDir}$ ${input}`, 'cmd');
             const parts = input.split(' ');
@@ -205,96 +157,83 @@
             const args = parts.slice(1);
 
             let vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {}, AUDIT_LOG: [] };
+            let ninjaRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
 
             switch(cmd) {
                 case 'help':
-                    print("AVAILABLE_COMMANDS: ls, cd, provision, delete, top, whoami, clear, exit");
-                    print("Usage: provision [ID] [PASS] | delete [ID]");
+                    print("provision [ID] [PASS] [ROLE], delete [ID], ls, cd, top, godmode, clear, exit");
+                    print("ROLES: IT_SENSEI (Full Access), BASIC_SENSEI (Dash Only)");
                     break;
 
                 case 'ls':
-                    let items = VFS[currentDir] || [];
-                    if (currentDir === "/home/senseis") items = Object.keys(vault.teachers);
-                    const output = items.map(i => `<span class="${i.includes('.') ? '' : 'dir'}">${i}${i.includes('.') ? '' : '/'}</span>`).join('  ');
-                    print(output || "empty directory");
+                    if (currentDir === "/home/senseis") {
+                        const list = Object.keys(vault.teachers).map(id => `${id} <span style="color:#555">[${vault.teachers[id].role}]</span>`).join('<br>');
+                        print(list || "Directory empty.");
+                    } else if (currentDir === "/home/ninjas") {
+                        print(Object.keys(ninjaRoster).join('  ') || "No ninjas found.");
+                    } else {
+                        print("bin/  home/  root/  sys/");
+                    }
                     break;
 
                 case 'cd':
-                    const target = args[0];
-                    if (!target || target === "~") currentDir = "/root";
-                    else if (target === "..") {
-                        const bits = currentDir.split('/'); bits.pop();
-                        currentDir = bits.join('/') || "/";
+                    const dest = args[0] || "";
+                    if (dest === "home/senseis") currentDir = "/home/senseis";
+                    else if (dest === "home/ninjas") currentDir = "/home/ninjas";
+                    else if (dest === "..") {
+                        currentDir = "/";
                     } else {
-                        const newPath = currentDir === "/" ? `/${target}` : `${currentDir}/${target}`;
-                        if (VFS[newPath] || newPath === "/home/senseis") currentDir = newPath;
-                        else print(`bash: cd: ${target}: No such directory`, 'err');
+                        currentDir = "/root";
                     }
                     pathLabel.innerText = currentDir.replace("/root", "~");
                     break;
 
-                case 'whoami':
-                    print("ADMIN_1 // MASTER_OVERRIDE_ENABLED");
-                    break;
-
                 case 'provision':
-                    if(args.length < 2) return print("usage: provision &lt;id&gt; &lt;pass&gt;", 'err');
-                    const newID = args[0].toUpperCase();
-                    vault.teachers[newID] = args[1]; // Correctly saves into the teachers object
+                    if(args.length < 3) return print("usage: provision [ID] [PASS] [ROLE]", "err");
+                    const id = args[0].toUpperCase();
+                    vault.teachers[id] = { pass: args[1], role: args[2].toUpperCase() };
                     localStorage.setItem('vault_users', JSON.stringify(vault));
-                    logAction(vault, `PROVISIONED: ${newID}`);
-                    print(`SUCCESS: Sensei ${newID} has been authorized/reset.`, 'suc');
-                    playBeep(800, 0.1, 'square');
+                    logAction(vault, `PROVISIONED: ${id} [${args[2]}]`);
+                    print(`SUCCESS: ${id} initialized as ${args[2]}.`, "suc");
                     break;
 
                 case 'delete':
-                    if(!args[0]) return print("usage: delete &lt;id&gt;", 'err');
-                    const targetID = args[0].toUpperCase();
-                    if(vault.teachers[targetID]) {
-                        delete vault.teachers[targetID];
+                    const target = args[0].toUpperCase();
+                    if(vault.teachers[target]) {
+                        delete vault.teachers[target];
                         localStorage.setItem('vault_users', JSON.stringify(vault));
-                        logAction(vault, `DELETED_USER: ${targetID}`);
-                        print(`SUCCESS: ${targetID} has been purged from memory.`, 'suc');
-                        playBeep(200, 0.2, 'sawtooth');
-                    } else {
-                        print(`ERROR: User ${targetID} not found.`, 'err');
-                    }
+                        print(`PURGED: ${target} removed from system.`, "suc");
+                    } else { print("ERR: Target not found.", "err"); }
+                    break;
+
+                case 'godmode':
+                    Object.keys(ninjaRoster).forEach(n => {
+                        if (!ninjaRoster[n].xp) ninjaRoster[n].xp = 0;
+                        ninjaRoster[n].xp += 100000;
+                    });
+                    localStorage.setItem('ninja_roster_full', JSON.stringify(ninjaRoster));
+                    print("GODMODE: Distributed 100,000 XP to all accounts.", "gold");
                     break;
 
                 case 'top':
-                    print("--- SYSTEM_LOG_FEED ---");
-                    if(vault.AUDIT_LOG.length === 0) print("No logs found.");
-                    vault.AUDIT_LOG.slice(0, 10).forEach(l => print(`[${l.time}] ${l.status}`));
+                    print("--- AUDIT LOG (LAST 10) ---");
+                    (vault.AUDIT_LOG || []).slice(0,10).forEach(l => print(`[${l.time}] ${l.status}`));
                     break;
 
-                case 'clear':
-                    termBody.innerHTML = "";
-                    break;
-
-                case 'exit':
-                    terminate();
-                    break;
-
-                default:
-                    print(`bash: ${cmd}: command not found`, 'err');
+                case 'clear': termBody.innerHTML = ""; break;
+                case 'exit': terminate(); break;
+                default: print(`bash: ${cmd}: command not found`, "err");
             }
         }
 
-        function logAction(vault, status) {
-            if(!vault.AUDIT_LOG) vault.AUDIT_LOG = [];
-            vault.AUDIT_LOG.unshift({ time: new Date().toLocaleTimeString(), user: "ROOT", status: status });
-            localStorage.setItem('vault_users', JSON.stringify(vault));
+        function logAction(v, msg) {
+            if(!v.AUDIT_LOG) v.AUDIT_LOG = [];
+            v.AUDIT_LOG.unshift({ time: new Date().toLocaleTimeString(), status: msg });
+            localStorage.setItem('vault_users', JSON.stringify(v));
         }
 
-        function injectCmd(txt) {
-            cmdField.value = txt;
-            cmdField.focus();
-        }
-
-        function terminate() {
-            localStorage.removeItem('it_active');
-            window.location.href = 'index.html';
-        }
+        function injectCmd(txt) { cmdField.value = txt; cmdField.focus(); }
+        function terminate() { localStorage.removeItem('it_active'); window.location.href = 'index.html'; }
     </script>
 </body>
 </html>
