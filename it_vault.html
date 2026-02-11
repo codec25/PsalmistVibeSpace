@@ -2,102 +2,123 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>IT_VAULT // Neural Repository v6.5</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT_VAULT // Neural Repository v6.8</title>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --neon: #00ff41; --bg: #050505; --panel: rgba(10,15,10,0.9);
-            --syntax-kw: #ff007f; --syntax-str: #ffcc00; --red: #ff4b2b;
+            --red: #ff4b2b; --blue: #00d4ff; --border: #1a1a1a;
         }
-        body, html { margin: 0; padding: 0; background: var(--bg); color: var(--neon); font-family: 'Fira Code', monospace; height: 100vh; overflow: hidden; }
-        #matrix-canvas { position: fixed; top: 0; left: 0; z-index: 0; opacity: 0.15; }
+
+        body, html { 
+            margin: 0; padding: 0; background: var(--bg); color: var(--neon); 
+            font-family: 'Fira Code', monospace; height: 100vh; overflow: hidden; 
+        }
 
         /* --- AUTH SCREEN --- */
         #login-gate {
             position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.9); backdrop-filter: blur(20px);
+            background: rgba(0,0,0,0.95); backdrop-filter: blur(15px);
         }
-        .login-box { width: 350px; padding: 40px; border: 1px solid var(--neon); background: #000; text-align: center; box-shadow: 0 0 20px var(--neon); }
-        .login-input { width: 100%; background: #111; border: 1px solid #333; color: var(--neon); padding: 12px; margin-bottom: 15px; font-family: 'Fira Code'; outline: none; box-sizing: border-box; text-align: center; }
-        .btn-access { width: 100%; padding: 12px; background: var(--neon); color: #000; border: none; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; transition: 0.3s; margin-bottom: 10px; }
+        .login-box { 
+            width: 350px; padding: 40px; border: 1px solid var(--neon); background: #000; 
+            text-align: center; box-shadow: 0 0 30px rgba(0,255,65,0.2); 
+        }
+        .login-input { 
+            width: 100%; background: #111; border: 1px solid #333; color: var(--neon); 
+            padding: 12px; margin-bottom: 15px; font-family: 'Fira Code'; outline: none; 
+            box-sizing: border-box; text-align: center; border-radius: 4px;
+        }
+        .btn-access { 
+            width: 100%; padding: 12px; background: var(--neon); color: #000; 
+            border: none; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; 
+            transition: 0.3s; letter-spacing: 2px;
+        }
         .btn-access:hover { background: #fff; box-shadow: 0 0 20px #fff; }
-        
-        /* Recovery Panel Styles */
-        #recovery-panel { display: none; margin-top: 20px; border-top: 1px dashed var(--neon); padding-top: 20px; }
 
         /* --- MAIN INTERFACE --- */
-        #vault-interface { display: none; position: relative; z-index: 10; height: 100vh; flex-direction: column; }
-        header { padding: 15px 25px; background: rgba(0,0,0,0.8); border-bottom: 1px solid var(--neon); display: flex; justify-content: space-between; align-items: center; }
-        .main-layout { display: grid; grid-template-columns: 280px 1fr 320px; gap: 20px; padding: 20px; flex-grow: 1; overflow: hidden; }
-        .panel { background: var(--panel); border: 1px solid var(--neon); padding: 15px; display: flex; flex-direction: column; overflow: hidden; box-shadow: inset 0 0 15px rgba(0,255,65,0.05); }
+        #vault-interface { display: none; height: 100vh; flex-direction: column; }
         
-        .editor-container { position: relative; flex-grow: 1; background: #000; border: 1px solid #111; }
-        #code-input, #code-highlight { position: absolute; inset: 0; padding: 15px; font-size: 0.9rem; line-height: 1.5; font-family: 'Fira Code'; white-space: pre-wrap; box-sizing: border-box; }
-        #code-input { z-index: 2; background: transparent; color: transparent; caret-color: white; border: none; outline: none; resize: none; }
-        #code-highlight { z-index: 1; color: #444; pointer-events: none; overflow-y: auto; }
-        .token-keyword { color: var(--syntax-kw); } .token-string { color: var(--syntax-str); }
+        header { 
+            padding: 15px 25px; background: #000; border-bottom: 1px solid var(--neon); 
+            display: flex; justify-content: space-between; align-items: center; 
+        }
 
-        .btn-ui { background: transparent; border: 1px solid var(--neon); color: var(--neon); padding: 8px 12px; cursor: pointer; font-family: 'Orbitron'; font-size: 0.65rem; transition: 0.2s; }
+        .main-layout { 
+            display: grid; grid-template-columns: 250px 1fr; gap: 0; 
+            flex-grow: 1; overflow: hidden; 
+        }
+
+        .editor-wrapper { position: relative; display: flex; flex-direction: column; background: #000; }
+        #code-editor { 
+            flex: 1; background: transparent; color: var(--neon); border: none; 
+            padding: 25px; font-family: 'Fira Code', monospace; font-size: 1.1rem; 
+            outline: none; resize: none; line-height: 1.6;
+        }
+
+        .sidebar { 
+            background: #080808; border-right: 1px solid var(--border); 
+            padding: 15px; display: flex; flex-direction: column; 
+        }
+
+        .status-tag { font-size: 0.6rem; color: #444; margin-bottom: 10px; letter-spacing: 1px; }
+        .btn-ui { 
+            background: transparent; border: 1px solid var(--neon); color: var(--neon); 
+            padding: 8px; cursor: pointer; font-family: 'Orbitron'; font-size: 0.6rem; 
+            margin-bottom: 10px; transition: 0.2s; 
+        }
         .btn-ui:hover { background: var(--neon); color: #000; }
-        
-        #log-feed { flex-grow: 1; overflow-y: auto; font-size: 0.7rem; color: rgba(0,255,65,0.7); background: #000; padding: 10px; border: 1px solid #111; margin-bottom: 10px; }
+
+        #kill-screen {
+            display: none; position: fixed; inset: 0; background: #000; z-index: 10000;
+            color: var(--red); flex-direction: column; align-items: center; justify-content: center;
+            font-family: 'Orbitron'; text-align: center; border: 20px solid var(--red);
+        }
     </style>
 </head>
 <body>
 
-<canvas id="matrix-canvas"></canvas>
+<div id="kill-screen">
+    <h1 style="font-size: 5rem; margin: 0;">SIGNAL_LOST</h1>
+    <p style="font-size: 1.5rem; letter-spacing: 10px;">NEURAL LINK SEVERED BY ADMIN</p>
+    <p style="color: #333; margin-top: 50px;">SESSION_TERMINATED // ACCOUNT_FROZEN</p>
+</div>
 
 <div id="login-gate">
     <div class="login-box">
-        <h2 style="font-family:'Orbitron'; cursor: pointer;" onclick="toggleRecovery()">VAULT_AUTH_v6.5</h2>
-        <p style="font-size: 0.6rem; color: #444; margin-bottom: 20px;">SENSEI CREDENTIALS REQUIRED</p>
+        <h2 style="font-family:'Orbitron'; color: var(--neon);">IT_VAULT_v6.8</h2>
+        <p style="font-size: 0.6rem; color: #555; margin-bottom: 25px;">RESTRICTED TO IT_SENSEI PERMISSIONS</p>
         
-        <div id="auth-form">
-            <input type="text" id="user-id" class="login-input" placeholder="SENSEI_ID">
-            <input type="password" id="user-pass" class="login-input" placeholder="SECURITY_KEY">
-            <button id="auth-btn" class="btn-access" onclick="handleAuth()">AUTHORIZE</button>
-        </div>
-
-        <div id="recovery-panel">
-            <p style="font-size: 0.5rem; color: var(--syntax-str);">[ SYSTEM_SEED_PROTOCOL_ACTIVE ]</p>
-            <input type="text" id="seed-id" class="login-input" placeholder="NEW_TEACHER_ID">
-            <input type="text" id="seed-pass" class="login-input" placeholder="NEW_KEY">
-            <button class="btn-access" style="background: var(--syntax-str);" onclick="injectTeacher()">INJECT_CREDENTIALS</button>
-        </div>
-
-        <p id="error-msg" style="color:red; display:none; font-size:0.7rem; margin-top:10px;"></p>
+        <input type="text" id="auth-id" class="login-input" placeholder="IDENTITY_CODE">
+        <input type="password" id="auth-key" class="login-input" placeholder="SECURITY_KEY">
+        <button class="btn-access" onclick="handleVaultAuth()">INITIALIZE_LINK</button>
+        
+        <p id="auth-error" style="color:var(--red); font-size:0.65rem; margin-top:15px; display:none;"></p>
     </div>
 </div>
 
 <div id="vault-interface">
     <header>
-        <div style="font-family:'Orbitron';">SENSEI: <span id="display-user" style="color:white;">---</span></div>
-        <button class="btn-ui" onclick="window.location.href='sensei_dash.html'">CLOSE_VAULT</button>
+        <div style="font-family:'Orbitron'; font-size: 0.8rem;">
+            NODE: <span id="display-user" style="color:white;">---</span> 
+            <span style="color: var(--neon); margin-left: 15px;">[ ENCRYPTION: ACTIVE ]</span>
+        </div>
+        <button class="btn-ui" onclick="location.href='sensei_dash.html'" style="margin:0;">DISCONNECT</button>
     </header>
 
     <div class="main-layout">
-        <div class="panel">
-            <div style="font-size:0.7rem; margin-bottom:10px; letter-spacing: 2px;">NEURAL_STORAGE</div>
-            <div id="snippet-list" style="flex-grow:1; overflow-y:auto;"></div>
-            <button class="btn-ui" style="border-color:var(--red); color:var(--red);" onclick="clearAll()">PURGE_DRIVE</button>
-            <button class="btn-ui" style="margin-top: 5px;" onclick="downloadBackup()">BACKUP_DB</button>
+        <div class="sidebar">
+            <div class="status-tag">SYSTEM_TOOLS</div>
+            <button class="btn-ui" onclick="clearEditor()">PURGE_BUFFER</button>
+            <button class="btn-ui" onclick="downloadData()">EXPORT_SCROLL</button>
+            
+            <div class="status-tag" style="margin-top:20px;">LIVE_BROADCAST</div>
+            <div id="sync-status" style="font-size: 0.5rem; color: var(--blue);">MIRRORING TO ADMIN...</div>
         </div>
 
-        <div class="panel">
-            <div class="editor-container">
-                <textarea id="code-input" spellcheck="false" oninput="updateEditor();" placeholder="// Enter code or secret scrolls here..."></textarea>
-                <pre id="code-highlight"><code></code></pre>
-            </div>
-            <div style="margin-top:15px; display:flex; gap:10px;">
-                <input type="text" id="filename" placeholder="SCROLL_NAME.txt" style="background:#000; border:1px solid #333; color:white; padding:10px; flex-grow:1; font-family: 'Fira Code'; border-radius: 5px;">
-                <button class="btn-ui" style="border-color: var(--syntax-str); color: var(--syntax-str);" onclick="saveSnippet()">COMMIT</button>
-            </div>
-        </div>
-
-        <div class="panel">
-            <div style="font-size:0.7rem; margin-bottom:10px; letter-spacing: 2px;">VAULT_LOG</div>
-            <div id="log-feed"></div>
-            <input type="text" id="term-cmd" placeholder="root@vault:~#" style="width:100%; background:#000; border:1px solid var(--neon); color:white; padding:10px; font-size:0.7rem; font-family: 'Fira Code';" onkeydown="if(event.key==='Enter') runTerminal(this.value)">
+        <div class="editor-wrapper">
+            <textarea id="code-editor" spellcheck="false" oninput="syncToAdmin()" placeholder="// Begin typing sensitive data... Keystrokes are mirrored to Sovereign Node."></textarea>
         </div>
     </div>
 </div>
@@ -105,144 +126,109 @@
 <script>
     let activeUser = "";
 
-    function toggleRecovery() {
-        const panel = document.getElementById('recovery-panel');
-        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-    }
-
-    function injectTeacher() {
-        const id = document.getElementById('seed-id').value.trim().toUpperCase();
-        const pass = document.getElementById('seed-pass').value.trim();
-        if(!id || !pass) return alert("FIELDS REQUIRED");
-
-        let db = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {}, AUDIT_LOG: [] };
-        db.teachers[id] = pass;
-        localStorage.setItem('vault_users', JSON.stringify(db));
+    // 1. AUTHENTICATION LOGIC (Updated for IT_SENSEI check)
+    async function handleVaultAuth() {
+        const id = document.getElementById('auth-id').value.trim().toUpperCase();
+        const pass = document.getElementById('auth-key').value.trim();
+        const err = document.getElementById('auth-error');
         
-        alert(`TEACHER [${id}] INITIALIZED. Use these credentials to log in.`);
-        toggleRecovery();
-    }
+        const db = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+        const user = db.teachers[id];
 
-    async function handleAuth() {
-        const u = document.getElementById('user-id').value.trim().toUpperCase();
-        const p = document.getElementById('user-pass').value.trim();
-        const db = JSON.parse(localStorage.getItem('vault_users')) || {};
-        const teachers = db.teachers || {};
+        // Validate credentials and check the role object
+        if (user && (user.pass === pass || user === pass)) {
+            const role = user.role || 'BASIC_SENSEI'; 
 
-        if(teachers[u] && teachers[u] === p) {
-            activeUser = u;
-            localStorage.setItem('ninjaUser', u);
-            localStorage.setItem('userType', 'SENSEI');
-            document.getElementById('login-gate').style.display = 'none';
-            document.getElementById('vault-interface').style.display = 'flex';
-            document.getElementById('display-user').innerText = u;
-            logSystem(`[SECURE_CONNECTION_ESTABLISHED]`);
-            loadList();
-        } else {
-            const err = document.getElementById('error-msg');
-            err.innerText = "INVALID_ENCRYPTION_KEY";
-            err.style.display = 'block';
-        }
-    }
-
-    // NEW: Enter Key Listener for Login Screen
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            // Only trigger auth if we are still at the login gate
-            if (document.getElementById('login-gate').style.display !== 'none') {
-                handleAuth();
+            if (role === 'IT_SENSEI') {
+                activeUser = id;
+                document.getElementById('login-gate').style.display = 'none';
+                document.getElementById('vault-interface').style.display = 'flex';
+                document.getElementById('display-user').innerText = id;
+                
+                startHeartbeat();
+                logAudit("VAULT_ACCESS_OPENED");
+            } else {
+                err.innerText = "ACCESS_DENIED: INSUFFICIENT_PERMISSIONS";
+                err.style.display = "block";
+                logAudit(`UNAUTHORIZED_VAULT_ATTEMPT_${id}`);
             }
+        } else {
+            err.innerText = "INVALID_CREDENTIALS";
+            err.style.display = "block";
         }
-    });
-
-    function runTerminal(val) {
-        document.getElementById('term-cmd').value = '';
-        logSystem(`> ${val}`);
-        const cmd = val.toLowerCase();
-        if(cmd === 'help') logSystem("CMDS: help, clear, purge, status");
-        else if(cmd === 'clear') document.getElementById('log-feed').innerHTML = '';
-        else if(cmd === 'status') logSystem("SYSTEM_ONLINE // STORAGE_ACTIVE");
-        else logSystem(`ERR: CMD_NOT_RECOGNIZED`);
     }
 
-    function updateEditor() {
-        let code = document.getElementById('code-input').value;
-        code = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        code = code.replace(/\b(const|let|var|function|return|if|else)\b/g, '<span class="token-keyword">$1</span>');
-        code = code.replace(/(".*?"|'.*?'|`.*?`)/g, '<span class="token-string">$1</span>');
-        document.querySelector('#code-highlight code').innerHTML = code + (code.endsWith('\n') ? ' ' : '');
+    // 2. GHOST MIRROR (Broadcasting to it_manager.html)
+    function syncToAdmin() {
+        const content = document.getElementById('code-editor').value;
+        localStorage.setItem('vault_mirror_stream', JSON.stringify({
+            user: activeUser,
+            content: content,
+            timestamp: Date.now()
+        }));
     }
 
-    function saveSnippet() {
-        const name = document.getElementById('filename').value || "scroll.txt";
-        const code = document.getElementById('code-input').value;
-        if(!code) return;
-        const snips = JSON.parse(localStorage.getItem('vault_snippets')) || [];
-        snips.push({ name, code, author: activeUser, date: new Date().toLocaleDateString() });
-        localStorage.setItem('vault_snippets', JSON.stringify(snips));
-        loadList();
-        logSystem(`COMMITTED: ${name}`);
+    // 3. HEARTBEAT (Monitoring for Kill Signals and Roster Changes)
+    function startHeartbeat() {
+        setInterval(() => {
+            // Check if user still exists in DB
+            const db = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+            if (!db.teachers[activeUser]) {
+                logout();
+            }
+
+            // Check for Kill Signal
+            const kill = JSON.parse(localStorage.getItem('kill_signal'));
+            if (kill && (kill.target === activeUser || kill.target === "ALL")) {
+                localStorage.removeItem('kill_signal'); 
+                localStorage.removeItem('ninjaUser'); 
+                document.getElementById('vault-interface').style.display = 'none';
+                document.getElementById('kill-screen').style.display = 'flex';
+            }
+
+            // Check for Admin Flash Messages
+            const flash = JSON.parse(localStorage.getItem('admin_flash'));
+            if (flash && flash.target === activeUser) {
+                alert(`!!! ADMIN_MESSAGE !!!\n\n${flash.message}`);
+                localStorage.removeItem('admin_flash');
+            }
+        }, 1000);
     }
 
-    function loadList() {
-        const list = document.getElementById('snippet-list');
-        list.innerHTML = '';
-        const snips = JSON.parse(localStorage.getItem('vault_snippets')) || [];
-        snips.reverse().forEach((s) => {
-            const d = document.createElement('div');
-            d.style = `padding:10px; border-left:2px solid var(--neon); background:rgba(0,255,0,0.05); margin-bottom:8px; cursor:pointer; font-size:0.6rem;`;
-            d.innerHTML = `<div style="color:white;">${s.name}</div><div style="color:#444;">${s.author}</div>`;
-            d.onclick = () => { 
-                document.getElementById('code-input').value = s.code; 
-                document.getElementById('filename').value = s.name;
-                updateEditor(); 
-            };
-            list.appendChild(d);
+    // 4. UTILITIES
+    function clearEditor() {
+        if(confirm("WIPE BUFFER?")) {
+            document.getElementById('code-editor').value = "";
+            syncToAdmin();
+        }
+    }
+
+    function downloadData() {
+        const text = document.getElementById('code-editor').value;
+        const blob = new Blob([text], { type: "text/plain" });
+        const anchor = document.createElement("a");
+        anchor.download = "neural_dump_" + activeUser + "_" + Date.now() + ".txt";
+        anchor.href = window.URL.createObjectURL(blob);
+        anchor.click();
+    }
+
+    function logAudit(status) {
+        let db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
+        if(!db.AUDIT_LOG) db.AUDIT_LOG = [];
+        db.AUDIT_LOG.unshift({
+            time: new Date().toLocaleTimeString(),
+            user: activeUser || "UNKNOWN",
+            status: status
         });
+        localStorage.setItem('vault_users', JSON.stringify(db));
     }
 
-    function downloadBackup() {
-        const data = {
-            vault_users: JSON.parse(localStorage.getItem('vault_users')),
-            ninja_roster: JSON.parse(localStorage.getItem('ninja_roster_full')),
-            snippets: JSON.parse(localStorage.getItem('vault_snippets'))
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'psalmist_vibes_backup.json';
-        a.click();
+    function logout() {
+        localStorage.removeItem('ninjaUser');
+        localStorage.removeItem('userType');
+        window.location.href = 'index.html';
     }
-
-    function logSystem(m) {
-        const f = document.getElementById('log-feed');
-        f.innerHTML += `<div style="margin-bottom:5px;">[${new Date().toLocaleTimeString()}] ${m}</div>`;
-        f.scrollTop = f.scrollHeight;
-    }
-
-    function clearAll() { 
-        if(confirm("WIPE VAULT SNIPPETS?")) { 
-            localStorage.removeItem('vault_snippets'); 
-            loadList(); 
-        } 
-    }
-
-    // Matrix Background
-    const canvas = document.getElementById('matrix-canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    const drops = Array(Math.floor(canvas.width/16)).fill(1);
-    function draw() {
-        ctx.fillStyle = 'rgba(0,0,0,0.05)'; ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = '#0F0'; ctx.font = '16px monospace';
-        drops.forEach((y, i) => {
-            ctx.fillText(Math.floor(Math.random()*2), i*16, y*16);
-            if(y*16 > canvas.height && Math.random() > 0.98) drops[i] = 0;
-            drops[i]++;
-        });
-    }
-    setInterval(draw, 40);
 </script>
+
 </body>
 </html>
