@@ -12,9 +12,9 @@
 
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif;
-            height: 100vh; display: flex; flex-direction: column;
+            min-height: 100vh; display: flex; flex-direction: column;
             background-image: radial-gradient(circle at 50% 50%, #0a1324 0%, #010204 100%);
-            overflow: hidden;
+            overflow-x: hidden; overflow-y: auto;
         }
 
         /* --- HEADER & TICKER --- */
@@ -79,6 +79,7 @@
         .vs-text { font-size: 5rem; color: var(--red); font-style: italic; font-weight: 900; text-shadow: 0 0 20px var(--red); }
         .timer-display { font-size: 6rem; color: var(--gold); margin-top: 40px; text-shadow: 0 0 30px var(--gold); }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 

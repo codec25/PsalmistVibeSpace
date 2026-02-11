@@ -24,6 +24,7 @@
         
         .warning-box { color: var(--gold); border: 1px dashed var(--gold); padding: 15px; margin-bottom: 20px; font-size: 0.7rem; line-height: 1.4; }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
     <h1>ROOT_SYSTEM_OVERRIDE</h1>
@@ -62,7 +63,7 @@
                 <input type="text" id="rec-id" placeholder="SENSEI_ID">
                 <input type="text" id="rec-pass" placeholder="NEW_PASSWORD">
                 <select id="rec-role">
-                    <option value="BASIC_SENSEI">BASIC_SENSEI</option>
+                    <option value="SENSEI">SENSEI</option>
                     <option value="IT_SENSEI">IT_SENSEI (VAULT_ACCESS)</option>
                 </select>
                 <button class="btn-danger" onclick="injectSensei()">INJECT_CREDENTIALS</button>
@@ -124,7 +125,8 @@
         function injectSensei() {
             const id = document.getElementById('rec-id').value.trim().toUpperCase();
             const pass = document.getElementById('rec-pass').value.trim();
-            const role = document.getElementById('rec-role').value;
+            const roleRaw = document.getElementById('rec-role').value;
+            const role = roleRaw === 'IT_SENSEI' ? 'IT_SENSEI' : 'SENSEI';
             
             if(!id || !pass) return alert("MISSING_DATA");
 

@@ -8,8 +8,8 @@
         :root { --bg: #020408; --green: #00ff88; --border: #1e2544; --red: #ff4b2b; --blue: #4facfe; --gold: #ffcc00; }
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
-            overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;
+            overflow-x: hidden; overflow-y: auto;
             transition: background 0.2s ease;
         }
         .hud { position: absolute; top: 20px; width: 90%; display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--green); letter-spacing: 2px; }
@@ -61,6 +61,7 @@
         #life-counter { color: var(--red); font-size: 1.2rem; margin-top: 10px; display: none; }
         #guide-overlay { font-size: 0.8rem; color: var(--blue); margin-bottom: 10px; height: 20px; }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
     <div class="hud">

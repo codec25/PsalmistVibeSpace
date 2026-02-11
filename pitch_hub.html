@@ -133,6 +133,7 @@
             }
         }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 
@@ -213,6 +214,40 @@
 <script>
     const ninjaName = localStorage.getItem('ninjaUser') || "GUEST_NINJA";
 
+    function getRosterSafe() {
+        try {
+            return JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        } catch {
+            return {};
+        }
+    }
+
+    function setRosterSafe(roster) {
+        localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+    }
+
+    function getCanonicalXP() {
+        const roster = getRosterSafe();
+        if (!roster[ninjaName] || typeof roster[ninjaName] !== 'object') {
+            roster[ninjaName] = {
+                pass: "",
+                xp: 0,
+                joined: new Date().toLocaleDateString(),
+                status: "LEVEL 01"
+            };
+        }
+        const numericXP = Number(roster[ninjaName].xp);
+        const safeXP = Number.isFinite(numericXP) && numericXP > 0 ? Math.floor(numericXP) : 0;
+        roster[ninjaName].xp = safeXP;
+        if (!roster[ninjaName].joined) roster[ninjaName].joined = new Date().toLocaleDateString();
+        if (!roster[ninjaName].status) roster[ninjaName].status = "LEVEL 01";
+        setRosterSafe(roster);
+        localStorage.setItem('totalXP', String(safeXP));
+        localStorage.setItem(`xp_${ninjaName}`, String(safeXP));
+        localStorage.setItem('currentLevel', String(Math.floor(safeXP / 2500) + 1));
+        return safeXP;
+    }
+
     function checkSecurityHandshake() {
         if (localStorage.getItem('global_system_lock') === 'true') {
             document.body.innerHTML = `<div style="background:#000; color:#ff4b2b; height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>SYSTEM_LOCKED</h1></div>`;
@@ -228,13 +263,13 @@
     }
 
     function renderLeaderboard() {
-        const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        const roster = getRosterSafe();
         const lbList = document.getElementById('leaderboard-list');
         
         // Convert object to array and sort by XP
         let ninjas = Object.keys(roster).map(key => ({
             name: key,
-            xp: roster[key].xp || 0
+            xp: Number.isFinite(Number(roster[key] && roster[key].xp)) ? Math.max(0, Math.floor(Number(roster[key].xp))) : 0
         })).sort((a, b) => b.xp - a.xp).slice(0, 5); // Top 5
 
         lbList.innerHTML = ninjas.map((ninja, index) => `
@@ -247,9 +282,7 @@
 
     function updateHUD() {
         checkSecurityHandshake();
-        
-        const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-        const xp = (roster[ninjaName] && roster[ninjaName].xp) ? roster[ninjaName].xp : (parseInt(localStorage.getItem(`xp_${ninjaName}`)) || 0);
+        const xp = getCanonicalXP();
         
         document.getElementById('global-xp').innerText = `XP: ${xp.toString().padStart(6, '0')}`;
         

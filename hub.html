@@ -89,6 +89,7 @@
         @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
         @media (max-width: 850px) { .content-stack { grid-template-columns: 1fr; } }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 
@@ -170,17 +171,41 @@
         </a>
     </div>
 
+    <script src="lms_core.js"></script>
     <script>
         const ninjaUser = localStorage.getItem('ninjaUser');
         if (!ninjaUser) window.location.href = 'index.html';
+        if (window.LMSCore) LMSCore.init();
+
+        function normalizeRoster() {
+            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            Object.keys(roster).forEach(id => {
+                if (!roster[id] || typeof roster[id] !== "object") {
+                    roster[id] = { pass: "", xp: 0, status: "LEVEL 01", joined: new Date().toLocaleDateString() };
+                    return;
+                }
+                roster[id].pass = String(roster[id].pass ?? "");
+                roster[id].xp = Number.isFinite(Number(roster[id].xp)) ? Number(roster[id].xp) : 0;
+                if (!roster[id].status) roster[id].status = "LEVEL 01";
+                if (!roster[id].joined) roster[id].joined = new Date().toLocaleDateString();
+            });
+            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+            return roster;
+        }
 
         function syncHub() {
-            const masterRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            if (window.LMSCore) {
+                const userType = (localStorage.getItem('userType') || 'MEMBER').toUpperCase();
+                const role = userType === 'GUEST' ? 'GUEST' : 'STUDENT';
+                LMSCore.upsertUser(ninjaUser, role, userType);
+            }
+            const masterRoster = normalizeRoster();
             const myData = masterRoster[ninjaUser] || { xp: 0, status: "LEVEL 01" };
 
             document.getElementById('display-name').innerText = ninjaUser.toUpperCase();
             const typeLabel = localStorage.getItem('userType') === 'GUEST' ? "VISITOR" : "OFFICIAL";
-            document.getElementById('display-rank').innerText = `${myData.status} // ${typeLabel} // XP: ${myData.xp.toLocaleString()}`;
+            const myXP = Number.isFinite(Number(myData.xp)) ? Number(myData.xp) : 0;
+            document.getElementById('display-rank').innerText = `${myData.status} // ${typeLabel} // XP: ${myXP.toLocaleString()}`;
 
             // Announcement
             const msg = localStorage.getItem('academy_announcement');
@@ -197,7 +222,7 @@
                 tracker.style.display = 'block';
                 document.getElementById('m-name').innerText = mission.name.toUpperCase();
                 document.getElementById('m-desc').innerText = `Objective: ${mission.goal} XP`;
-                let progress = Math.min((myData.xp / mission.goal) * 100, 100);
+                let progress = Math.min((myXP / mission.goal) * 100, 100);
                 document.getElementById('m-percent').innerText = Math.floor(progress) + "%";
                 document.getElementById('progress-bar').style.width = progress + "%";
             } else { tracker.style.display = 'none'; }
@@ -206,7 +231,7 @@
             const timer = JSON.parse(localStorage.getItem('active_timer'));
             const tDisp = document.getElementById('active-timer');
             if (timer && timer.active) {
-                tDisp.innerText = timer.timeString;
+                tDisp.innerText = timer.timeString || timer.time || "00:00";
                 tDisp.style.display = 'block';
             } else { tDisp.style.display = 'none'; }
         }
@@ -244,6 +269,8 @@
             }
             localStorage.removeItem('ninjaUser');
             localStorage.removeItem('userType');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('it_active');
             window.location.href = 'index.html';
         }
 

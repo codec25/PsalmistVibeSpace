@@ -117,6 +117,7 @@
         .hidden { display: none !important; }
         @media (max-width: 600px) { .choices-grid { grid-template-columns: 1fr; } }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 
@@ -204,14 +205,65 @@
 
     const INTERVAL_NAMES = { 0:"ROOT", 1:"b2", 2:"M2", 3:"b3", 4:"M3", 5:"P4", 6:"#4/b5", 7:"P5", 8:"b6", 9:"M6", 10:"b7", 11:"M7" };
 
+    function getCurrentNinjaName() {
+        return localStorage.getItem('ninjaUser') || 'GUEST_NINJA';
+    }
+
+    function getRosterSafe() {
+        try {
+            return JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        } catch {
+            return {};
+        }
+    }
+
+    function setRosterSafe(roster) {
+        localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+    }
+
+    function ensureNinjaXPEntry() {
+        const ninjaName = getCurrentNinjaName();
+        const roster = getRosterSafe();
+        if (!roster[ninjaName] || typeof roster[ninjaName] !== 'object') {
+            roster[ninjaName] = {
+                pass: "",
+                xp: 0,
+                joined: new Date().toLocaleDateString(),
+                status: "LEVEL 01"
+            };
+        }
+        const numericXP = Number(roster[ninjaName].xp);
+        roster[ninjaName].xp = Number.isFinite(numericXP) && numericXP > 0 ? Math.floor(numericXP) : 0;
+        if (!roster[ninjaName].joined) roster[ninjaName].joined = new Date().toLocaleDateString();
+        if (!roster[ninjaName].status) roster[ninjaName].status = "LEVEL 01";
+        setRosterSafe(roster);
+        return { ninjaName, roster };
+    }
+
+    function syncXPCompat(xpValue) {
+        const safeXP = Number.isFinite(xpValue) && xpValue > 0 ? Math.floor(xpValue) : 0;
+        const ninjaName = getCurrentNinjaName();
+        localStorage.setItem('totalXP', String(safeXP));
+        localStorage.setItem(`xp_${ninjaName}`, String(safeXP));
+        localStorage.setItem('currentLevel', String(Math.floor(safeXP / 2500) + 1));
+    }
+
+    function adjustCanonicalXP(delta) {
+        const { ninjaName, roster } = ensureNinjaXPEntry();
+        const currentXP = Number(roster[ninjaName].xp) || 0;
+        const nextXP = Math.max(0, Math.floor(currentXP + delta));
+        roster[ninjaName].xp = nextXP;
+        setRosterSafe(roster);
+        syncXPCompat(nextXP);
+        return nextXP;
+    }
+
     function setInstruction(text) {
         document.getElementById('task-prompt').innerHTML = text;
     }
 
     function updateXP(amount) {
-        let xp = parseInt(localStorage.getItem('totalXP') || 0);
-        xp += amount;
-        localStorage.setItem('totalXP', xp);
+        const xp = adjustCanonicalXP(amount);
         document.getElementById('xp-display').innerText = `XP: ${xp.toString().padStart(4, '0')}`;
     }
 

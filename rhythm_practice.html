@@ -12,9 +12,9 @@
         }
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
-            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; overflow-y: auto;
             background-image: radial-gradient(circle at center, #0b1426 0%, #030508 100%);
-            touch-action: none; -webkit-user-select: none; user-select: none;
+            touch-action: pan-y; -webkit-user-select: none; user-select: none;
         }
 
         .hud-top {
@@ -117,6 +117,7 @@
         }
         .btn-start.running { background: var(--red); color: #fff; }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 

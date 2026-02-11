@@ -17,7 +17,7 @@
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
             display: flex; flex-direction: column; align-items: center; min-height: 100vh;
-            overflow: hidden; padding: 20px;
+            overflow-x: hidden; overflow-y: auto; padding: 20px;
             background-image: radial-gradient(circle at 50% 50%, #0a111a 0%, #020406 100%);
         }
 
@@ -111,6 +111,7 @@
         }
         .btn-start:hover { transform: scale(1.05); box-shadow: 0 0 40px var(--red); }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 

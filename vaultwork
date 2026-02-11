@@ -1,0 +1,27 @@
+Access Level,Entry Method,ID / Username,Password / Key
+IT Manager,Ctrl+Shift+I,ADMIN_1,MASTER_ROOT_2026
+Sensei Dash,Sensei Mode Toggle,Created in IT Manager,Created in IT Manager
+Ninja Hub,Main Portal Login,Created in Dash/IT,Created in Dash/IT
+Guest,Guest Entry Link,Auto-generated,None
+
+⌨️ New Commands you can use:
+ls: See what folders/files are around you.
+
+cd home then cd ninjas then ls: This will actually pull the live list of students from the database and show them as "folders".
+
+provision NAME PASS: Still works exactly like before, but inside the bash terminal.
+
+sudo freeze USER_1: For that extra "hacker" feel when you need to lock someone out.
+
+clear: Wipes the terminal screen.
+
+top: Shows the latest entries from the Audit Log.
+
+Your system is now a fully functional "Web-Bash" terminal!
+
+
+To Reset Password: Type provision KEN 5555. This changes KEN's password to 5555.
+
+To Delete a Sensei: Type delete KEN. This removes KEN entirely.
+
+To View all Senseis: Type ls.

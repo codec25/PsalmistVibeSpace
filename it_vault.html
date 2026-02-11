@@ -13,7 +13,7 @@
 
         body, html { 
             margin: 0; padding: 0; background: var(--bg); color: var(--neon); 
-            font-family: 'Fira Code', monospace; height: 100vh; overflow: hidden; 
+            font-family: 'Fira Code', monospace; min-height: 100vh; overflow-x: hidden; overflow-y: auto; 
         }
 
         /* --- AUTH SCREEN --- */
@@ -38,7 +38,7 @@
         .btn-access:hover { background: #fff; box-shadow: 0 0 20px #fff; }
 
         /* --- MAIN INTERFACE --- */
-        #vault-interface { display: none; height: 100vh; flex-direction: column; }
+        #vault-interface { display: none; min-height: 100vh; flex-direction: column; }
         
         header { 
             padding: 15px 25px; background: #000; border-bottom: 1px solid var(--neon); 
@@ -76,6 +76,7 @@
             font-family: 'Orbitron'; text-align: center; border: 20px solid var(--red);
         }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 
@@ -137,7 +138,7 @@
 
         // Validate credentials and check the role object
         if (user && (user.pass === pass || user === pass)) {
-            const role = user.role || 'BASIC_SENSEI'; 
+            const role = (user.role || 'SENSEI').toUpperCase();
 
             if (role === 'IT_SENSEI') {
                 activeUser = id;

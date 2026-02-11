@@ -16,7 +16,7 @@
         body {
             margin: 0; font-family: 'Quicksand', sans-serif;
             background: #000; color: white;
-            min-height: 100vh; overflow: hidden;
+            min-height: 100vh; overflow-x: hidden; overflow-y: auto;
             display: flex; flex-direction: column;
             transition: 0.5s;
         }
@@ -199,6 +199,7 @@
         }
         #shoutbox.show { transform: translateY(0); }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body id="game-body">
 <canvas id="warp-canvas"></canvas>

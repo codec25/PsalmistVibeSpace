@@ -12,7 +12,7 @@
             --syntax-kw: #ff007f;
             --syntax-str: #ffcc00;
         }
-        body, html { margin: 0; padding: 0; background: var(--bg); color: var(--neon-blue); font-family: 'Fira Code', monospace; height: 100vh; overflow: hidden; }
+        body, html { margin: 0; padding: 0; background: var(--bg); color: var(--neon-blue); font-family: 'Fira Code', monospace; min-height: 100vh; overflow-x: hidden; overflow-y: auto; }
         
         #matrix-canvas { position: fixed; top: 0; left: 0; z-index: 0; opacity: 0.15; pointer-events: none; }
 
@@ -26,7 +26,7 @@
         .main-layout { 
             position: relative; z-index: 10; display: grid; 
             grid-template-columns: 280px 1fr 320px; gap: 20px; 
-            padding: 20px; height: calc(100vh - 80px); overflow: hidden; 
+            padding: 20px; min-height: calc(100vh - 80px); overflow: visible; 
         }
 
         .panel { 
@@ -59,6 +59,7 @@
         .snippet-item { padding:10px; border-left:2px solid var(--neon-blue); background:rgba(79,172,254,0.05); margin-bottom:8px; cursor:pointer; font-size:0.7rem; transition: 0.2s; }
         .snippet-item:hover { background: rgba(79,172,254,0.15); padding-left: 15px; }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 

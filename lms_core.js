@@ -1,81 +1,256 @@
-/**
- * PSALMIST_NINJA // LMS_CORE_V5
- * Centralized Logic for Conservatory Accreditation & XP Management
+/* Psalmist LMS Core v1
+ * Canonical LMS data store shared by auth, IT manager, and sensei dashboard.
  */
+(function () {
+  var DB_KEY = "lms_db_v1";
 
-const LMS = {
-    // Standardized Grade Titles for UI consistency
-    gradeTitles: [
-        "THE_TACTUS", "SIMPLE_SUBDIVISION", "TERNARY_GROUPING", 
-        "THE_ANACRUSIS", "SYNCOPATION", "COMPOUND_METERS", 
-        "PARADIDDLES", "CROSS_RHYTHMS", "ASYMMETRIC_METERS", 
-        "THE_HEMIOLA", "MICRO_SUBDIVISIONS", "METRIC_MODULATION"
-    ],
+  function nowISO() {
+    return new Date().toISOString();
+  }
 
-    // Data Structure
-    profile: {
-        name: localStorage.getItem('ninjaUser') || "GUEST_OPERATOR",
-        xp: parseInt(localStorage.getItem('totalXP')) || 0,
-        level: parseInt(localStorage.getItem('currentLevel')) || 1,
-        stats: JSON.parse(localStorage.getItem('ninjaStats')) || { reading: 0, timing: 0, ident: 0 }
-    },
-
-    /**
-     * Awards XP and updates specific skill metrics
-     * @param {string} category - 'reading', 'timing', or 'ident'
-     * @param {number} amount - XP value to add
-     */
-    award: function(category, amount) {
-        this.profile.xp += amount;
-        if (this.profile.stats[category] !== undefined) {
-            this.profile.stats[category] += amount;
-        }
-
-        this.save();
-        console.log(`[LMS] +${amount} XP awarded to ${category}. Total: ${this.profile.xp}`);
-        
-        // Dispatch event for UI updates (like HUDs)
-        window.dispatchEvent(new CustomEvent('xpUpdate', { detail: this.profile }));
-    },
-
-    /**
-     * Promotes the user to the next Grade
-     * Usually called by grade_exam.html upon success
-     */
-    promote: function() {
-        if (this.profile.level < 12) {
-            this.profile.level++;
-            this.save();
-            return true;
-        }
-        return false;
-    },
-
-    /**
-     * Logic for the Daily Challenge
-     * Returns a difficulty multiplier based on Grade
-     */
-    getChallengeConfig: function() {
-        return {
-            grade: this.profile.level,
-            title: this.gradeTitles[this.profile.level - 1],
-            multiplier: 1 + (this.profile.level * 0.1),
-            bpm: 60 + (this.profile.level * 5)
-        };
-    },
-
-    save: function() {
-        localStorage.setItem('totalXP', this.profile.xp);
-        localStorage.setItem('currentLevel', this.profile.level);
-        localStorage.setItem('ninjaStats', JSON.stringify(this.profile.stats));
+  function safeParse(raw, fallback) {
+    try {
+      var parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : fallback;
+    } catch (_err) {
+      return fallback;
     }
-};
+  }
 
-// Auto-Sync HUDs if they exist on the page
-window.addEventListener('xpUpdate', (e) => {
-    const xpDisplay = document.getElementById('display-xp');
-    const lvlDisplay = document.getElementById('display-level');
-    
-    if (xpDisplay) xpDisplay.innerText = e.detail.xp.toLocaleString() + " XP";
-    if (lvlDisplay) lvlDisplay.innerText = "GRADE_" + e.detail.level.toString().padStart(2, '0');
-});
+  function getDB() {
+    var db = safeParse(localStorage.getItem(DB_KEY), null);
+    if (!db || typeof db !== "object") {
+      db = {
+        version: 1,
+        users: {},
+        courses: {},
+        enrollments: {},
+        assignments: {},
+        submissions: {}
+      };
+    }
+    if (!db.users || typeof db.users !== "object") db.users = {};
+    if (!db.courses || typeof db.courses !== "object") db.courses = {};
+    if (!db.enrollments || typeof db.enrollments !== "object") db.enrollments = {};
+    if (!db.assignments || typeof db.assignments !== "object") db.assignments = {};
+    if (!db.submissions || typeof db.submissions !== "object") db.submissions = {};
+    if (!db.version) db.version = 1;
+    return db;
+  }
+
+  function setDB(db) {
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+  }
+
+  function normalizeRole(role) {
+    var r = String(role || "").toUpperCase();
+    if (r === "ADMIN" || r === "IT_SENSEI" || r === "SENSEI" || r === "STUDENT" || r === "GUEST") return r;
+    return "STUDENT";
+  }
+
+  function upsertUser(id, role, userType) {
+    var key = String(id || "").trim().toUpperCase();
+    if (!key) return null;
+    var db = getDB();
+    var existing = db.users[key] || {};
+    db.users[key] = {
+      id: key,
+      role: normalizeRole(role || existing.role),
+      userType: String(userType || existing.userType || "MEMBER").toUpperCase(),
+      createdAt: existing.createdAt || nowISO(),
+      updatedAt: nowISO(),
+      active: true
+    };
+    setDB(db);
+    return db.users[key];
+  }
+
+  function initFromLegacy() {
+    var db = getDB();
+    var vault = safeParse(localStorage.getItem("vault_users"), { teachers: {} });
+    var roster = safeParse(localStorage.getItem("ninja_roster_full"), {});
+
+    if (!vault.teachers || typeof vault.teachers !== "object") vault.teachers = {};
+    Object.keys(vault.teachers).forEach(function (id) {
+      var teacher = vault.teachers[id];
+      var role = "SENSEI";
+      if (teacher && typeof teacher === "object" && String(teacher.role || "").toUpperCase() === "IT_SENSEI") {
+        role = "IT_SENSEI";
+      }
+      var key = String(id).toUpperCase();
+      var existing = db.users[key] || {};
+      db.users[key] = {
+        id: key,
+        role: role,
+        userType: "SENSEI",
+        createdAt: existing.createdAt || nowISO(),
+        updatedAt: nowISO(),
+        active: true
+      };
+    });
+
+    Object.keys(roster || {}).forEach(function (id) {
+      var key = String(id).toUpperCase();
+      var existing = db.users[key] || {};
+      db.users[key] = {
+        id: key,
+        role: existing.role || "STUDENT",
+        userType: existing.userType || "MEMBER",
+        createdAt: existing.createdAt || nowISO(),
+        updatedAt: nowISO(),
+        active: true
+      };
+    });
+
+    var adminName = String(localStorage.getItem("ninjaUser") || "").toUpperCase();
+    var sessionRole = String(localStorage.getItem("userRole") || "").toUpperCase();
+    var sessionType = String(localStorage.getItem("userType") || "").toUpperCase();
+    if (adminName && (sessionRole === "ADMIN" || sessionType === "ADMIN")) {
+      var existingAdmin = db.users[adminName] || {};
+      db.users[adminName] = {
+        id: adminName,
+        role: "ADMIN",
+        userType: "ADMIN",
+        createdAt: existingAdmin.createdAt || nowISO(),
+        updatedAt: nowISO(),
+        active: true
+      };
+    }
+
+    setDB(db);
+    return db;
+  }
+
+  function createCourse(courseId, title, createdBy) {
+    var id = String(courseId || "").trim().toUpperCase();
+    if (!id) return { ok: false, error: "COURSE_ID_REQUIRED" };
+    var db = getDB();
+    if (db.courses[id]) return { ok: false, error: "COURSE_EXISTS" };
+    db.courses[id] = {
+      id: id,
+      title: String(title || id).trim(),
+      createdBy: String(createdBy || "SYSTEM").toUpperCase(),
+      createdAt: nowISO(),
+      active: true
+    };
+    if (!Array.isArray(db.enrollments[id])) db.enrollments[id] = [];
+    setDB(db);
+    return { ok: true, course: db.courses[id] };
+  }
+
+  function listCourses() {
+    var db = getDB();
+    return Object.keys(db.courses).map(function (id) { return db.courses[id]; });
+  }
+
+  function enrollStudent(courseId, studentId) {
+    var cid = String(courseId || "").trim().toUpperCase();
+    var sid = String(studentId || "").trim().toUpperCase();
+    if (!cid || !sid) return { ok: false, error: "COURSE_AND_STUDENT_REQUIRED" };
+    var db = getDB();
+    if (!db.courses[cid]) return { ok: false, error: "COURSE_NOT_FOUND" };
+    if (!db.users[sid]) {
+      db.users[sid] = { id: sid, role: "STUDENT", userType: "MEMBER", createdAt: nowISO(), updatedAt: nowISO(), active: true };
+    }
+    if (!Array.isArray(db.enrollments[cid])) db.enrollments[cid] = [];
+    if (!db.enrollments[cid].includes(sid)) db.enrollments[cid].push(sid);
+    db.users[sid].updatedAt = nowISO();
+    setDB(db);
+    return { ok: true };
+  }
+
+  function createAssignment(courseId, assignmentId, title, maxPoints, createdBy) {
+    var cid = String(courseId || "").trim().toUpperCase();
+    var aid = String(assignmentId || "").trim().toUpperCase();
+    var points = Math.max(1, parseInt(maxPoints, 10) || 100);
+    if (!cid || !aid) return { ok: false, error: "COURSE_AND_ASSIGNMENT_REQUIRED" };
+    var db = getDB();
+    if (!db.courses[cid]) return { ok: false, error: "COURSE_NOT_FOUND" };
+    if (db.assignments[aid]) return { ok: false, error: "ASSIGNMENT_EXISTS" };
+    db.assignments[aid] = {
+      id: aid,
+      courseId: cid,
+      title: String(title || aid).trim(),
+      maxPoints: points,
+      createdBy: String(createdBy || "SYSTEM").toUpperCase(),
+      createdAt: nowISO()
+    };
+    if (!db.submissions[aid] || typeof db.submissions[aid] !== "object") db.submissions[aid] = {};
+    setDB(db);
+    return { ok: true, assignment: db.assignments[aid] };
+  }
+
+  function gradeAssignment(assignmentId, studentId, score, feedback) {
+    var aid = String(assignmentId || "").trim().toUpperCase();
+    var sid = String(studentId || "").trim().toUpperCase();
+    var value = parseInt(score, 10);
+    if (!aid || !sid || !Number.isFinite(value)) return { ok: false, error: "ASSIGNMENT_STUDENT_SCORE_REQUIRED" };
+    var db = getDB();
+    var assignment = db.assignments[aid];
+    if (!assignment) return { ok: false, error: "ASSIGNMENT_NOT_FOUND" };
+    if (!db.users[sid]) return { ok: false, error: "STUDENT_NOT_FOUND" };
+    if (!db.submissions[aid] || typeof db.submissions[aid] !== "object") db.submissions[aid] = {};
+    var maxPoints = Math.max(1, parseInt(assignment.maxPoints, 10) || 100);
+    var bounded = Math.max(0, Math.min(maxPoints, value));
+    db.submissions[aid][sid] = {
+      studentId: sid,
+      assignmentId: aid,
+      score: bounded,
+      maxPoints: maxPoints,
+      feedback: String(feedback || ""),
+      status: "GRADED",
+      submittedAt: db.submissions[aid][sid] && db.submissions[aid][sid].submittedAt ? db.submissions[aid][sid].submittedAt : nowISO(),
+      gradedAt: nowISO()
+    };
+    setDB(db);
+    return { ok: true, submission: db.submissions[aid][sid] };
+  }
+
+  function getStudentProgress(studentId) {
+    var sid = String(studentId || "").trim().toUpperCase();
+    var db = getDB();
+    var enrolledCourses = [];
+    Object.keys(db.enrollments).forEach(function (cid) {
+      if (Array.isArray(db.enrollments[cid]) && db.enrollments[cid].includes(sid)) enrolledCourses.push(cid);
+    });
+
+    var graded = [];
+    Object.keys(db.submissions).forEach(function (aid) {
+      var subMap = db.submissions[aid] || {};
+      if (subMap[sid] && subMap[sid].status === "GRADED") {
+        graded.push(subMap[sid]);
+      }
+    });
+    var totalScore = graded.reduce(function (sum, item) { return sum + (parseInt(item.score, 10) || 0); }, 0);
+    var totalMax = graded.reduce(function (sum, item) { return sum + (parseInt(item.maxPoints, 10) || 0); }, 0);
+    var average = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+    return {
+      studentId: sid,
+      courses: enrolledCourses,
+      gradedCount: graded.length,
+      averagePercent: average
+    };
+  }
+
+  function listAssignments(courseId) {
+    var cid = String(courseId || "").trim().toUpperCase();
+    var db = getDB();
+    return Object.keys(db.assignments)
+      .map(function (id) { return db.assignments[id]; })
+      .filter(function (a) { return !cid || a.courseId === cid; });
+  }
+
+  window.LMSCore = {
+    init: initFromLegacy,
+    getDB: getDB,
+    setDB: setDB,
+    upsertUser: upsertUser,
+    createCourse: createCourse,
+    listCourses: listCourses,
+    enrollStudent: enrollStudent,
+    createAssignment: createAssignment,
+    listAssignments: listAssignments,
+    gradeAssignment: gradeAssignment,
+    getStudentProgress: getStudentProgress
+  };
+})();

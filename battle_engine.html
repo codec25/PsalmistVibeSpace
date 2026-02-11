@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Battle Engine | Psalmist Ninja Studio</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -12,8 +12,9 @@
         }
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
-            display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 0 0 40px 0;
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: max(8px, env(safe-area-inset-top)) 0 max(24px, env(safe-area-inset-bottom)) 0;
             background-image: radial-gradient(circle at center, #0b1426 0%, #030508 100%);
+            overflow-x: hidden;
         }
 
         /* --- Navigation Header --- */
@@ -59,8 +60,8 @@
         }
 
         .battle-arena { 
-            width: 90%; max-width: 900px; background: var(--panel); border: 1px solid var(--border); 
-            border-radius: 30px; padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            width: min(920px, calc(100% - 24px)); background: var(--panel); border: 1px solid var(--border); 
+            border-radius: 30px; padding: clamp(16px, 4vw, 40px); box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             box-sizing: border-box;
         }
 
@@ -109,7 +110,7 @@
 
         .signal-zone { text-align: center; margin: 40px 0; }
         .big-q { 
-            font-size: 8rem; font-weight: 900; color: var(--blue); 
+            font-size: clamp(3.5rem, 18vw, 8rem); font-weight: 900; color: var(--blue); 
             text-shadow: 0 0 50px rgba(79, 172, 254, 0.5); margin: 0; 
         }
         
@@ -131,20 +132,20 @@
         .repeat-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
         .input-grid { 
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); gap: 10px; 
             margin-top: 40px; 
         }
         .note-btn { 
             background: rgba(255,255,255,0.03); border: 1px solid var(--border); 
-            color: #fff; padding: 20px; border-radius: 10px; cursor: pointer; 
-            font-family: 'Orbitron'; font-size: 0.8rem; transition: 0.2s;
+            color: #fff; padding: clamp(12px, 3vw, 20px); border-radius: 10px; cursor: pointer; 
+            font-family: 'Orbitron'; font-size: clamp(0.7rem, 2.5vw, 0.8rem); transition: 0.2s;
         }
         .note-btn.flash-green { background: var(--green) !important; color: #000 !important; }
         .note-btn.flash-red { background: var(--pink) !important; color: #000 !important; }
 
         /* --- Piano Mode Styles --- */
         #pianoMode { display: none; width: 100%; justify-content: center; margin-bottom: 20px; }
-        .piano-container { display: flex; position: relative; height: 120px; }
+        .piano-container { display: flex; position: relative; height: 120px; max-width: 100%; overflow-x: auto; }
         .key { border: 1px solid #000; cursor: pointer; position: relative; transition: 0.2s; }
         .key.white { width: 40px; height: 120px; background: #fff; z-index: 1; border-radius: 0 0 5px 5px; }
         .key.black { width: 26px; height: 75px; background: #222; z-index: 2; margin-left: -13px; margin-right: -13px; border-radius: 0 0 3px 3px; }
@@ -157,7 +158,21 @@
         .footer-nav { margin-top: 40px; }
         .footer-nav a { color: var(--red); text-decoration: none; border: 1px solid var(--red); padding: 10px 20px; border-radius: 5px; font-size: 0.7rem; letter-spacing: 2px; transition: 0.3s; }
         .footer-nav a:hover { background: rgba(255, 75, 43, 0.1); box-shadow: 0 0 15px rgba(255, 75, 43, 0.2); }
+
+        @media (max-width: 760px) {
+            .nav-header { padding: 12px; flex-direction: column; align-items: stretch; gap: 8px; }
+            .nav-links { width: 100%; }
+            .nav-links .btn-return { width: 100%; text-align: center; }
+            .btn-return { font-size: 0.58rem; padding: 9px 10px; letter-spacing: 1px; text-align: center; }
+            #missionHeader { font-size: 0.62rem !important; padding: 0 10px; text-align: center; }
+            .stats-row { flex-direction: column; gap: 12px; margin-bottom: 22px; }
+            .stat-group { width: 100%; text-align: left !important; }
+            .signal-zone { margin: 22px 0; }
+            .strike-btn { letter-spacing: 2px; padding: 14px; }
+            #rangePanel { max-width: calc(100vw - 24px); grid-template-columns: repeat(2, 1fr); }
+        }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 
@@ -267,8 +282,68 @@
             if(isPianoView) generatePiano();
         }
 
+        function getCurrentNinjaName() {
+            return localStorage.getItem('ninjaUser') || 'GUEST_NINJA';
+        }
+
+        function getRosterSafe() {
+            try {
+                return JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            } catch {
+                return {};
+            }
+        }
+
+        function setRosterSafe(roster) {
+            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+        }
+
+        function ensureNinjaXPEntry() {
+            const ninjaName = getCurrentNinjaName();
+            const roster = getRosterSafe();
+            if (!roster[ninjaName] || typeof roster[ninjaName] !== 'object') {
+                roster[ninjaName] = {
+                    pass: "",
+                    xp: 0,
+                    joined: new Date().toLocaleDateString(),
+                    status: "LEVEL 01"
+                };
+            }
+            const numericXP = Number(roster[ninjaName].xp);
+            roster[ninjaName].xp = Number.isFinite(numericXP) && numericXP > 0 ? Math.floor(numericXP) : 0;
+            if (!roster[ninjaName].joined) roster[ninjaName].joined = new Date().toLocaleDateString();
+            if (!roster[ninjaName].status) roster[ninjaName].status = "LEVEL 01";
+            setRosterSafe(roster);
+            return { ninjaName, roster };
+        }
+
+        function syncXPCompat(xpValue) {
+            const safeXP = Number.isFinite(xpValue) && xpValue > 0 ? Math.floor(xpValue) : 0;
+            const ninjaName = getCurrentNinjaName();
+            localStorage.setItem('totalXP', String(safeXP));
+            localStorage.setItem(`xp_${ninjaName}`, String(safeXP));
+            localStorage.setItem('currentLevel', String(Math.floor(safeXP / 2500) + 1));
+        }
+
+        function getCanonicalXP() {
+            const { ninjaName, roster } = ensureNinjaXPEntry();
+            const xp = roster[ninjaName].xp;
+            syncXPCompat(xp);
+            return xp;
+        }
+
+        function adjustCanonicalXP(delta) {
+            const { ninjaName, roster } = ensureNinjaXPEntry();
+            const currentXP = Number(roster[ninjaName].xp) || 0;
+            const nextXP = Math.max(0, Math.floor(currentXP + delta));
+            roster[ninjaName].xp = nextXP;
+            setRosterSafe(roster);
+            syncXPCompat(nextXP);
+            return nextXP;
+        }
+
         function updateXPDisplay() {
-            let xp = parseInt(localStorage.getItem('totalXP')) || 0;
+            const xp = getCanonicalXP();
             const el = document.getElementById('currentXP');
             if(el) el.innerText = xp;
         }
@@ -397,9 +472,9 @@
 
         async function repeatSignal() {
             if(!isHumanVS) {
-                let xp = parseInt(localStorage.getItem('totalXP')) || 0;
+                const xp = getCanonicalXP();
                 if (xp < 5) return alert("INSUFFICIENT XP");
-                localStorage.setItem('totalXP', xp - 5);
+                adjustCanonicalXP(-5);
                 updateXPDisplay();
             }
             initAudio();
@@ -439,7 +514,7 @@
             if (!isHumanVS) {
                 if (p1Wins) {
                     const reward = (missionType === 'perfect5th') ? 500 : 150;
-                    localStorage.setItem('totalXP', (parseInt(localStorage.getItem('totalXP')) || 0) + reward);
+                    adjustCanonicalXP(reward);
                     alert(`VICTORY! +${reward} XP`);
                 } else alert("CRITICAL FAILURE.");
             } else alert(p1Wins ? "PLAYER 1 DOMINATES!" : "PLAYER 2 DOMINATES!");

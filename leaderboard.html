@@ -64,6 +64,7 @@
         }
         .btn-back:hover { background: var(--blue); color: #000; }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 
@@ -112,11 +113,26 @@
         { name: "Ghost_Notes", level: 5, xp: 22100 }
     ];
 
+    function getRosterSafe() {
+        try {
+            return JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        } catch {
+            return {};
+        }
+    }
+
+    function getCanonicalXPForUser(username) {
+        const roster = getRosterSafe();
+        if (!roster[username] || typeof roster[username] !== 'object') return 0;
+        const xp = Number(roster[username].xp);
+        return Number.isFinite(xp) && xp > 0 ? Math.floor(xp) : 0;
+    }
+
     function initLeaderboard() {
         const body = document.getElementById('leaderboard-body');
         const myName = localStorage.getItem('ninjaUser') || "GUEST_USER";
-        const myXP = parseInt(localStorage.getItem('totalXP') || 0);
-        const myLevel = parseInt(localStorage.getItem('currentLevel') || 1);
+        const myXP = getCanonicalXPForUser(myName);
+        const myLevel = Math.floor(myXP / 2500) + 1;
 
         // Add "Me" to the list
         const allPlayers = [...MOCK_PLAYERS, { name: myName, level: myLevel, xp: myXP }];

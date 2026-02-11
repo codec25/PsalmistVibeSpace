@@ -43,423 +43,323 @@
             color: #fff; padding: 10px; font-family: 'Orbitron'; font-size: 0.7rem; margin-bottom: 10px; border-radius: 8px;
         }
 
-        .tactical-search {
-            border-color: var(--blue);
-            margin-bottom: 15px;
-            background: rgba(79, 172, 254, 0.05);
-            text-align: center;
-            letter-spacing: 2px;
-        }
-
         .btn {
             width: 100%; padding: 12px; background: transparent; border: 1px solid var(--blue);
             color: var(--blue); font-family: 'Orbitron'; cursor: pointer; border-radius: 8px;
-            font-size: 0.6rem; transition: 0.3s; font-weight: 900; letter-spacing: 1px;
-            text-transform: uppercase;
+            font-size: 0.6rem; transition: 0.3s; font-weight: 900; text-transform: uppercase;
         }
         .btn:hover { background: var(--blue); color: #000; box-shadow: 0 0 10px var(--blue); }
         .btn-red { border-color: var(--red); color: var(--red); }
-        .btn-red:hover { background: var(--red); color: #fff; box-shadow: 0 0 10px var(--red); }
-        .btn-green { border-color: var(--green); color: var(--green); }
-        .btn-green:hover { background: var(--green); color: #000; box-shadow: 0 0 10px var(--green); }
-        .btn-gold { border-color: var(--gold); color: var(--gold); }
-        .btn-gold:hover { background: var(--gold); color: #000; }
-
-        .vault-btn { 
-            display: none; /* Only visible for IT_SENSEI */
-            border-color: var(--gold); color: var(--gold); width: auto; padding: 10px 20px;
-        }
-
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-
-        .bracket-slot { width: 150px; background: #000; border: 1px solid var(--border); color: #fff; font-size: 0.6rem; padding: 8px; margin-bottom: 5px; border-radius: 4px; }
+        .btn-red:hover { background: var(--red); color: #fff; }
+        
+        .leaderboard-box { height: 250px; overflow-y: auto; background: #000; padding: 10px; border-radius: 8px; border: 1px solid #111; }
+        
+        .bracket-slot { width: 100%; background: #000; border: 1px solid var(--border); color: #fff; font-size: 0.6rem; padding: 8px; margin-bottom: 5px; border-radius: 4px; }
+        
+        #dash-timer-preview { text-align:center; font-size:2.5rem; color:var(--gold); font-weight:900; text-shadow: 0 0 15px var(--gold); }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 
 <div class="dash-container">
     <header>
         <div>
-            <h1 style="font-size: 1.2rem; letter-spacing: 5px; margin:0;">SENSEI_DASH // <span id="sensei-name-display">CLASSROOM_CORE</span></h1>
+            <h1 style="font-size: 1.2rem; letter-spacing: 5px; margin:0;">SENSEI_DASH // <span id="sensei-name-display">...</span></h1>
             <div class="it-status">
                 <div id="it-light" class="light"></div>
                 <span id="it-text">IT_SURVEILLANCE: PASSIVE</span>
             </div>
         </div>
         <div style="display:flex; gap:10px;">
-            <button id="vault-access-btn" class="btn vault-btn" onclick="window.location.href='it_vault.html'">ACCESS_VAULT</button>
-            <button class="btn btn-red" style="width:auto; padding: 10px 25px;" onclick="logout()">EXIT_COMMAND</button>
+            <button id="vault-access-btn" class="btn" style="display:none; border-color:var(--gold); color:var(--gold);" onclick="window.location.href='it_vault.html'">IT_VAULT</button>
+            <button class="btn btn-red" style="width:auto; padding: 10px 25px;" onclick="logout()">LOGOUT</button>
         </div>
     </header>
 
     <div class="grid">
         <div class="panel">
-            <h3>DEPLOY_MISSION</h3>
-            <input type="text" id="m-name" placeholder="MISSION_CODENAME">
-            <input type="number" id="m-goal" placeholder="XP_GOAL">
-            <select id="m-type">
-                <option value="PITCH_HUB">PITCH_HUB</option>
-                <option value="PIANO_LAB">PIANO_LAB</option>
-                <option value="RHYTHM_HUB">RHYTHM_HUB</option>
-            </select>
-            <button class="btn btn-blue" onclick="deployMission()">TRANSMIT_ORDERS</button>
-            <button class="btn btn-red" style="margin-top:5px;" onclick="cancelMission()">ABORT_MISSION</button>
+            <h3>NINJA_ENROLLMENT</h3>
+            <input type="text" id="new-ninja-id" placeholder="STUDENT_ID (Ex: NINJA_01)">
+            <input type="password" id="new-ninja-pass" placeholder="PASSWORD">
+            <button class="btn" style="border-color:var(--green); color:var(--green);" onclick="enrollNinja()">ENROLL_NINJA</button>
+            <hr style="border:0; border-top:1px solid #222; margin:20px 0;">
+            <h3>QUICK_ACTIONS</h3>
+            <button class="btn" style="border-color:var(--purple); color:var(--purple);" onclick="bulkXP()">GRANT_GLOBAL_XP (+500)</button>
         </div>
 
         <div class="panel">
-            <h3>NINJA_ROSTER_OVERWATCH</h3>
-            <input type="text" id="roster-search" class="tactical-search" placeholder="[ SCAN_FOR_NINJA_ID ]" onkeyup="refreshUI()">
-            
-            <div id="leaderboard-list" style="height: 250px; overflow-y: auto; background: #000; padding: 10px; border-radius: 8px; border: 1px solid #111;"></div>
-            <div id="total-xp-pool" style="font-size:0.55rem; color:var(--gold); margin-top:10px; text-align:right;">TOTAL_POWER: 0</div>
-            <button class="btn btn-purple" style="margin-top:10px; font-size:0.5rem;" onclick="generateAcademyReport()">GENERATE_MISSION_REPORT</button>
+            <h3>ROSTER_OVERWATCH</h3>
+            <input type="text" id="roster-search" placeholder="SEARCH_ID..." onkeyup="refreshUI()">
+            <div id="leaderboard-list" class="leaderboard-box"></div>
+            <div id="total-xp-pool" style="font-size:0.6rem; color:var(--gold); margin-top:10px; text-align:right;">TOTAL_POWER: 0</div>
         </div>
 
         <div class="panel">
-            <h3>ENROLLMENT_OFFICE</h3>
-            <input type="text" id="new-ninja-id" placeholder="NEW_STUDENT_ID">
-            <input type="password" id="new-ninja-pass" placeholder="SET_TEMP_PASSWORD">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:5px;">
-                <button class="btn btn-green" onclick="enrollNinja()">ENROLL</button>
-                <button class="btn btn-blue" style="border-color: var(--purple); color: var(--purple);" onclick="bulkEnrollPrompt()">BULK_DEPLOY</button>
-            </div>
-            
-            <hr style="border:0; border-top:1px solid #111; margin: 15px 0;">
-            
-            <h3 style="color: var(--gold);">CREDENTIAL_OVERRIDE</h3>
-            <select id="edit-ninja-select" onchange="loadNinjaData()">
-                <option value="">-- SELECT STUDENT --</option>
-            </select>
-            <input type="text" id="edit-ninja-id" placeholder="UPDATE_ID">
-            <input type="password" id="edit-ninja-pass" placeholder="UPDATE_PASSWORD">
-            <button class="btn btn-gold" onclick="updateNinjaCredentials()">APPLY_OVERRIDE</button>
-            
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:5px;">
-                <button class="btn btn-red" style="font-size: 0.5rem;" onclick="freezeNinja()">FREEZE_ACCOUNT</button>
-                <button class="btn btn-red" style="font-size: 0.5rem; background: rgba(255, 75, 43, 0.1);" onclick="terminateNinja()">WIPE_NINJA_DATA</button>
-            </div>
-        </div>
-
-        <div class="panel" style="grid-column: span 2;">
-            <h3>DUEL_ARENA_CONTROLS</h3>
-            <div style="display:flex; justify-content:space-around; align-items:center; background:#000; padding:20px; border-radius:10px; border: 1px solid #111;">
-                <div style="text-align:center; width: 45%;">
-                    <select id="select-n1" onchange="updateDuel()"></select>
-                    <div id="stat-n1" style="font-size:1.8rem; color:var(--blue); font-weight:900;">0 XP</div>
-                </div>
-                <div style="font-size:1.5rem; color:var(--red); font-weight:900; text-shadow: 0 0 10px var(--red);">VS</div>
-                <div style="text-align:center; width: 45%;">
-                    <select id="select-n2" onchange="updateDuel()"></select>
-                    <div id="stat-n2" style="font-size:1.8rem; color:var(--gold); font-weight:900;">0 XP</div>
-                </div>
-            </div>
-            <button class="btn btn-purple" style="margin-top:10px; border-color:var(--purple); color:var(--purple);" onclick="announceWinner()">DECLARE_WINNER</button>
+            <h3>LMS_CONTROL</h3>
+            <input type="text" id="course-id" placeholder="COURSE_ID (EX: PIANO_101)">
+            <input type="text" id="course-title" placeholder="COURSE_TITLE">
+            <button class="btn" onclick="createCourse()">CREATE_COURSE</button>
+            <hr style="border:0; border-top:1px solid #222; margin:12px 0;">
+            <input type="text" id="course-enroll-id" placeholder="COURSE_ID">
+            <input type="text" id="course-student-id" placeholder="STUDENT_ID">
+            <button class="btn" style="border-color:var(--green); color:var(--green);" onclick="enrollStudentToCourse()">ENROLL_TO_COURSE</button>
+            <hr style="border:0; border-top:1px solid #222; margin:12px 0;">
+            <input type="text" id="assignment-course-id" placeholder="COURSE_ID">
+            <input type="text" id="assignment-id" placeholder="ASSIGNMENT_ID">
+            <input type="number" id="assignment-max-points" value="100" placeholder="MAX_POINTS">
+            <input type="text" id="assignment-title" placeholder="ASSIGNMENT_TITLE">
+            <button class="btn" style="border-color:var(--purple); color:var(--purple);" onclick="createAssignment()">CREATE_ASSIGNMENT</button>
+            <hr style="border:0; border-top:1px solid #222; margin:12px 0;">
+            <input type="text" id="grade-assignment-id" placeholder="ASSIGNMENT_ID">
+            <input type="text" id="grade-student-id" placeholder="STUDENT_ID">
+            <input type="number" id="grade-score" placeholder="SCORE">
+            <input type="text" id="grade-feedback" placeholder="FEEDBACK (OPTIONAL)">
+            <button class="btn" style="border-color:var(--gold); color:var(--gold);" onclick="postGrade()">POST_GRADE</button>
         </div>
 
         <div class="panel">
-            <h3>SESSION_TIMER & SFX</h3>
-            <div style="display:flex; gap:5px; margin-bottom:10px;">
+            <h3>SESSION_COMMAND</h3>
+            <div id="dash-timer-preview">00:00</div>
+            <div style="display:flex; gap:5px; margin-top:10px;">
                 <input type="number" id="timer-input" value="60" style="margin:0;">
-                <button class="btn btn-green" style="width:auto;" onclick="startTimer()">START</button>
+                <button class="btn" style="width:auto; border-color:var(--green); color:var(--green);" onclick="startTimer()">START</button>
             </div>
-            <div id="dash-timer-preview" style="text-align:center; font-size:2rem; color:var(--gold); margin-bottom:10px; font-weight:900; text-shadow: 0 0 15px var(--gold);">00:00</div>
-            <div style="display:flex; gap:5px;">
-                <button class="btn btn-gold" onclick="fireSFX('horn')">🔔 BELL</button>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:15px;">
+                <button class="btn" onclick="fireSFX('horn')">🔔 BELL</button>
                 <button class="btn btn-red" onclick="fireSFX('battle')">💥 CRASH</button>
             </div>
         </div>
 
-        <div class="panel" style="grid-column: span 1;">
-            <h3>CLASS_BROADCAST</h3>
-            <textarea id="announcement-input" placeholder="SEND MESSAGE TO ALL HUBS..." style="height: 80px;"></textarea>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:5px;">
-                <button class="btn btn-blue" onclick="postAnnouncement()">BROADCAST</button>
-                <button class="btn btn-red" onclick="clearSOS()">CLEAR_SOS</button>
-            </div>
-            <button class="btn btn-green" onclick="bulkXP()">GRANT_CLASS_XP (+500)</button>
-        </div>
-
-        <div class="panel" style="grid-column: span 2;">
+        <div class="panel" style="grid-column: span 3;">
             <h3>TOURNAMENT_BRACKET_ENGINE</h3>
-            <div style="display:flex; justify-content:space-between; padding:30px; background:#000; border-radius:12px; border: 1px solid #111;">
-                <div style="display:flex; flex-direction:column; justify-content:center; gap:10px;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:40px; background:#000; padding:20px; border-radius:10px;">
+                <div>
                     <input type="text" class="bracket-slot" id="q1" placeholder="QUALIFIER_1">
                     <input type="text" class="bracket-slot" id="q2" placeholder="QUALIFIER_2">
                     <div style="height:20px;"></div>
                     <input type="text" class="bracket-slot" id="q3" placeholder="QUALIFIER_3">
                     <input type="text" class="bracket-slot" id="q4" placeholder="QUALIFIER_4">
                 </div>
-                <div style="display:flex; flex-direction:column; justify-content:center; gap:60px;">
-                    <input type="text" class="bracket-slot" id="s1" placeholder="SEMI_FINAL_1" style="border-color:var(--purple);">
-                    <input type="text" class="bracket-slot" id="s2" placeholder="SEMI_FINAL_2" style="border-color:var(--purple);">
+                <div style="display:flex; flex-direction:column; justify-content:center; gap:50px;">
+                    <input type="text" class="bracket-slot" id="s1" placeholder="SEMI_1" style="border-color:var(--purple);">
+                    <input type="text" class="bracket-slot" id="s2" placeholder="SEMI_2" style="border-color:var(--purple);">
                 </div>
                 <div style="display:flex; flex-direction:column; justify-content:center;">
-                    <div style="font-size:0.5rem; color:var(--gold); text-align:center; margin-bottom:5px;">GRAND_CHAMPION</div>
-                    <input type="text" class="bracket-slot" id="f1" placeholder="WINNER" style="border-color:var(--gold); height:50px; text-align:center; font-size:0.8rem; font-weight:900;">
+                    <input type="text" class="bracket-slot" id="f1" placeholder="GRAND_CHAMPION" style="border-color:var(--gold); height:60px; font-weight:900; text-align:center;">
                 </div>
             </div>
-            <div style="display:flex; gap:10px; margin-top:15px;">
-                <button class="btn btn-gold" style="width:auto;" onclick="saveBracket()">SAVE_STATE</button>
-                <button class="btn btn-red" style="width:auto;" onclick="resetBracket()">PURGE_BRACKET</button>
-            </div>
+            <button class="btn" style="margin-top:10px; border-color:var(--gold); color:var(--gold);" onclick="saveBracket()">SAVE_BRACKET_STATE</button>
         </div>
     </div>
 </div>
 
+<script src="lms_core.js"></script>
 <script>
-    // --- SECURITY SHIELD ---
-    const CURRENT_USER_ID = localStorage.getItem('ninjaUser');
+    // --- DATABASE HANDSHAKE ---
+    const getVault = () => JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+    const getRoster = () => JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+    if (window.LMSCore) LMSCore.init();
+    function normalizeRoster() {
+        const roster = getRoster();
+        Object.keys(roster).forEach(id => {
+            if (!roster[id] || typeof roster[id] !== 'object') {
+                roster[id] = { pass: '', xp: 0, joined: new Date().toLocaleDateString(), status: 'LEVEL 01' };
+                return;
+            }
+            roster[id].pass = String(roster[id].pass ?? '');
+            roster[id].xp = Number.isFinite(Number(roster[id].xp)) ? Number(roster[id].xp) : 0;
+            if (!roster[id].joined) roster[id].joined = new Date().toLocaleDateString();
+            if (!roster[id].status) roster[id].status = 'LEVEL 01';
+        });
+        localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+        return roster;
+    }
+    
+    const USER_ID = localStorage.getItem('ninjaUser');
     const USER_TYPE = localStorage.getItem('userType');
-    const vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
 
-    // Verify identity against vault storage
-    if (!CURRENT_USER_ID || USER_TYPE !== 'SENSEI' || !vault.teachers[CURRENT_USER_ID]) {
-        alert("ACCESS_DENIED: UNAUTHORIZED_SENSEI_COMMAND");
-        logout();
+    // Security Gate
+    if (!USER_ID || USER_TYPE !== 'SENSEI' || !getVault().teachers[USER_ID]) {
+        window.location.href = 'index.html';
     } else {
-        document.getElementById('sensei-name-display').innerText = CURRENT_USER_ID;
-        // Check for IT Role to show Vault Button
-        if (vault.teachers[CURRENT_USER_ID].role === 'IT_SENSEI') {
+        document.getElementById('sensei-name-display').innerText = USER_ID;
+        if(getVault().teachers[USER_ID].role === 'IT_SENSEI') {
             document.getElementById('vault-access-btn').style.display = 'block';
         }
     }
 
-    let tInt;
-
-    function logout() {
-        localStorage.removeItem('ninjaUser');
-        localStorage.removeItem('userType');
-        window.location.href = 'index.html';
-    }
-
-    function checkITStatus() {
-        const isWatched = localStorage.getItem('it_active') === 'true';
-        const light = document.getElementById('it-light');
-        const text = document.getElementById('it-text');
-        if(light && text) {
-            light.className = isWatched ? 'light watching' : 'light';
-            text.innerText = isWatched ? "IT_SURVEILLANCE: ACTIVE" : "IT_SURVEILLANCE: PASSIVE";
-        }
-    }
-
-    // --- ENROLLMENT & ROSTER ---
+    // --- ENROLLMENT ---
     function enrollNinja() {
         const id = document.getElementById('new-ninja-id').value.trim().toUpperCase();
         const pass = document.getElementById('new-ninja-pass').value.trim();
-        if (!id || !pass) return alert("REQUIRED: ID & PASS");
+        if(!id || !pass) return alert("MISSING_DATA");
 
-        let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-        if (!roster[id]) {
-            roster[id] = { pass: pass, xp: 0, status: "LEVEL 01 ACADEMY", joined: new Date().toLocaleDateString(), lastLogin: "NEVER" };
-            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
-            document.getElementById('new-ninja-id').value = "";
-            document.getElementById('new-ninja-pass').value = "";
-            refreshUI();
-            alert("SUCCESS: NINJA " + id + " ENROLLED.");
-        } else {
-            alert("ERROR: ID ALREADY EXISTS.");
-        }
-    }
+        let roster = getRoster();
+        if(roster[id]) return alert("ID_EXISTS");
 
-    function bulkEnrollPrompt() {
-        const input = prompt("PASTE LIST OF NINJA IDs (Separated by commas or lines):");
-        if (!input) return;
-        const names = input.split(/[,\n]/).map(n => n.trim().toUpperCase()).filter(n => n.length > 0);
-        let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-        names.forEach(id => {
-            if (!roster[id]) roster[id] = { pass: "NINJA_START_2026", xp: 0, status: "LEVEL 01 ACADEMY", joined: new Date().toLocaleDateString(), lastLogin: "NEVER" };
-        });
+        roster[id] = { pass: String(pass), xp: 0, joined: new Date().toLocaleDateString(), status: "LEVEL 01" };
         localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+        
+        document.getElementById('new-ninja-id').value = "";
+        document.getElementById('new-ninja-pass').value = "";
         refreshUI();
-        alert("BULK ENROLLMENT COMPLETE.");
+        alert("NINJA_ENROLLED: " + id);
     }
 
     function refreshUI() {
         const list = document.getElementById('leaderboard-list');
-        const searchFilter = (document.getElementById('roster-search').value || "").toUpperCase();
-        const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        const filter = document.getElementById('roster-search').value.toUpperCase();
+        const roster = normalizeRoster();
         const ids = Object.keys(roster);
-        let totalXP = 0;
-
-        const editSelect = document.getElementById('edit-ninja-select');
-        const s1 = document.getElementById('select-n1');
-        const s2 = document.getElementById('select-n2');
         
-        const opts = '<option value="">-- SELECT STUDENT --</option>' + ids.sort().map(id => `<option value="${id}">${id}</option>`).join('');
-        editSelect.innerHTML = opts;
-        s1.innerHTML = opts;
-        s2.innerHTML = opts;
-
-        const sorted = ids.filter(id => id.includes(searchFilter))
+        let total = 0;
+        const sorted = ids.filter(id => id.includes(filter))
                           .map(id => ({ id, ...roster[id] }))
                           .sort((a,b) => b.xp - a.xp);
-        
-        list.innerHTML = sorted.map((n, i) => {
-            totalXP += n.xp;
-            return `
-                <div style="padding:10px; margin-bottom:5px; border-radius:8px; border-bottom: 1px solid #111;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:0.65rem;">#${i+1} ${n.id}</span>
-                        <span style="color:var(--green); font-size:0.7rem; font-weight:900;">${n.xp.toLocaleString()} XP</span>
-                    </div>
-                    <div style="display:flex; gap:5px; margin-top:10px;">
-                        <button class="btn" style="padding:5px; font-size:0.4rem;" onclick="modifyXP('${n.id}', 100)">+100</button>
-                        <button class="btn btn-red" style="padding:5px; font-size:0.4rem;" onclick="modifyXP('${n.id}', -100)">-100</button>
-                    </div>
-                </div>`;
-        }).join('');
 
-        document.getElementById('total-xp-pool').innerText = `TOTAL_POWER: ${totalXP.toLocaleString()}`;
+        list.innerHTML = sorted.map((n, i) => {
+            total += (Number.isFinite(Number(n.xp)) ? Number(n.xp) : 0);
+            return `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #111;">
+                    <span style="font-size:0.6rem;">#${i+1} ${n.id}</span>
+                    <span style="color:var(--green); font-size:0.7rem;">${(Number.isFinite(Number(n.xp)) ? Number(n.xp) : 0).toLocaleString()}</span>
+                    <div style="display:flex; gap:5px;">
+                        <button onclick="modifyXP('${n.id}', 100)" style="background:none; border:1px solid var(--blue); color:var(--blue); font-size:0.5rem; cursor:pointer;">+100</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        document.getElementById('total-xp-pool').innerText = "TOTAL_POWER: " + total.toLocaleString();
     }
 
     function modifyXP(id, amt) {
-        let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-        if (roster[id]) {
-            roster[id].xp = Math.max(0, (roster[id].xp || 0) + amt);
-            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
-            refreshUI();
-        }
-    }
-
-    function bulkXP() {
-        if(!confirm("GRANT 500 XP TO ALL?")) return;
-        let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-        Object.keys(roster).forEach(id => roster[id].xp += 500);
+        let roster = getRoster();
+        if (!roster[id]) return;
+        const cur = Number.isFinite(Number(roster[id].xp)) ? Number(roster[id].xp) : 0;
+        roster[id].xp = cur + Number(amt || 0);
         localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
-        postAnnouncement("ACADEMY REWARD: ALL NINJAS +500 XP!");
         refreshUI();
     }
 
-    function loadNinjaData() {
-        const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-        const id = document.getElementById('edit-ninja-select').value;
-        if(id && roster[id]) {
-            document.getElementById('edit-ninja-id').value = id;
-            document.getElementById('edit-ninja-pass').value = roster[id].pass;
-        }
-    }
-
-    function updateNinjaCredentials() {
-        const oldId = document.getElementById('edit-ninja-select').value;
-        const newId = document.getElementById('edit-ninja-id').value.trim().toUpperCase();
-        const newPass = document.getElementById('edit-ninja-pass').value.trim();
-        if(!oldId || !newId || !newPass) return alert("MISSING DATA");
-        let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-        const data = roster[oldId];
-        data.pass = newPass;
-        if(oldId !== newId) { roster[newId] = data; delete roster[oldId]; }
+    function bulkXP() {
+        if(!confirm("AWARD 500 XP TO EVERYONE?")) return;
+        let roster = getRoster();
+        Object.keys(roster).forEach(id => {
+            const cur = Number.isFinite(Number(roster[id].xp)) ? Number(roster[id].xp) : 0;
+            roster[id].xp = cur + 500;
+        });
         localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
-        refreshUI(); alert("CREDENTIALS UPDATED.");
+        localStorage.setItem('system_broadcast', JSON.stringify({ message: "SENSEI GRANTED +500 XP TO ALL!", timestamp: Date.now() }));
+        refreshUI();
     }
 
-    function terminateNinja() {
-        const id = document.getElementById('edit-ninja-select').value;
-        if(id && confirm("WIPE " + id + "?")) {
-            let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-            delete roster[id];
-            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
-            refreshUI();
-        }
+    // --- LMS ACTIONS ---
+    function createCourse() {
+        if (!window.LMSCore) return alert("LMS_CORE_UNAVAILABLE");
+        const courseId = document.getElementById('course-id').value.trim().toUpperCase();
+        const title = document.getElementById('course-title').value.trim();
+        if (!courseId) return alert("COURSE_ID_REQUIRED");
+        const result = LMSCore.createCourse(courseId, title || courseId, USER_ID);
+        if (!result.ok) return alert(result.error);
+        document.getElementById('course-id').value = '';
+        document.getElementById('course-title').value = '';
+        alert("COURSE_CREATED: " + courseId);
     }
 
-    function freezeNinja() {
-        const id = document.getElementById('edit-ninja-select').value;
-        if(id) {
-            let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-            roster[id].status = "FROZEN_BY_SENSEI";
-            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
-            alert(id + " ACCOUNT FROZEN.");
-        }
+    function enrollStudentToCourse() {
+        if (!window.LMSCore) return alert("LMS_CORE_UNAVAILABLE");
+        const courseId = document.getElementById('course-enroll-id').value.trim().toUpperCase();
+        const studentId = document.getElementById('course-student-id').value.trim().toUpperCase();
+        if (!courseId || !studentId) return alert("COURSE_AND_STUDENT_REQUIRED");
+        const result = LMSCore.enrollStudent(courseId, studentId);
+        if (!result.ok) return alert(result.error);
+        document.getElementById('course-enroll-id').value = '';
+        document.getElementById('course-student-id').value = '';
+        alert(`ENROLLED: ${studentId} -> ${courseId}`);
     }
 
-    function updateDuel() {
-        const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-        const n1 = document.getElementById('select-n1').value;
-        const n2 = document.getElementById('select-n2').value;
-        document.getElementById('stat-n1').innerText = n1 ? (roster[n1].xp || 0).toLocaleString() + " XP" : "0 XP";
-        document.getElementById('stat-n2').innerText = n2 ? (roster[n2].xp || 0).toLocaleString() + " XP" : "0 XP";
+    function createAssignment() {
+        if (!window.LMSCore) return alert("LMS_CORE_UNAVAILABLE");
+        const courseId = document.getElementById('assignment-course-id').value.trim().toUpperCase();
+        const assignmentId = document.getElementById('assignment-id').value.trim().toUpperCase();
+        const maxPoints = parseInt(document.getElementById('assignment-max-points').value, 10);
+        const title = document.getElementById('assignment-title').value.trim();
+        if (!courseId || !assignmentId) return alert("COURSE_AND_ASSIGNMENT_REQUIRED");
+        if (!Number.isFinite(maxPoints) || maxPoints <= 0) return alert("MAX_POINTS_INVALID");
+        const result = LMSCore.createAssignment(courseId, assignmentId, title || assignmentId, maxPoints, USER_ID);
+        if (!result.ok) return alert(result.error);
+        document.getElementById('assignment-course-id').value = '';
+        document.getElementById('assignment-id').value = '';
+        document.getElementById('assignment-title').value = '';
+        alert(`ASSIGNMENT_CREATED: ${assignmentId}`);
     }
 
-    function announceWinner() {
-        const winner = document.getElementById('select-n1').value;
-        if(winner) postAnnouncement(`VICTORY: ${winner} WINS THE DUEL!`);
+    function postGrade() {
+        if (!window.LMSCore) return alert("LMS_CORE_UNAVAILABLE");
+        const assignmentId = document.getElementById('grade-assignment-id').value.trim().toUpperCase();
+        const studentId = document.getElementById('grade-student-id').value.trim().toUpperCase();
+        const score = parseInt(document.getElementById('grade-score').value, 10);
+        const feedback = document.getElementById('grade-feedback').value.trim();
+        if (!assignmentId || !studentId) return alert("ASSIGNMENT_AND_STUDENT_REQUIRED");
+        if (!Number.isFinite(score)) return alert("SCORE_INVALID");
+        const result = LMSCore.gradeAssignment(assignmentId, studentId, score, feedback);
+        if (!result.ok) return alert(result.error);
+        document.getElementById('grade-assignment-id').value = '';
+        document.getElementById('grade-student-id').value = '';
+        document.getElementById('grade-score').value = '';
+        document.getElementById('grade-feedback').value = '';
+        alert(`GRADE_POSTED: ${studentId} ${result.submission.score}/${result.submission.maxPoints}`);
     }
 
-    function deployMission() {
-        const name = document.getElementById('m-name').value;
-        const goal = document.getElementById('m-goal').value;
-        const type = document.getElementById('m-type').value;
-        localStorage.setItem('active_mission', JSON.stringify({ name, goal, type, active: true }));
-        alert("MISSION DEPLOYED.");
-    }
-
-    function cancelMission() { localStorage.removeItem('active_mission'); alert("MISSION ABORTED."); }
-
-    function postAnnouncement(msgOverride) {
-        const msg = msgOverride || document.getElementById('announcement-input').value;
-        if(msg) {
-            localStorage.setItem('system_broadcast', JSON.stringify({ message: msg, timestamp: Date.now() }));
-            if(!msgOverride) document.getElementById('announcement-input').value = "";
-            alert("BROADCAST SENT.");
-        }
-    }
-
-    function clearSOS() { localStorage.removeItem('system_broadcast'); alert("SOS CLEARED."); }
-
+    // --- UTILITIES ---
+    let tClock;
     function startTimer() {
         let s = parseInt(document.getElementById('timer-input').value);
-        clearInterval(tInt);
-        tInt = setInterval(() => {
+        clearInterval(tClock);
+        tClock = setInterval(() => {
             s--;
-            let str = Math.floor(s/60).toString().padStart(2,'0') + ":" + (s%60).toString().padStart(2,'0');
-            localStorage.setItem('active_timer', JSON.stringify({ active: true, timeString: str }));
-            document.getElementById('dash-timer-preview').innerText = str;
-            if (s<=0) { clearInterval(tInt); fireSFX('battle'); }
+            let m = Math.floor(s/60).toString().padStart(2,'0');
+            let sec = (s%60).toString().padStart(2,'0');
+            let timeStr = `${m}:${sec}`;
+            document.getElementById('dash-timer-preview').innerText = timeStr;
+            localStorage.setItem('active_timer', JSON.stringify({ time: timeStr, active: s > 0 }));
+            if(s <= 0) { clearInterval(tClock); fireSFX('battle'); }
         }, 1000);
     }
 
-    function fireSFX(type) { localStorage.setItem('sfx_trigger', type); setTimeout(() => localStorage.removeItem('sfx_trigger'), 500); }
+    function fireSFX(type) {
+        localStorage.setItem('sfx_trigger', JSON.stringify({ type: type, time: Date.now() }));
+    }
 
     function saveBracket() {
         const b = {};
         ['q1','q2','q3','q4','s1','s2','f1'].forEach(id => b[id] = document.getElementById(id).value);
         localStorage.setItem('tournament_bracket', JSON.stringify(b));
-        alert("STATE_SAVED");
+        alert("BRACKET_SAVED");
     }
 
-    function resetBracket() {
-        ['q1','q2','q3','q4','s1','s2','f1'].forEach(id => document.getElementById(id).value = "");
-        localStorage.removeItem('tournament_bracket');
+    function logout() {
+        localStorage.removeItem('ninjaUser');
+        localStorage.removeItem('userType');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('it_active');
+        window.location.href = 'index.html';
     }
-
-    function generateAcademyReport() {
-        const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-        let r = "ACADEMY REPORT\n---\n";
-        Object.keys(roster).forEach(id => r += `${id}: ${roster[id].xp} XP\n`);
-        alert(r);
-    }
-
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && document.activeElement.id === 'new-ninja-pass') enrollNinja();
-        if (e.key === 'Enter' && document.activeElement.id === 'announcement-input') {
-            e.preventDefault(); 
-            postAnnouncement();
-        }
-        if (e.ctrlKey && e.shiftKey && e.key === 'I') {
-             // Only redirect if they are IT_SENSEI
-             const v = JSON.parse(localStorage.getItem('vault_users'));
-             if(v.teachers[CURRENT_USER_ID].role === 'IT_SENSEI') window.location.href = 'it_vault.html';
-        }
-    });
 
     window.onload = () => {
+        normalizeRoster();
         refreshUI();
-        const b = JSON.parse(localStorage.getItem('tournament_bracket'));
-        if(b) Object.keys(b).forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = b[id]; });
-        setInterval(checkITStatus, 2000);
+        const saved = JSON.parse(localStorage.getItem('tournament_bracket'));
+        if(saved) Object.keys(saved).forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = saved[id]; });
+        
+        setInterval(() => {
+            const watched = localStorage.getItem('it_active') === 'true';
+            document.getElementById('it-light').className = watched ? 'light watching' : 'light';
+            document.getElementById('it-text').innerText = watched ? "IT_SURVEILLANCE: ACTIVE" : "IT_SURVEILLANCE: PASSIVE";
+        }, 2000);
     };
 </script>
+
 </body>
 </html>

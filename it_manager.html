@@ -14,125 +14,217 @@
 
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Fira Code', monospace; 
-            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh; height: 100dvh;
             background-image: radial-gradient(circle at 50% 50%, #0a1324 0%, #010204 100%);
-            padding: 20px; overflow: hidden;
+            padding: 20px; overflow-x: hidden; overflow-y: auto;
         }
 
         #boot-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: black; z-index: 1000; display: flex; flex-direction: column;
             justify-content: center; align-items: center; font-family: 'Fira Code';
-            color: var(--green); transition: opacity 1s ease;
+            color: var(--green); transition: opacity 0.8s ease;
         }
 
-        .manager-container { width: 100%; max-width: 1400px; display: grid; grid-template-columns: 1fr 350px; gap: 20px; height: 90vh; }
+        .manager-container { width: 100%; max-width: 1400px; display: grid; grid-template-columns: 1fr 350px; gap: 20px; height: calc(100dvh - 40px); max-height: calc(100dvh - 40px); overflow: hidden; }
 
         .terminal-window {
-            background: #000; border: 1px solid var(--border); border-radius: 10px;
+            background: #000; border: 2px solid #111; border-radius: 10px;
             display: flex; flex-direction: column; height: 100%; box-shadow: 0 0 40px rgba(0,0,0,0.8);
-            border: 2px solid #111;
+            min-height: 0;
         }
 
-        .term-header { background: #1a1a2e; padding: 10px 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        .term-body { flex: 1; padding: 20px; overflow-y: auto; font-size: 0.85rem; line-height: 1.5; color: #d1d1d1; }
-        .term-input-area { display: flex; background: #050505; padding: 15px 20px; border-top: 1px solid #222; }
+        .term-header { background: #1a1a2e; padding: 12px 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        .term-body { flex: 1; padding: 20px; overflow-y: auto; font-size: 0.85rem; line-height: 1.6; color: #d1d1d1; }
+        .term-input-area { display: flex; background: #050505; padding: 15px 20px; border-top: 1px solid #222; align-items: center; }
 
-        .sidebar { display: flex; flex-direction: column; gap: 15px; }
-        .panel { background: var(--panel); border: 1px solid var(--border); padding: 15px; border-radius: 12px; }
-        h3 { font-family: 'Orbitron'; font-size: 0.65rem; color: var(--blue); letter-spacing: 2px; margin: 0 0 10px 0; border-bottom: 1px solid #111; padding-bottom: 5px; }
+        .sidebar { display: flex; flex-direction: column; gap: 15px; min-height: 0; overflow-y: auto; }
+        .panel { background: var(--panel); border: 1px solid var(--border); padding: 18px; border-radius: 12px; }
+        h3 { font-family: 'Orbitron'; font-size: 0.7rem; color: var(--blue); letter-spacing: 2px; margin: 0 0 15px 0; border-bottom: 1px solid #222; padding-bottom: 8px; text-transform: uppercase; }
 
         .prompt { color: var(--green); font-weight: bold; margin-right: 8px; }
         .path { color: var(--blue); margin-right: 5px; }
-        .cmd-input { flex: 1; background: transparent; border: none; color: #fff; font-family: 'Fira Code'; outline: none; }
+        .cmd-input { flex: 1; background: transparent; border: none; color: #fff; font-family: 'Fira Code'; outline: none; font-size: 0.9rem; }
         
-        .out-err { color: var(--red); }
-        .out-suc { color: var(--green); text-shadow: 0 0 5px var(--green); }
-        .out-cmd { color: #888; }
-        .out-res { color: #bbb; }
+        .out-err { color: var(--red); font-weight: bold; }
+        .out-suc { color: var(--green); text-shadow: 0 0 5px rgba(0,255,136,0.5); }
+        .out-cmd { color: #666; margin-top: 10px; }
+        .out-res { color: #bbb; margin-bottom: 4px; }
         .out-gold { color: var(--gold); font-weight: bold; }
-        .dir { color: var(--blue); font-weight: bold; }
         
-        .btn { width: 100%; padding: 10px; margin-bottom: 5px; background: transparent; border: 1px solid var(--border); color: #fff; font-family: 'Orbitron'; font-size: 0.6rem; cursor: pointer; border-radius: 5px; transition: 0.3s; }
-        .btn:hover { background: var(--blue); color: #000; }
+        .btn { width: 100%; padding: 12px; margin-bottom: 8px; background: transparent; border: 1px solid var(--border); color: #fff; font-family: 'Orbitron'; font-size: 0.65rem; cursor: pointer; border-radius: 6px; transition: 0.2s; text-align: left; }
+        .btn:hover { background: rgba(79, 172, 254, 0.1); border-color: var(--blue); }
+        .btn-danger:hover { background: rgba(255, 75, 43, 0.1); border-color: var(--red); color: var(--red); }
+        .term-btn {
+            background: #0d1322; border: 1px solid var(--border); color: var(--blue);
+            padding: 6px 10px; border-radius: 6px; font-family: 'Orbitron'; font-size: 0.55rem;
+            letter-spacing: 1px; cursor: pointer;
+        }
+        .term-btn:hover { border-color: var(--blue); background: rgba(79, 172, 254, 0.1); }
 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
+
+        .terminal-window:fullscreen {
+            width: 100vw;
+            height: 100vh;
+            max-width: 100vw;
+            max-height: 100vh;
+            border-radius: 0;
+            margin: 0;
+            border: none;
+            box-shadow: none;
+        }
+
+        .terminal-window:fullscreen::backdrop {
+            background: #000;
+        }
+
+        @media (max-width: 980px) {
+            body { padding: 10px; }
+            .manager-container { grid-template-columns: 1fr; height: auto; max-height: none; min-height: calc(100dvh - 20px); overflow: visible; }
+            .terminal-window { min-height: 60vh; }
+            .sidebar { overflow-y: visible; }
+            .term-body { font-size: 0.78rem; }
+        }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 
     <div id="boot-overlay">
-        <div id="boot-text" style="width: 400px; font-size: 0.8rem;"></div>
+        <div id="boot-text" style="width: 450px; font-size: 0.85rem; line-height: 1.8;"></div>
     </div>
 
     <div class="manager-container">
         <div class="terminal-window">
             <div class="term-header">
-                <span style="font-family:'Orbitron'; font-size:0.6rem; letter-spacing:2px; color:var(--gold);">HARMONY_BASH_v8.5</span>
-                <span style="font-size: 0.7rem; color: #555;">ROOT@ADMIN_1 // SOVEREIGN_MODE</span>
+                <span style="font-family:'Orbitron'; font-size:0.65rem; letter-spacing:3px; color:var(--gold);">HARMONY_BASH_v9.0_SOVEREIGN</span>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button id="fullscreen-btn" class="term-btn" onclick="toggleFullscreen()">FULLSCREEN</button>
+                    <span id="uptime" style="font-size: 0.65rem; color: #555;">UPTIME: 00:00:00</span>
+                </div>
             </div>
             <div class="term-body" id="term-body"></div>
             <div class="term-input-area">
                 <span class="prompt">root@harmony:</span>
                 <span class="path" id="current-path">~</span>
                 <span style="color:white; margin-right:10px;">$</span>
-                <input type="text" id="cmd-field" class="cmd-input" autofocus autocomplete="off">
+                <input type="text" id="cmd-field" class="cmd-input" autofocus autocomplete="off" spellcheck="false">
             </div>
         </div>
 
         <div class="sidebar">
             <div class="panel">
-                <h3>SENSEI_PROVISION</h3>
-                <button class="btn" onclick="injectCmd('provision ID PASS IT_SENSEI')">NEW_IT_SENSEI</button>
-                <button class="btn" onclick="injectCmd('provision ID PASS BASIC_SENSEI')">NEW_REG_SENSEI</button>
-                <button class="btn" style="border-color:var(--red);" onclick="injectCmd('delete ')">PURGE_USER</button>
+                <h3>COMMAND_SHORTCUTS</h3>
+                <button class="btn" onclick="injectCmd('provision ')">PROVISION_SENSEI</button>
+                <button class="btn" onclick="injectCmd('enroll ')">ENROLL_STUDENT</button>
+                <button class="btn" onclick="injectCmd('award ')">AWARD_NINJA_XP</button>
+                <button class="btn" onclick="injectCmd('broadcast ')">GLOBAL_BROADCAST</button>
+                <button class="btn btn-danger" onclick="injectCmd('eject ')">REMOTE_EJECT</button>
             </div>
+
             <div class="panel">
-                <h3>GLOBAL_OVERRIDES</h3>
-                <button class="btn" style="border-color:var(--gold); color:var(--gold);" onclick="executeBash('godmode')">XP_OVERRIDE_ALL</button>
-                <button class="btn" onclick="executeBash('ls')">LIST_VAULT</button>
-                <button class="btn" onclick="executeBash('top')">VIEW_LOGS</button>
-                <button class="btn" onclick="executeBash('clear')">CLEAR_SCREEN</button>
+                <h3>SYSTEM_STATUS</h3>
+                <button class="btn" onclick="executeBash('records')">LIST_VAULT</button>
+                <button class="btn" onclick="executeBash('top')">VIEW_AUDIT_LOGS</button>
+                <button class="btn" onclick="executeBash('godmode')">DISTRIBUTE_GOD_XP</button>
+                <button class="btn" style="color:var(--red);" onclick="executeBash('clear')">WIPE_TERMINAL</button>
             </div>
-            <button class="btn" style="margin-top:auto; border-color:var(--red); color:var(--red);" onclick="terminate()">LOGOUT</button>
+
+            <button class="btn btn-danger" style="margin-top:auto; font-weight:bold; text-align:center;" onclick="terminate()">SYSTEM_EXIT ⏻</button>
         </div>
     </div>
 
+    <script src="lms_core.js"></script>
     <script>
-        if (localStorage.getItem('it_active') !== 'true') window.location.href = 'index.html';
+        // Security Gate
+        const SESSION_USER_TYPE = (localStorage.getItem('userType') || '').toUpperCase();
+        const SESSION_USER_ROLE = (localStorage.getItem('userRole') || '').toUpperCase();
+        const HAS_IT_POWER = SESSION_USER_TYPE === 'ADMIN' || SESSION_USER_ROLE === 'IT_SENSEI';
+        if (localStorage.getItem('it_active') !== 'true' || !HAS_IT_POWER) {
+            window.location.href = 'index.html';
+        }
+        if (window.LMSCore) LMSCore.init();
 
         const termBody = document.getElementById('term-body');
         const cmdField = document.getElementById('cmd-field');
         const pathLabel = document.getElementById('current-path');
         const bootOverlay = document.getElementById('boot-overlay');
         const bootText = document.getElementById('boot-text');
+        const terminalWindow = document.querySelector('.terminal-window');
+        const fullBtn = document.getElementById('fullscreen-btn');
 
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playBeep(freq = 400, dur = 0.05) {
-            try {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(); osc.stop(audioCtx.currentTime + dur);
-            } catch(e) {}
-        }
+        // Uptime Clock
+        let seconds = 0;
+        setInterval(() => {
+            seconds++;
+            let hrs = Math.floor(seconds / 3600).toString().padStart(2,'0');
+            let mins = Math.floor((seconds % 3600) / 60).toString().padStart(2,'0');
+            let secs = (seconds % 60).toString().padStart(2,'0');
+            document.getElementById('uptime').innerText = `UPTIME: ${hrs}:${mins}:${secs}`;
+        }, 1000);
 
         async function runBoot() {
-            const lines = ["BOOTING_BASH...", "FILESYSTEM_CHECK: OK", "VAULT_SYNC: SUCCESS", "WELCOME MASTER."];
+            const lines = [
+                "INITIALIZING SOVEREIGN KERNEL...",
+                "CHECKING LOCAL_STORAGE INTEGRITY... OK",
+                "SYNCING NINJA_ROSTER_FULL... SUCCESS",
+                "ESTABLISHING BROADCAST_LINK... ACTIVE",
+                "WELCOME, ARCHITECT."
+            ];
             for (let line of lines) {
-                bootText.innerHTML += `> ${line}<br>`;
-                playBeep(500, 0.04);
-                await new Promise(r => setTimeout(r, 300));
+                bootText.innerHTML += `<span style="color:var(--blue)">[SYS]</span> ${line}<br>`;
+                await new Promise(r => setTimeout(r, 200));
             }
-            bootOverlay.style.opacity = '0';
-            setTimeout(() => { bootOverlay.style.display = 'none'; }, 1000);
+            setTimeout(() => {
+                bootOverlay.style.opacity = '0';
+                setTimeout(() => bootOverlay.style.display = 'none', 800);
+            }, 500);
         }
         window.onload = runBoot;
 
         let currentDir = "/root";
+        const commandHistory = [];
+
+        const vfs = {
+            type: "dir",
+            children: {
+                root: {
+                    type: "dir",
+                    children: {
+                        "README.txt": {
+                            type: "file",
+                            content: [
+                                "Welcome to HARMONY_BASH training shell.",
+                                "Try: help, man ls, pwd, ls, cd, cat, mkdir, touch, grep, history",
+                                "Admin ops: records, provision, enroll, award, broadcast, eject, top, godmode"
+                            ].join("\n")
+                        }
+                    }
+                },
+                home: { type: "dir", children: {} },
+                etc: {
+                    type: "dir",
+                    children: {
+                        "motd": { type: "file", content: "Practice Linux daily. Small commands, big power." }
+                    }
+                },
+                var: {
+                    type: "dir",
+                    children: {
+                        log: {
+                            type: "dir",
+                            children: {
+                                "training.log": { type: "file", content: "" }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        pathLabel.textContent = currentDir;
 
         cmdField.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
@@ -150,9 +242,67 @@
             termBody.scrollTop = termBody.scrollHeight;
         }
 
+        function pathParts(path){
+            if (path === "/") return [];
+            return path.split("/").filter(Boolean);
+        }
+
+        function resolvePath(inputPath){
+            if (!inputPath || inputPath === "~") return "/root";
+            const base = inputPath.startsWith("/") ? [] : pathParts(currentDir);
+            const parts = inputPath.replace(/^~(?=\/|$)/, "/root").split("/").filter(Boolean);
+            for (const p of parts){
+                if (p === ".") continue;
+                if (p === "..") base.pop();
+                else base.push(p);
+            }
+            return "/" + base.join("/");
+        }
+
+        function getNode(absPath){
+            const parts = pathParts(absPath);
+            let node = vfs;
+            for (const p of parts){
+                if (!node || node.type !== "dir" || !node.children[p]) return null;
+                node = node.children[p];
+            }
+            return node;
+        }
+
+        function getParentAndName(absPath){
+            const parts = pathParts(absPath);
+            const name = parts.pop();
+            const parentPath = "/" + parts.join("/");
+            return { parent: getNode(parentPath || "/"), name };
+        }
+
+        function writeTrainingLog(line){
+            const logNode = getNode("/var/log/training.log");
+            if (!logNode || logNode.type !== "file") return;
+            const stamp = new Date().toLocaleTimeString();
+            logNode.content += `[${stamp}] ${line}\n`;
+        }
+
+        function tokenize(line){
+            return line.match(/(?:[^\s"]+|"[^"]*")+/g)?.map(t => t.replace(/^"|"$/g, "")) || [];
+        }
+
+        function printRecords(vault, ninjaRoster){
+            print("--- VAULT_RECORDS ---", "blue");
+            const teachers = Object.keys(vault.teachers || {});
+            teachers.forEach(t => print(`[SENSEI] ${t} (${vault.teachers[t].role})`));
+            const ninjas = Object.keys(ninjaRoster);
+            ninjas.forEach(n => print(`[NINJA] ${n} (XP: ${ninjaRoster[n].xp || 0})`));
+            if(teachers.length === 0 && ninjas.length === 0) print("DATABASE_EMPTY");
+        }
+
         function executeBash(input) {
             print(`root@harmony:${currentDir}$ ${input}`, 'cmd');
-            const parts = input.split(' ');
+            commandHistory.push(input);
+            writeTrainingLog(input);
+
+            const parts = tokenize(input);
+            if (!parts.length) return;
             const cmd = parts[0].toLowerCase();
             const args = parts.slice(1);
 
@@ -161,68 +311,346 @@
 
             switch(cmd) {
                 case 'help':
-                    print("provision [ID] [PASS] [ROLE], delete [ID], ls, cd, top, godmode, clear, exit");
-                    print("ROLES: IT_SENSEI (Full Access), BASIC_SENSEI (Dash Only)");
+                    print("LINUX_COMMANDS:", "blue");
+                    print("- pwd, ls [path], cd [path], cat <file>, mkdir <dir>, touch <file>");
+                    print("- rm <path>, mv <src> <dst>, cp <src> <dst>, grep <text> <file>");
+                    print("- echo <text>, history, clear, whoami, id, man <cmd>");
+                    print("ADMIN_COMMANDS:", "blue");
+                    print("- records (or lsvault): List teachers + students");
+                    print("- provision [ID] [PASS] [ROLE] : Create Teacher (ROLES: IT_SENSEI, SENSEI)");
+                    print("  RULE: ADMIN can create IT_SENSEI + SENSEI; IT_SENSEI can create SENSEI only");
+                    print("- enroll [ID] [PASS] : Create Student");
+                    print("- award [ID] [XP] : Grant XP to specific Ninja");
+                    print("- broadcast [MSG] : Send global pop-up to all Hubs");
+                    print("- eject [ID] : Remotely log out a user");
+                    print("- godmode : +100k XP to everyone");
+                    print("- courseadd [COURSE_ID] [TITLE] : Create LMS course");
+                    print("- coursels : List LMS courses");
+                    print("- courseenroll [COURSE_ID] [STUDENT_ID] : Enroll student");
+                    print("- assign [COURSE_ID] [ASSIGN_ID] [MAX_POINTS] [TITLE] : Create assignment");
+                    print("- grade [ASSIGN_ID] [STUDENT_ID] [SCORE] [FEEDBACK?] : Grade assignment");
+                    print("- progress [STUDENT_ID] : Student LMS summary");
+                    print("- ls [path] : List files/folders");
+                    print("- top : View recent system logs");
                     break;
 
-                case 'ls':
-                    if (currentDir === "/home/senseis") {
-                        const list = Object.keys(vault.teachers).map(id => `${id} <span style="color:#555">[${vault.teachers[id].role}]</span>`).join('<br>');
-                        print(list || "Directory empty.");
-                    } else if (currentDir === "/home/ninjas") {
-                        print(Object.keys(ninjaRoster).join('  ') || "No ninjas found.");
-                    } else {
-                        print("bin/  home/  root/  sys/");
-                    }
+                case 'man': {
+                    const topic = (args[0] || '').toLowerCase();
+                    const manPages = {
+                        ls: "ls [path] -> list directory items",
+                        cd: "cd [path] -> change directory",
+                        pwd: "pwd -> print working directory",
+                        cat: "cat <file> -> print file content",
+                        grep: "grep <text> <file> -> search text in file",
+                        provision: "provision ID PASS ROLE -> create teacher role",
+                        enroll: "enroll ID PASS -> create student",
+                        courseadd: "courseadd COURSE_ID TITLE -> create course",
+                        assign: "assign COURSE_ID ASSIGN_ID MAX_POINTS TITLE -> create assignment"
+                    };
+                    if (!topic) return print("usage: man <command>", "err");
+                    print(manPages[topic] || `No manual entry for ${topic}`, manPages[topic] ? "res" : "err");
+                    break;
+                }
+
+                case 'pwd':
+                    print(currentDir);
                     break;
 
-                case 'cd':
-                    const dest = args[0] || "";
-                    if (dest === "home/senseis") currentDir = "/home/senseis";
-                    else if (dest === "home/ninjas") currentDir = "/home/ninjas";
-                    else if (dest === "..") {
-                        currentDir = "/";
-                    } else {
-                        currentDir = "/root";
+                case 'whoami':
+                    print(SESSION_USER_TYPE === "ADMIN" ? "root-admin" : "root-it_sensei", "gold");
+                    break;
+
+                case 'id':
+                    print(`uid=0(root) role=${SESSION_USER_TYPE === "ADMIN" ? "ADMIN" : SESSION_USER_ROLE}`);
+                    break;
+
+                case 'history':
+                    commandHistory.slice(-30).forEach((c, i) => print(`${i+1}  ${c}`));
+                    break;
+
+                case 'cd': {
+                    const dest = resolvePath(args[0] || "/root");
+                    const node = getNode(dest);
+                    if (!node || node.type !== "dir") return print("bash: cd: no such directory", "err");
+                    currentDir = dest;
+                    pathLabel.textContent = currentDir;
+                    break;
+                }
+
+                case 'ls': {
+                    const dest = resolvePath(args[0] || currentDir);
+                    const node = getNode(dest);
+                    if (!node) return print("ls: cannot access: No such file or directory", "err");
+                    if (node.type === "file") return print(args[0] || currentDir);
+                    const names = Object.keys(node.children).sort();
+                    if (!names.length) return print("(empty)");
+                    names.forEach(n => {
+                        const child = node.children[n];
+                        print(child.type === "dir" ? `${n}/` : n, child.type === "dir" ? "blue" : "res");
+                    });
+                    break;
+                }
+
+                case 'cat': {
+                    const filePath = resolvePath(args[0] || "");
+                    const node = getNode(filePath);
+                    if (!node || node.type !== "file") return print("cat: file not found", "err");
+                    print((node.content || "").replace(/\n/g, "<br>"));
+                    break;
+                }
+
+                case 'touch': {
+                    if (!args[0]) return print("usage: touch <file>", "err");
+                    const filePath = resolvePath(args[0]);
+                    const { parent, name } = getParentAndName(filePath);
+                    if (!parent || parent.type !== "dir" || !name) return print("touch: invalid path", "err");
+                    if (!parent.children[name]) parent.children[name] = { type: "file", content: "" };
+                    break;
+                }
+
+                case 'mkdir': {
+                    if (!args[0]) return print("usage: mkdir <dir>", "err");
+                    const dirPath = resolvePath(args[0]);
+                    const { parent, name } = getParentAndName(dirPath);
+                    if (!parent || parent.type !== "dir" || !name) return print("mkdir: invalid path", "err");
+                    if (parent.children[name]) return print("mkdir: file exists", "err");
+                    parent.children[name] = { type: "dir", children: {} };
+                    break;
+                }
+
+                case 'rm': {
+                    if (!args[0]) return print("usage: rm <path>", "err");
+                    const targetPath = resolvePath(args[0]);
+                    if (targetPath === "/") return print("rm: cannot remove root", "err");
+                    const { parent, name } = getParentAndName(targetPath);
+                    if (!parent || !parent.children[name]) return print("rm: no such file or directory", "err");
+                    delete parent.children[name];
+                    break;
+                }
+
+                case 'mv': {
+                    if (args.length < 2) return print("usage: mv <src> <dst>", "err");
+                    const src = resolvePath(args[0]);
+                    const dst = resolvePath(args[1]);
+                    const srcRef = getParentAndName(src);
+                    const dstRef = getParentAndName(dst);
+                    if (!srcRef.parent || !srcRef.parent.children[srcRef.name]) return print("mv: source not found", "err");
+                    if (!dstRef.parent || dstRef.parent.type !== "dir") return print("mv: destination invalid", "err");
+                    dstRef.parent.children[dstRef.name] = srcRef.parent.children[srcRef.name];
+                    delete srcRef.parent.children[srcRef.name];
+                    break;
+                }
+
+                case 'cp': {
+                    if (args.length < 2) return print("usage: cp <src> <dst>", "err");
+                    const src = resolvePath(args[0]);
+                    const dst = resolvePath(args[1]);
+                    const srcNode = getNode(src);
+                    const dstRef = getParentAndName(dst);
+                    if (!srcNode || srcNode.type !== "file") return print("cp: source file not found", "err");
+                    if (!dstRef.parent || dstRef.parent.type !== "dir") return print("cp: destination invalid", "err");
+                    dstRef.parent.children[dstRef.name] = { type: "file", content: srcNode.content };
+                    break;
+                }
+
+                case 'grep': {
+                    if (args.length < 2) return print("usage: grep <text> <file>", "err");
+                    const pattern = args[0].toLowerCase();
+                    const filePath = resolvePath(args[1]);
+                    const node = getNode(filePath);
+                    if (!node || node.type !== "file") return print("grep: file not found", "err");
+                    const lines = (node.content || "").split("\n");
+                    let hits = 0;
+                    lines.forEach((line, i) => {
+                        if (line.toLowerCase().includes(pattern)) {
+                            hits++;
+                            print(`${i+1}: ${line}`);
+                        }
+                    });
+                    if (!hits) print("grep: no matches");
+                    break;
+                }
+
+                case 'echo': {
+                    const redirectMatch = input.match(/^echo\s+(.+?)\s*(>>|>)\s*(\S+)$/);
+                    if (!redirectMatch) {
+                        print(args.join(" "));
+                        break;
                     }
-                    pathLabel.innerText = currentDir.replace("/root", "~");
+                    const text = redirectMatch[1].replace(/^"|"$/g, "");
+                    const mode = redirectMatch[2];
+                    const filePath = resolvePath(redirectMatch[3]);
+                    const { parent, name } = getParentAndName(filePath);
+                    if (!parent || parent.type !== "dir" || !name) return print("echo: invalid redirect path", "err");
+                    if (!parent.children[name]) parent.children[name] = { type: "file", content: "" };
+                    if (parent.children[name].type !== "file") return print("echo: target is not a file", "err");
+                    parent.children[name].content = mode === ">>"
+                        ? `${parent.children[name].content}${parent.children[name].content ? "\n" : ""}${text}`
+                        : text;
+                    break;
+                }
+
+                case 'records':
+                case 'lsvault':
+                    printRecords(vault, ninjaRoster);
                     break;
 
                 case 'provision':
-                    if(args.length < 3) return print("usage: provision [ID] [PASS] [ROLE]", "err");
-                    const id = args[0].toUpperCase();
-                    vault.teachers[id] = { pass: args[1], role: args[2].toUpperCase() };
+                    if(args.length < 3) return print("ERR: usage 'provision [ID] [PASS] [ROLE]'", "err");
+                    const sId = args[0].toUpperCase();
+                    const sPass = String(args[1] || "");
+                    const requestedRole = args[2].toUpperCase();
+                    if (!['IT_SENSEI', 'SENSEI'].includes(requestedRole)) {
+                        return print("ERR: ROLE must be IT_SENSEI or SENSEI", "err");
+                    }
+                    if (!sPass) return print("ERR: PASSWORD_REQUIRED", "err");
+                    if (SESSION_USER_TYPE !== 'ADMIN' && requestedRole === 'IT_SENSEI') {
+                        return print("ERR: ONLY_ADMIN_CAN_CREATE_IT_SENSEI", "err");
+                    }
+                    if (!(SESSION_USER_TYPE === 'ADMIN' || SESSION_USER_ROLE === 'IT_SENSEI')) {
+                        return print("ERR: ACCESS_DENIED_FOR_PROVISION", "err");
+                    }
+                    vault.teachers[sId] = { pass: sPass, role: requestedRole };
                     localStorage.setItem('vault_users', JSON.stringify(vault));
-                    logAction(vault, `PROVISIONED: ${id} [${args[2]}]`);
-                    print(`SUCCESS: ${id} initialized as ${args[2]}.`, "suc");
+                    if (window.LMSCore) LMSCore.upsertUser(sId, requestedRole, 'SENSEI');
+                    logAction(vault, `PROVISIONED_TEACHER: ${sId} AS ${requestedRole}`);
+                    print(`SUCCESS: ${sId} ADDED AS ${requestedRole}`, "suc");
                     break;
 
-                case 'delete':
+                case 'enroll':
+                    if(args.length < 2) return print("ERR: usage 'enroll [ID] [PASS]'", "err");
+                    const ninjaId = args[0].toUpperCase();
+                    const ninjaPass = String(args[1] || "");
+                    if (!ninjaPass) return print("ERR: PASSWORD_REQUIRED", "err");
+                    if(ninjaRoster[ninjaId]) return print("ERR: STUDENT_ID_EXISTS", "err");
+                    ninjaRoster[ninjaId] = { pass: ninjaPass, xp: 0, joined: new Date().toLocaleDateString(), status: "LEVEL 01" };
+                    localStorage.setItem('ninja_roster_full', JSON.stringify(ninjaRoster));
+                    if (window.LMSCore) LMSCore.upsertUser(ninjaId, 'STUDENT', 'MEMBER');
+                    logAction(vault, `ENROLLED_STUDENT: ${ninjaId}`);
+                    print(`SUCCESS: STUDENT ${ninjaId} CREATED`, "suc");
+                    break;
+
+                case 'award':
+                    const nTarget = args[0].toUpperCase();
+                    const amt = parseInt(args[1]);
+                    if (!Number.isFinite(amt)) return print("ERR: XP_AMOUNT_INVALID", "err");
+                    if(ninjaRoster[nTarget]) {
+                        const cur = Number.isFinite(Number(ninjaRoster[nTarget].xp)) ? Number(ninjaRoster[nTarget].xp) : 0;
+                        ninjaRoster[nTarget].xp = cur + amt;
+                        localStorage.setItem('ninja_roster_full', JSON.stringify(ninjaRoster));
+                        print(`SUCCESS: ${amt} XP GRANTED TO ${nTarget}`, "gold");
+                    } else { print("ERR: NINJA_NOT_FOUND", "err"); }
+                    break;
+
+                case 'broadcast':
+                    const msg = args.join(' ');
+                    localStorage.setItem('system_broadcast', JSON.stringify({
+                        message: msg,
+                        type: 'ALERT',
+                        timestamp: Date.now()
+                    }));
+                    print("BROADCAST_SENT_TO_ALL_ACTIVE_HUBS", "suc");
+                    break;
+
+                case 'eject':
                     const target = args[0].toUpperCase();
-                    if(vault.teachers[target]) {
-                        delete vault.teachers[target];
-                        localStorage.setItem('vault_users', JSON.stringify(vault));
-                        print(`PURGED: ${target} removed from system.`, "suc");
-                    } else { print("ERR: Target not found.", "err"); }
+                    localStorage.setItem('kill_signal', JSON.stringify({
+                        target: target,
+                        time: Date.now()
+                    }));
+                    print(`EJECT_SIGNAL_DISPATCHED_TO_${target}`, "err");
                     break;
 
                 case 'godmode':
                     Object.keys(ninjaRoster).forEach(n => {
-                        if (!ninjaRoster[n].xp) ninjaRoster[n].xp = 0;
-                        ninjaRoster[n].xp += 100000;
+                        const cur = Number.isFinite(Number(ninjaRoster[n].xp)) ? Number(ninjaRoster[n].xp) : 0;
+                        ninjaRoster[n].xp = cur + 100000;
                     });
                     localStorage.setItem('ninja_roster_full', JSON.stringify(ninjaRoster));
-                    print("GODMODE: Distributed 100,000 XP to all accounts.", "gold");
+                    print("GODMODE_ACTIVE: +100,000 XP TO ENTIRE ROSTER", "gold");
                     break;
 
+                case 'courseadd': {
+                    if (!window.LMSCore) return print("ERR: LMS_CORE_UNAVAILABLE", "err");
+                    if (args.length < 1) return print("ERR: usage 'courseadd [COURSE_ID] [TITLE]'", "err");
+                    const courseId = args[0].toUpperCase();
+                    const title = args.slice(1).join(" ") || courseId;
+                    const result = LMSCore.createCourse(courseId, title, localStorage.getItem('ninjaUser') || 'SYSTEM');
+                    if (!result.ok) return print(`ERR: ${result.error}`, "err");
+                    logAction(vault, `COURSE_CREATED: ${courseId}`);
+                    print(`SUCCESS: COURSE ${courseId} CREATED`, "suc");
+                    break;
+                }
+
+                case 'coursels': {
+                    if (!window.LMSCore) return print("ERR: LMS_CORE_UNAVAILABLE", "err");
+                    const courses = LMSCore.listCourses();
+                    if (!courses.length) return print("NO_COURSES_FOUND");
+                    courses.forEach(c => print(`[COURSE] ${c.id} :: ${c.title} (BY ${c.createdBy})`, "blue"));
+                    break;
+                }
+
+                case 'courseenroll': {
+                    if (!window.LMSCore) return print("ERR: LMS_CORE_UNAVAILABLE", "err");
+                    if (args.length < 2) return print("ERR: usage 'courseenroll [COURSE_ID] [STUDENT_ID]'", "err");
+                    const courseId = args[0].toUpperCase();
+                    const studentId = args[1].toUpperCase();
+                    const result = LMSCore.enrollStudent(courseId, studentId);
+                    if (!result.ok) return print(`ERR: ${result.error}`, "err");
+                    logAction(vault, `COURSE_ENROLL: ${studentId} -> ${courseId}`);
+                    print(`SUCCESS: ${studentId} ENROLLED IN ${courseId}`, "suc");
+                    break;
+                }
+
+                case 'assign': {
+                    if (!window.LMSCore) return print("ERR: LMS_CORE_UNAVAILABLE", "err");
+                    if (args.length < 4) return print("ERR: usage 'assign [COURSE_ID] [ASSIGN_ID] [MAX_POINTS] [TITLE]'", "err");
+                    const courseId = args[0].toUpperCase();
+                    const assignmentId = args[1].toUpperCase();
+                    const maxPoints = parseInt(args[2], 10);
+                    if (!Number.isFinite(maxPoints) || maxPoints <= 0) return print("ERR: MAX_POINTS_INVALID", "err");
+                    const title = args.slice(3).join(" ");
+                    const result = LMSCore.createAssignment(courseId, assignmentId, title, maxPoints, localStorage.getItem('ninjaUser') || 'SYSTEM');
+                    if (!result.ok) return print(`ERR: ${result.error}`, "err");
+                    logAction(vault, `ASSIGNMENT_CREATED: ${assignmentId} IN ${courseId}`);
+                    print(`SUCCESS: ASSIGNMENT ${assignmentId} CREATED`, "suc");
+                    break;
+                }
+
+                case 'grade': {
+                    if (!window.LMSCore) return print("ERR: LMS_CORE_UNAVAILABLE", "err");
+                    if (args.length < 3) return print("ERR: usage 'grade [ASSIGN_ID] [STUDENT_ID] [SCORE] [FEEDBACK?]'", "err");
+                    const assignmentId = args[0].toUpperCase();
+                    const studentId = args[1].toUpperCase();
+                    const score = parseInt(args[2], 10);
+                    if (!Number.isFinite(score)) return print("ERR: SCORE_INVALID", "err");
+                    const feedback = args.slice(3).join(" ");
+                    const result = LMSCore.gradeAssignment(assignmentId, studentId, score, feedback);
+                    if (!result.ok) return print(`ERR: ${result.error}`, "err");
+                    logAction(vault, `GRADE_POSTED: ${assignmentId} -> ${studentId} = ${result.submission.score}`);
+                    print(`SUCCESS: GRADE ${result.submission.score}/${result.submission.maxPoints} POSTED`, "gold");
+                    break;
+                }
+
+                case 'progress': {
+                    if (!window.LMSCore) return print("ERR: LMS_CORE_UNAVAILABLE", "err");
+                    if (!args[0]) return print("ERR: usage 'progress [STUDENT_ID]'", "err");
+                    const studentId = args[0].toUpperCase();
+                    const p = LMSCore.getStudentProgress(studentId);
+                    print(`STUDENT: ${p.studentId}`, "blue");
+                    print(`COURSES: ${p.courses.length ? p.courses.join(', ') : 'NONE'}`);
+                    print(`GRADED: ${p.gradedCount}`);
+                    print(`AVERAGE: ${p.averagePercent}%`, "gold");
+                    break;
+                }
+
                 case 'top':
-                    print("--- AUDIT LOG (LAST 10) ---");
-                    (vault.AUDIT_LOG || []).slice(0,10).forEach(l => print(`[${l.time}] ${l.status}`));
+                    print("--- SYSTEM_AUDIT_LOG ---", "blue");
+                    (vault.AUDIT_LOG || []).slice(0,15).forEach(l => print(`[${l.time}] ${l.status}`));
                     break;
 
                 case 'clear': termBody.innerHTML = ""; break;
-                case 'exit': terminate(); break;
-                default: print(`bash: ${cmd}: command not found`, "err");
+                default: print(`bash: ${cmd}: command not found. type 'help'`, "err");
             }
         }
 
@@ -233,7 +661,34 @@
         }
 
         function injectCmd(txt) { cmdField.value = txt; cmdField.focus(); }
-        function terminate() { localStorage.removeItem('it_active'); window.location.href = 'index.html'; }
+        function terminate() { 
+            localStorage.removeItem('it_active'); 
+            localStorage.removeItem('userRole');
+            window.location.href = 'index.html'; 
+        }
+
+        function updateFullscreenButton() {
+            const isFs = document.fullscreenElement === terminalWindow;
+            if (fullBtn) fullBtn.innerText = isFs ? "EXIT FULL" : "FULLSCREEN";
+        }
+
+        async function toggleFullscreen() {
+            try {
+                if (document.fullscreenElement === terminalWindow) {
+                    await document.exitFullscreen();
+                } else if (!document.fullscreenElement) {
+                    await terminalWindow.requestFullscreen();
+                } else {
+                    await document.exitFullscreen();
+                    await terminalWindow.requestFullscreen();
+                }
+                updateFullscreenButton();
+            } catch (_err) {
+                print("ERR: FULLSCREEN_BLOCKED_BY_BROWSER", "err");
+            }
+        }
+
+        document.addEventListener('fullscreenchange', updateFullscreenButton);
     </script>
 </body>
 </html>

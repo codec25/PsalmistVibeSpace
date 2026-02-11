@@ -99,6 +99,7 @@
             padding: 20px; font-family: 'Orbitron'; border-radius: 15px; cursor: pointer; font-size: 0.6rem;
         }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 
@@ -157,6 +158,66 @@
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
         let currentMidi, coachMode = false, currentView = 'screen';
+
+        function getCurrentNinjaName() {
+            return localStorage.getItem('ninjaUser') || 'GUEST_NINJA';
+        }
+
+        function getRosterSafe() {
+            try {
+                return JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            } catch {
+                return {};
+            }
+        }
+
+        function setRosterSafe(roster) {
+            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+        }
+
+        function ensureNinjaXPEntry() {
+            const ninjaName = getCurrentNinjaName();
+            const roster = getRosterSafe();
+            if (!roster[ninjaName] || typeof roster[ninjaName] !== 'object') {
+                roster[ninjaName] = {
+                    pass: "",
+                    xp: 0,
+                    joined: new Date().toLocaleDateString(),
+                    status: "LEVEL 01"
+                };
+            }
+            const numericXP = Number(roster[ninjaName].xp);
+            roster[ninjaName].xp = Number.isFinite(numericXP) && numericXP > 0 ? Math.floor(numericXP) : 0;
+            if (!roster[ninjaName].joined) roster[ninjaName].joined = new Date().toLocaleDateString();
+            if (!roster[ninjaName].status) roster[ninjaName].status = "LEVEL 01";
+            setRosterSafe(roster);
+            return { ninjaName, roster };
+        }
+
+        function syncXPCompat(xpValue) {
+            const safeXP = Number.isFinite(xpValue) && xpValue > 0 ? Math.floor(xpValue) : 0;
+            const ninjaName = getCurrentNinjaName();
+            localStorage.setItem('totalXP', String(safeXP));
+            localStorage.setItem(`xp_${ninjaName}`, String(safeXP));
+            localStorage.setItem('currentLevel', String(Math.floor(safeXP / 2500) + 1));
+        }
+
+        function getCanonicalXP() {
+            const { ninjaName, roster } = ensureNinjaXPEntry();
+            const xp = roster[ninjaName].xp;
+            syncXPCompat(xp);
+            return xp;
+        }
+
+        function adjustCanonicalXP(delta) {
+            const { ninjaName, roster } = ensureNinjaXPEntry();
+            const currentXP = Number(roster[ninjaName].xp) || 0;
+            const nextXP = Math.max(0, Math.floor(currentXP + delta));
+            roster[ninjaName].xp = nextXP;
+            setRosterSafe(roster);
+            syncXPCompat(nextXP);
+            return nextXP;
+        }
 
         function setView(view) {
             currentView = view;
@@ -261,18 +322,12 @@
          * Updates XP, Calculates Level, and Syncs for Teacher Roster
          */
         function addXP(amt) {
-            let total = parseInt(localStorage.getItem('totalXP') || 0) + amt;
-            localStorage.setItem('totalXP', total);
-            
-            // Auto-Leveling Logic (1 level per 2500 XP)
-            let newLevel = Math.floor(total / 2500) + 1;
-            localStorage.setItem('currentLevel', newLevel);
-            
+            adjustCanonicalXP(amt);
             refreshXP();
         }
 
         function refreshXP() {
-            const xp = localStorage.getItem('totalXP') || '0';
+            const xp = getCanonicalXP();
             document.getElementById('global-xp').innerText = `XP: ${xp.toString().padStart(5, '0')}`;
         }
 

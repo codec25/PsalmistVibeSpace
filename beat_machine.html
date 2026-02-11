@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>PSALMIST // Beat Machine</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
@@ -17,7 +17,7 @@ body {
     display: flex; flex-direction: column; align-items: center; min-height: 100vh;
     padding: env(safe-area-inset-top) 10px 40px 10px; overflow-x: hidden;
 }
-header { width: 100%; max-width: 1100px; padding: 20px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+header { width: 100%; max-width: 1100px; padding: 20px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
 .logo { font-weight: 900; letter-spacing: 2px; font-size: 0.9rem; }
 .logo span { color: var(--green); }
 .studio-nav { display: flex; gap: 10px; align-items: center; }
@@ -58,7 +58,8 @@ canvas { width: 100%; height: 100%; }
     overflow-x: auto;
 }
 
-.track-row { display: grid; grid-template-columns: 150px 1fr; gap: 20px; align-items: center; margin-bottom: 12px; min-width: 1400px; }
+.track-row { display: grid; grid-template-columns: 130px 1fr; gap: 14px; align-items: center; margin-bottom: 12px; min-width: 920px; }
+.track-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .track-name { font-size: 0.65rem; font-weight: 700; color: var(--green); cursor:pointer; }
 .load-btn { font-size: 0.45rem; color: var(--gold); border: 1px solid var(--gold); padding: 2px 5px; border-radius: 3px; cursor: pointer; }
 
@@ -83,7 +84,20 @@ canvas { width: 100%; height: 100%; }
     padding: 30px; border-radius: 16px; text-align: center;
 }
 .page-controls { margin-top: 8px; display: flex; justify-content: center; gap: 5px; font-size: 0.5rem; color: var(--gold); cursor:pointer; }
+
+@media (max-width: 760px) {
+    body { padding: max(8px, env(safe-area-inset-top)) 10px max(20px, env(safe-area-inset-bottom)) 10px; }
+    .logo { font-size: 0.72rem; letter-spacing: 1px; }
+    .studio-nav { width: 100%; justify-content: space-between; }
+    .btn-action-nav { font-size: 0.5rem; padding: 7px 8px; }
+    .controls-grid { grid-template-columns: 1fr; gap: 10px; }
+    .sequencer-container { padding: 12px; }
+    .track-row { grid-template-columns: 1fr; min-width: 700px; gap: 8px; }
+    .track-name { font-size: 0.58rem; }
+    .step { min-height: 30px; }
+}
 </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 

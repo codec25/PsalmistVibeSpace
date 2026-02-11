@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>PSALMIST VIBES // NINJA_PORTAL</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -18,236 +18,277 @@
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;
             background-image: radial-gradient(circle at 50% 50%, #0a1324 0%, #010204 100%);
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding: max(12px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom)) 12px;
         }
 
         .portal-frame {
-            width: 420px; padding: 60px 40px; background: var(--panel);
+            width: min(420px, calc(100vw - 24px)); padding: clamp(26px, 7vw, 60px) clamp(18px, 5vw, 40px); background: var(--panel);
             border: 1px solid var(--border); border-radius: 40px;
-            box-shadow: 0 0 60px rgba(0,0,0,0.9), inset 0 0 30px rgba(0, 255, 136, 0.05);
+            box-shadow: 0 0 60px rgba(0,0,0,0.9);
             text-align: center; position: relative; z-index: 10;
-            backdrop-filter: blur(15px); transition: all 0.5s ease;
+            backdrop-filter: blur(15px); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .musical-header { font-size: 1.5rem; color: var(--gold); margin-bottom: 10px; letter-spacing: 15px; opacity: 0.8; }
-        h2 { font-size: 1.1rem; letter-spacing: 8px; margin-bottom: 40px; color: var(--green); transition: 0.4s; text-transform: uppercase; }
+        .musical-header { font-size: 1.5rem; color: var(--gold); margin-bottom: 10px; letter-spacing: 15px; cursor: pointer; }
+        h2 { font-size: 1.1rem; letter-spacing: 8px; margin-bottom: 40px; color: var(--green); text-transform: uppercase; }
 
-        .input-group { margin-bottom: 20px; text-align: left; position: relative; }
-        .input-group label { display: block; font-size: 0.55rem; color: #444; margin-bottom: 8px; letter-spacing: 1px; }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; font-size: 0.55rem; color: #555; margin-bottom: 8px; letter-spacing: 2px; }
         
         input {
-            width: 100%; padding: 18px; background: rgba(0,0,0,0.8); border: 1px solid var(--border);
-            color: var(--green); border-radius: 15px; font-family: 'Orbitron'; text-align: center;
-            font-size: 0.85rem; transition: 0.3s;
+            width: 100%; padding: 18px; background: rgba(0,0,0,0.5); border: 1px solid var(--border);
+            color: #fff; border-radius: 15px; font-family: 'Orbitron'; text-align: center;
+            font-size: 16px; transition: 0.3s;
         }
         input:focus { border-color: var(--green); box-shadow: 0 0 15px rgba(0, 255, 136, 0.2); }
 
-        .toggle-pass {
-            position: absolute; right: 15px; bottom: 15px; cursor: pointer;
-            color: #444; font-size: 0.8rem; transition: 0.3s;
-        }
-        .toggle-pass:hover { color: var(--green); }
-
         .btn {
             width: 100%; padding: 20px; border: none; border-radius: 15px; font-family: 'Orbitron';
-            font-weight: 900; cursor: pointer; transition: 0.4s; text-transform: uppercase;
+            font-weight: 900; cursor: pointer; transition: 0.3s; text-transform: uppercase;
             letter-spacing: 4px; margin-top: 15px;
         }
 
         .btn-main { background: var(--green); color: #000; }
-        .btn-main:hover { background: #fff; transform: scale(1.02); }
+        .btn-main:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,255,136,0.2); }
 
-        .sub-links { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
+        .sub-links { margin-top: 30px; display: flex; flex-direction: column; gap: 15px; }
         
-        .link { 
-            color: #444; font-size: 0.6rem; text-decoration: none; cursor: pointer; 
-            letter-spacing: 2px; transition: 0.3s; text-transform: uppercase;
-        }
+        .link { color: #444; font-size: 0.65rem; text-decoration: none; cursor: pointer; letter-spacing: 2px; transition: 0.3s; }
         .link:hover { color: var(--gold); }
         
-        .sensei-toggle { color: #2a3a5a; font-weight: bold; padding: 10px; border: 1px solid #111; border-radius: 10px; margin-top: 10px; }
-        .sensei-toggle:hover { color: var(--blue); border-color: var(--blue); }
-        .guest-link { color: var(--gold); border: 1px solid rgba(255,204,0,0.2); padding: 8px; border-radius: 8px; }
-        .guest-link:hover { background: rgba(255,204,0,0.1); }
-
-        #err-log { color: var(--red); font-size: 0.65rem; margin-top: 20px; display: none; font-weight: bold; text-shadow: 0 0 5px var(--red); }
-
-        .floating-note {
-            position: absolute; font-size: 1.5rem; color: rgba(0, 255, 136, 0.1);
-            pointer-events: none; animation: floatUp 10s infinite linear; z-index: -1;
+        .sensei-toggle { 
+            color: #2a3a5a; font-weight: bold; padding: 12px; border: 1px solid #1a253a; 
+            border-radius: 12px; transition: 0.3s;
         }
+        .sensei-toggle.active { color: var(--blue); border-color: var(--blue); background: rgba(79, 172, 254, 0.05); }
 
-        @keyframes floatUp {
-            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-            100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+        #err-log { color: var(--red); font-size: 0.7rem; margin-top: 20px; display: none; font-weight: bold; letter-spacing: 1px; }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+        /* Floating particles */
+        .note { position: absolute; color: rgba(0,255,136,0.05); pointer-events: none; animation: float 15s infinite linear; }
+        @keyframes float { from { transform: translateY(100vh) rotate(0deg); } to { transform: translateY(-10vh) rotate(360deg); } }
+
+        @media (max-width: 640px) {
+            .portal-frame { border-radius: 24px; }
+            .musical-header { font-size: 1.2rem; letter-spacing: 10px; }
+            h2 { font-size: 0.95rem; letter-spacing: 4px; margin-bottom: 24px; }
+            .btn { padding: 16px; letter-spacing: 2px; }
+            .sub-links { margin-top: 20px; gap: 10px; }
         }
     </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 
     <div class="portal-frame" id="card">
-        <div class="musical-header">♩ ♪ ♫ ♬</div>
+        <div class="musical-header" onclick="debugCounter()">♩ ♪ ♫ ♬</div>
         <h2 id="portal-title">NINJA_PORTAL</h2>
         
         <div class="input-group">
             <label>IDENTITY_CODE</label>
-            <input type="text" id="u-id" placeholder="ENTER_ID" autocomplete="off">
+            <input type="text" id="u-id" placeholder="ID_REQUIRED" autocomplete="off">
         </div>
         <div class="input-group">
             <label>SECURITY_KEY</label>
-            <input type="password" id="u-pass" placeholder="••••••••">
-            <span class="toggle-pass" onclick="togglePassView()">👁</span>
+            <input type="password" id="u-pass" placeholder="PASSWORD_REQUIRED">
         </div>
 
         <button class="btn btn-main" id="main-btn" onclick="executeAuth()">INITIALIZE</button>
 
         <div class="sub-links">
-            <a class="link" onclick="requestHelp()" style="color: var(--red);">FORGOT_ID?_SIGNAL_SENSEI</a>
-            <a class="link guest-link" onclick="guestEntry()">GUEST_ENTRY (TEMP)</a>
-            <a class="link sensei-toggle" id="mode-toggle" onclick="toggleSenseiMode()">ARE YOU A SENSEI?</a>
+            <a class="link" onclick="guestEntry()">GUEST_ENTRY (TEMP)</a>
+            <a class="link sensei-toggle" id="mode-btn" onclick="toggleSenseiMode()">ARE YOU A SENSEI?</a>
         </div>
 
-        <div id="err-log">ACCESS_DENIED // INVALID_CREDENTIALS</div>
+        <div id="err-log">ACCESS_DENIED</div>
     </div>
 
+    <script src="lms_core.js"></script>
     <script>
         let isSenseiMode = false;
+        let dClicks = 0;
 
-        // --- MASTER CONFIG ---
+        // --- MASTER SYSTEM KEYS ---
         const MASTER_ID = "ADMIN_1";
+        const MASTER_ALIAS = "ADMIN";
         const MASTER_PASS = "MASTER_ROOT_2026";
-        const SOVEREIGN_KEY = "777"; // The key required to activate the shortcut injection
-
-        function togglePassView() {
-            const passInput = document.getElementById('u-pass');
-            passInput.type = passInput.type === "password" ? "text" : "password";
-        }
+        const SOVEREIGN_KEY = "777"; 
 
         function toggleSenseiMode() {
             isSenseiMode = !isSenseiMode;
             const title = document.getElementById('portal-title');
             const btn = document.getElementById('main-btn');
+            const modeBtn = document.getElementById('mode-btn');
             
-            title.innerText = isSenseiMode ? "SENSEI_VAULT" : "NINJA_PORTAL";
-            title.style.color = isSenseiMode ? "var(--blue)" : "var(--green)";
-            btn.innerText = isSenseiMode ? "DECRYPT_SENSEI" : "INITIALIZE";
-            btn.style.background = isSenseiMode ? "var(--blue)" : "var(--green)";
+            if(isSenseiMode) {
+                title.innerText = "SENSEI_VAULT";
+                title.style.color = "var(--blue)";
+                btn.innerText = "DECRYPT_SENSEI";
+                btn.style.background = "var(--blue)";
+                modeBtn.classList.add('active');
+            } else {
+                title.innerText = "NINJA_PORTAL";
+                title.style.color = "var(--green)";
+                btn.innerText = "INITIALIZE";
+                btn.style.background = "var(--green)";
+                modeBtn.classList.remove('active');
+            }
+        }
+
+        function normalizeDatabases() {
+            const vault = JSON.parse(localStorage.getItem('vault_users')) || {};
+            if (!vault.teachers || typeof vault.teachers !== "object") vault.teachers = {};
+            Object.keys(vault.teachers).forEach(id => {
+                const t = vault.teachers[id];
+                if (typeof t === "string") {
+                    vault.teachers[id] = { pass: String(t), role: "SENSEI" };
+                    return;
+                }
+                if (!t || typeof t !== "object") {
+                    vault.teachers[id] = { pass: "", role: "SENSEI" };
+                    return;
+                }
+                t.pass = String(t.pass ?? "");
+                t.role = String(t.role || "SENSEI").toUpperCase();
+                if (t.role !== "IT_SENSEI") t.role = "SENSEI";
+            });
+            if (!Array.isArray(vault.AUDIT_LOG)) vault.AUDIT_LOG = [];
+            localStorage.setItem('vault_users', JSON.stringify(vault));
+
+            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            Object.keys(roster).forEach(id => {
+                const entry = roster[id];
+                if (!entry || typeof entry !== "object") {
+                    roster[id] = { pass: "", xp: 0, joined: new Date().toLocaleDateString(), status: "LEVEL 01" };
+                    return;
+                }
+                entry.pass = String(entry.pass ?? "");
+                entry.xp = Number.isFinite(Number(entry.xp)) ? Number(entry.xp) : 0;
+                if (!entry.joined) entry.joined = new Date().toLocaleDateString();
+                if (!entry.status) entry.status = "LEVEL 01";
+            });
+            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
         }
 
         function executeAuth() {
+            normalizeDatabases();
+            if (window.LMSCore) LMSCore.init();
             const rawId = document.getElementById('u-id').value.trim();
-            const passInput = document.getElementById('u-pass').value.trim();
-            const id = rawId.toUpperCase();
+            const pass = document.getElementById('u-pass').value.trim();
+            const id = rawId.toUpperCase(); // Force uppercase for DB matching
 
-            // 1. MASTER ADMIN BYPASS (Manual entry or post-shortcut)
-            if (id === MASTER_ID && passInput === MASTER_PASS) {
-                localStorage.setItem('it_active', 'true');
+            if(!rawId || !pass) { showError("DATA_REQUIRED"); return; }
+
+            // 1. ROOT BYPASS
+            if ((id === MASTER_ID || id === MASTER_ALIAS) && (pass === MASTER_PASS || pass === SOVEREIGN_KEY)) {
                 localStorage.setItem('ninjaUser', id);
                 localStorage.setItem('userType', 'ADMIN');
+                localStorage.setItem('userRole', 'ADMIN');
+                localStorage.setItem('it_active', 'true');
+                if (window.LMSCore) LMSCore.upsertUser(id, 'ADMIN', 'ADMIN');
                 window.location.href = 'it_manager.html';
                 return;
             }
 
-            // 2. LOAD DATABASES
-            const vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {}, AUDIT_LOG: [] };
-            const ninjaRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-
+            // 2. SENSEI MODE
             if (isSenseiMode) {
-                const teacher = vault.teachers[id];
-                if (teacher && teacher.pass === passInput && teacher.role !== "TERMINATED") {
-                    localStorage.setItem('ninjaUser', id);
-                    localStorage.setItem('userType', 'SENSEI');
-                    localStorage.setItem('userRole', teacher.role);
-                    window.location.href = 'sensei_dash.html';
-                } else { 
-                    logAudit(id, "SENSEI_AUTH_FAILED");
-                    showError(); 
+                const vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+                // Ensure teachers exists and look up by ID
+                if (vault.teachers && vault.teachers[id]) {
+                    const teacher = vault.teachers[id];
+                    if (String(teacher.pass) === String(pass)) {
+                        const rawRole = (teacher.role || 'SENSEI').toUpperCase();
+                        const role = rawRole === 'IT_SENSEI' ? 'IT_SENSEI' : 'SENSEI';
+                        localStorage.setItem('ninjaUser', id);
+                        localStorage.setItem('userType', 'SENSEI');
+                        localStorage.setItem('userRole', role);
+                        if (window.LMSCore) LMSCore.upsertUser(id, role, 'SENSEI');
+                        if (role === 'IT_SENSEI') {
+                            localStorage.setItem('it_active', 'true');
+                            window.location.href = 'it_manager.html';
+                        } else {
+                            localStorage.removeItem('it_active');
+                            window.location.href = 'sensei_dash.html';
+                        }
+                        return;
+                    }
                 }
-            } else {
-                if (ninjaRoster[id] && ninjaRoster[id].pass === passInput) {
+                showError("SENSEI_NOT_FOUND_OR_INVALID_KEY");
+            } 
+            // 3. NINJA MODE
+            else {
+                const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+                if (roster[id] && String(roster[id].pass) === String(pass)) {
                     localStorage.setItem('ninjaUser', id);
                     localStorage.setItem('userType', 'MEMBER');
+                    localStorage.removeItem('userRole');
+                    localStorage.removeItem('it_active');
+                    if (window.LMSCore) LMSCore.upsertUser(id, 'STUDENT', 'MEMBER');
                     window.location.href = 'hub.html';
-                } else { 
-                    showError(); 
+                } else {
+                    showError("INVALID_NINJA_ID_OR_PASS");
                 }
             }
         }
 
-        function logAudit(user, status) {
-            let vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {}, AUDIT_LOG: [] };
-            vault.AUDIT_LOG.unshift({ time: new Date().toLocaleString(), user: user, status: status });
-            localStorage.setItem('vault_users', JSON.stringify(vault));
+        function showError(msg) {
+            const err = document.getElementById('err-log');
+            const card = document.getElementById('card');
+            err.innerText = msg;
+            err.style.display = "block";
+            card.style.animation = "shake 0.3s";
+            setTimeout(() => { card.style.animation = ""; }, 300);
+            setTimeout(() => { err.style.display = "none"; }, 3000);
         }
 
         function guestEntry() {
-            const guestID = "GUEST_" + Math.floor(1000 + Math.random() * 9000);
-            localStorage.setItem('ninjaUser', guestID);
+            const gID = "GUEST_" + Math.floor(1000 + Math.random() * 8999);
+            localStorage.setItem('ninjaUser', gID);
             localStorage.setItem('userType', 'GUEST');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('it_active');
+            if (window.LMSCore) {
+                LMSCore.init();
+                LMSCore.upsertUser(gID, 'GUEST', 'GUEST');
+            }
             window.location.href = 'hub.html';
         }
 
-        function showError() {
-            const errorDiv = document.getElementById('err-log');
-            const card = document.getElementById('card');
-            errorDiv.style.display = "block";
-            card.style.transform = "translateX(8px)";
-            setTimeout(() => card.style.transform = "translateX(-8px)", 50);
-            setTimeout(() => card.style.transform = "translateX(0)", 100);
-            setTimeout(() => { errorDiv.style.display = "none"; }, 3000);
-        }
-
-        function requestHelp() {
-            alert("EMERGENCY SIGNAL SENT TO SENSEI NETWORK.");
-        }
-
-        // --- KEYBOARD LISTENERS ---
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                executeAuth();
+        function debugCounter() {
+            dClicks++;
+            if(dClicks >= 5) {
+                const vault = localStorage.getItem('vault_users');
+                alert("DEBUG_DATABASE_DUMP:\n" + (vault ? vault : "NO_VAULT_FOUND"));
+                dClicks = 0;
             }
-            
-            // TACTICAL ADMIN OVERRIDE: Ctrl + Shift + L
-            if (e.ctrlKey && e.shiftKey && e.key.toUpperCase() === 'L') {
-                e.preventDefault();
-                
-                // SECURE GATE: Prompt for secondary key
-                const challenge = prompt("AUTHORIZED_ACCESS_REQUIRED // ENTER_SOVEREIGN_KEY:");
-                
-                if (challenge === SOVEREIGN_KEY) {
-                    // Visual Flash indicating success
-                    document.getElementById('card').style.boxShadow = "0 0 50px var(--red)";
-                    
-                    // Inject Credentials
+        }
+
+        window.onkeydown = (e) => {
+            if(e.key === 'Enter') executeAuth();
+            if(e.ctrlKey && e.shiftKey && e.key.toUpperCase() === 'L') {
+                const k = prompt("SOVEREIGN_KEY:");
+                if(k === SOVEREIGN_KEY) {
                     document.getElementById('u-id').value = MASTER_ID;
                     document.getElementById('u-pass').value = MASTER_PASS;
-                    
-                    // Automated Login
-                    setTimeout(() => {
-                        executeAuth();
-                    }, 400);
-                } else {
-                    logAudit("SYSTEM", "UNAUTHORIZED_OVERRIDE_ATTEMPT");
-                    console.warn("CRITICAL: Invalid Sovereign Key entered.");
+                    executeAuth();
                 }
             }
+        };
 
-            // Secret IT Shortcut: Ctrl + Shift + I
-            if (e.ctrlKey && e.shiftKey && e.key.toUpperCase() === 'I') {
-                window.location.href = 'it_vault.html';
-            }
-        });
-
-        // Particle FX
+        // FX
         setInterval(() => {
-            const notes = ['♩', '♪', '♫', '♬'];
             const n = document.createElement('div');
-            n.className = 'floating-note';
-            n.innerText = notes[Math.floor(Math.random() * notes.length)];
-            n.style.left = Math.random() * 100 + "vw";
+            n.className = 'note';
+            n.innerText = ['♩','♪','♫','♬'][Math.floor(Math.random()*4)];
+            n.style.left = Math.random()*100+"vw";
+            n.style.fontSize = (Math.random()*20+10)+"px";
             document.body.appendChild(n);
-            setTimeout(() => n.remove(), 10000);
-        }, 3000);
+            setTimeout(() => n.remove(), 15000);
+        }, 2000);
     </script>
 </body>
 </html>
