@@ -105,13 +105,11 @@
 <script>
     let activeUser = "";
 
-    // Toggle the hidden recovery panel
     function toggleRecovery() {
         const panel = document.getElementById('recovery-panel');
         panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
     }
 
-    // Force inject a teacher into the empty GitHub localStorage
     function injectTeacher() {
         const id = document.getElementById('seed-id').value.trim().toUpperCase();
         const pass = document.getElementById('seed-pass').value.trim();
@@ -146,6 +144,16 @@
             err.style.display = 'block';
         }
     }
+
+    // NEW: Enter Key Listener for Login Screen
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            // Only trigger auth if we are still at the login gate
+            if (document.getElementById('login-gate').style.display !== 'none') {
+                handleAuth();
+            }
+        }
+    });
 
     function runTerminal(val) {
         document.getElementById('term-cmd').value = '';
