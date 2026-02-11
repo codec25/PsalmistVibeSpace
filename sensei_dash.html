@@ -63,6 +63,12 @@
         .btn-green { border-color: var(--green); color: var(--green); }
         .btn-green:hover { background: var(--green); color: #000; box-shadow: 0 0 10px var(--green); }
         .btn-gold { border-color: var(--gold); color: var(--gold); }
+        .btn-gold:hover { background: var(--gold); color: #000; }
+
+        .vault-btn { 
+            display: none; /* Only visible for IT_SENSEI */
+            border-color: var(--gold); color: var(--gold); width: auto; padding: 10px 20px;
+        }
 
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #000; }
@@ -82,7 +88,10 @@
                 <span id="it-text">IT_SURVEILLANCE: PASSIVE</span>
             </div>
         </div>
-        <button class="btn btn-red" style="width:auto; padding: 10px 25px;" onclick="logout()">EXIT_COMMAND</button>
+        <div style="display:flex; gap:10px;">
+            <button id="vault-access-btn" class="btn vault-btn" onclick="window.location.href='it_vault.html'">ACCESS_VAULT</button>
+            <button class="btn btn-red" style="width:auto; padding: 10px 25px;" onclick="logout()">EXIT_COMMAND</button>
+        </div>
     </header>
 
     <div class="grid">
@@ -201,14 +210,20 @@
 
 <script>
     // --- SECURITY SHIELD ---
-    const SENSEI_ID = localStorage.getItem('ninjaUser');
+    const CURRENT_USER_ID = localStorage.getItem('ninjaUser');
     const USER_TYPE = localStorage.getItem('userType');
+    const vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
 
-    if (!SENSEI_ID || USER_TYPE !== 'SENSEI') {
+    // Verify identity against vault storage
+    if (!CURRENT_USER_ID || USER_TYPE !== 'SENSEI' || !vault.teachers[CURRENT_USER_ID]) {
         alert("ACCESS_DENIED: UNAUTHORIZED_SENSEI_COMMAND");
-        window.location.href = 'index.html';
+        logout();
     } else {
-        document.getElementById('sensei-name-display').innerText = SENSEI_ID;
+        document.getElementById('sensei-name-display').innerText = CURRENT_USER_ID;
+        // Check for IT Role to show Vault Button
+        if (vault.teachers[CURRENT_USER_ID].role === 'IT_SENSEI') {
+            document.getElementById('vault-access-btn').style.display = 'block';
+        }
     }
 
     let tInt;
@@ -263,12 +278,11 @@
 
     function refreshUI() {
         const list = document.getElementById('leaderboard-list');
-        const searchFilter = document.getElementById('roster-search').value.toUpperCase();
+        const searchFilter = (document.getElementById('roster-search').value || "").toUpperCase();
         const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
         const ids = Object.keys(roster);
         let totalXP = 0;
 
-        // Update dropdowns
         const editSelect = document.getElementById('edit-ninja-select');
         const s1 = document.getElementById('select-n1');
         const s2 = document.getElementById('select-n2');
@@ -278,7 +292,6 @@
         s1.innerHTML = opts;
         s2.innerHTML = opts;
 
-        // Render List
         const sorted = ids.filter(id => id.includes(searchFilter))
                           .map(id => ({ id, ...roster[id] }))
                           .sort((a,b) => b.xp - a.xp);
@@ -319,7 +332,6 @@
         refreshUI();
     }
 
-    // --- CREDENTIALS ---
     function loadNinjaData() {
         const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
         const id = document.getElementById('edit-ninja-select').value;
@@ -362,7 +374,6 @@
         }
     }
 
-    // --- ARENA & MISSIONS ---
     function updateDuel() {
         const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
         const n1 = document.getElementById('select-n1').value;
@@ -386,18 +397,17 @@
 
     function cancelMission() { localStorage.removeItem('active_mission'); alert("MISSION ABORTED."); }
 
-    function postAnnouncement() {
-        const msg = document.getElementById('announcement-input').value;
+    function postAnnouncement(msgOverride) {
+        const msg = msgOverride || document.getElementById('announcement-input').value;
         if(msg) {
             localStorage.setItem('system_broadcast', JSON.stringify({ message: msg, timestamp: Date.now() }));
-            document.getElementById('announcement-input').value = "";
+            if(!msgOverride) document.getElementById('announcement-input').value = "";
             alert("BROADCAST SENT.");
         }
     }
 
     function clearSOS() { localStorage.removeItem('system_broadcast'); alert("SOS CLEARED."); }
 
-    // --- TIMER & BRACKET ---
     function startTimer() {
         let s = parseInt(document.getElementById('timer-input').value);
         clearInterval(tInt);
@@ -430,6 +440,19 @@
         Object.keys(roster).forEach(id => r += `${id}: ${roster[id].xp} XP\n`);
         alert(r);
     }
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && document.activeElement.id === 'new-ninja-pass') enrollNinja();
+        if (e.key === 'Enter' && document.activeElement.id === 'announcement-input') {
+            e.preventDefault(); 
+            postAnnouncement();
+        }
+        if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+             // Only redirect if they are IT_SENSEI
+             const v = JSON.parse(localStorage.getItem('vault_users'));
+             if(v.teachers[CURRENT_USER_ID].role === 'IT_SENSEI') window.location.href = 'it_vault.html';
+        }
+    });
 
     window.onload = () => {
         refreshUI();
