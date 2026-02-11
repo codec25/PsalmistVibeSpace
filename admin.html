@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Protocol | Music Studio</title>
+    <title>Admin Protocol | Master Reset</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -27,68 +27,81 @@
             margin-top: 20px; background: rgba(255, 68, 68, 0.05);
         }
         .btn-reset {
-            background: var(--red); color: #fff; border: none; width: 100%;
+            background: var(--red); color: #000; border: none; width: 100%;
             padding: 15px; font-family: 'Orbitron'; font-weight: 900;
             border-radius: 8px; cursor: pointer; margin-top: 10px;
+            transition: 0.3s;
         }
-        .btn-reset:hover { background: #cc0000; box-shadow: 0 0 20px rgba(255, 0, 0, 0.4); }
+        .btn-reset:hover { background: #fff; color: #ff0000; box-shadow: 0 0 20px #fff; }
         
-        .user-list { margin-top: 20px; max-height: 200px; overflow-y: auto; }
+        .user-list { margin-top: 20px; max-height: 250px; overflow-y: auto; background: #000; border-radius: 10px; padding: 5px; }
         .user-item { 
-            display: flex; justify-content: space-between; padding: 10px;
-            border-bottom: 1px solid var(--border); font-size: 0.8rem;
+            display: flex; justify-content: space-between; padding: 12px;
+            border-bottom: 1px solid #111; font-size: 0.75rem;
         }
-        .nav-link { margin-top: 30px; color: #444; text-decoration: none; font-size: 0.7rem; }
+        .nav-link { margin-top: 30px; color: #555; text-decoration: none; font-size: 0.7rem; letter-spacing: 2px; }
+        .nav-link:hover { color: var(--blue); }
     </style>
 </head>
 <body>
 
     <div class="admin-card">
-        <h1>ADMIN PROTOCOL</h1>
+        <h1>SYSTEM_PURGE_PROTOCOL</h1>
         
         <div id="userStats">
-            <div style="font-size: 0.7rem; color: var(--blue);">ACTIVE DATABASE USERS</div>
+            <div style="font-size: 0.6rem; color: var(--blue); letter-spacing: 2px;">ENROLLED_NINJA_ROSTER</div>
             <div class="user-list" id="list"></div>
         </div>
 
         <div class="danger-zone">
-            <div style="color: var(--red); font-weight: 900; font-size: 0.8rem;">DANGER ZONE</div>
-            <p style="font-size: 0.6rem; color: #888;">RESETTING WILL PERMANENTLY ERASE ALL XP, RANKS, AND USERS FROM THE LEADERBOARD.</p>
-            <button class="btn-reset" onclick="factoryReset()">FACTORY RESET STATS</button>
+            <div style="color: var(--red); font-weight: 900; font-size: 0.8rem;">NUCLEAR_OPTION</div>
+            <p style="font-size: 0.55rem; color: #888; line-height: 1.4; margin-top: 10px;">
+                WARNING: EXECUTING A FACTORY RESET WILL ERASE ALL NINJA DATA, XP, SENSEI ACCOUNTS, AND THE IT_VAULT AUDIT LOGS.
+            </p>
+            <button class="btn-reset" onclick="factoryReset()">EXECUTE_PURGE</button>
         </div>
     </div>
 
-    <a href="index.html" class="nav-link">RETURN TO HUB</a>
+    <a href="index.html" class="nav-link">← RETURN_TO_LOGIN</a>
 
     <script>
         function loadUsers() {
-            const db = JSON.parse(localStorage.getItem('psalmistDB')) || { users: {} };
+            // Syncing with your actual student roster key
+            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
             const list = document.getElementById('list');
-            const users = Object.keys(db.users);
+            const ids = Object.keys(roster);
 
-            if (users.length === 0) {
-                list.innerHTML = '<div style="color:#333; padding:10px;">NO DATA FOUND</div>';
+            if (ids.length === 0) {
+                list.innerHTML = '<div style="color:#444; padding:20px; text-align:center; font-size:0.6rem;">NO_NINJAS_DETECTED</div>';
                 return;
             }
 
-            list.innerHTML = users.map(u => `
+            list.innerHTML = ids.sort().map(id => `
                 <div class="user-item">
-                    <span>${u.toUpperCase()}</span>
-                    <span style="color:var(--gold)">${db.users[u].xp} XP</span>
+                    <span style="color:#eee;">${id}</span>
+                    <span style="color:var(--gold)">${(roster[id].xp || 0).toLocaleString()} XP</span>
                 </div>
             `).join('');
         }
 
         function factoryReset() {
-            const confirm1 = confirm("Are you sure you want to delete the entire database?");
+            const confirm1 = confirm("SYSTEM ALERT: This will wipe EVERYTHING. Are you 100% sure?");
             if (confirm1) {
-                const confirm2 = prompt("Type 'ERASE' to confirm final deletion:");
-                if (confirm2 === "ERASE") {
-                    localStorage.removeItem('psalmistDB');
-                    localStorage.removeItem('activeUser');
-                    localStorage.removeItem('lastSavedRank');
-                    alert("DATABASE PURGED. REDIRECTING...");
+                const confirm2 = prompt("TYPE 'CONFIRM_PURGE' TO EXECUTE:");
+                if (confirm2 === "CONFIRM_PURGE") {
+                    // Wipe the specific keys used in your new system
+                    localStorage.removeItem('ninja_roster_full');
+                    localStorage.removeItem('vault_users');
+                    localStorage.removeItem('ninjaUser');
+                    localStorage.removeItem('userType');
+                    localStorage.removeItem('it_active');
+                    localStorage.removeItem('active_mission');
+                    localStorage.removeItem('system_broadcast');
+                    
+                    alert("SYSTEM PURGED. ALL DATA ERASED.");
                     window.location.href = 'index.html';
+                } else {
+                    alert("PURGE ABORTED: INCORRECT CODE.");
                 }
             }
         }
