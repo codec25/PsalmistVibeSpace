@@ -29,7 +29,6 @@
             padding: env(safe-area-inset-top) 20px 40px 20px;
         }
 
-        /* --- Header HUD --- */
         header {
             width: 100%; max-width: 1100px; padding: 25px 0;
             display: flex; justify-content: space-between; align-items: center;
@@ -47,7 +46,6 @@
         }
         .btn-logout:hover { background: var(--red); color: #fff; }
 
-        /* --- Mission Tracker --- */
         #mission-tracker {
             display: none; width: 100%; max-width: 1100px; 
             background: linear-gradient(90deg, rgba(161, 140, 209, 0.15), rgba(15, 20, 30, 0.8));
@@ -60,14 +58,12 @@
         .progress-container { width: 100%; height: 10px; background: #000; border-radius: 5px; margin-top: 15px; border: 1px solid var(--border); overflow: hidden; }
         #progress-bar { height: 100%; width: 0%; background: var(--purple); transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px var(--purple); }
 
-        /* --- Broadcast Bar --- */
         #announcement-bar {
             display: none; width: 100%; max-width: 1100px; background: rgba(255, 204, 0, 0.1); 
             border: 1px solid var(--gold); color: var(--gold); padding: 12px; border-radius: 12px; 
             margin-bottom: 20px; font-size: 0.65rem; text-align: center; letter-spacing: 1px;
         }
 
-        /* --- Content Layout --- */
         .content-stack { width: 100%; max-width: 1100px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
         .card {
             background: var(--panel); backdrop-filter: blur(15px); border: 1px solid var(--border);
@@ -76,33 +72,19 @@
         }
         .card:hover { transform: translateY(-5px); border-color: var(--blue); background: rgba(79, 172, 254, 0.05); }
         
-        /* Special Styling for Kids Dojo Card */
-        .card.kids-card {
-            background: rgba(255, 204, 0, 0.1);
-            border: 2px solid var(--gold);
-            box-shadow: 0 0 15px rgba(255, 204, 0, 0.1);
-        }
-        .card.kids-card:hover {
-            background: rgba(255, 204, 0, 0.2);
-            box-shadow: 0 0 25px rgba(255, 204, 0, 0.3);
-        }
-        .kids-title { font-family: 'Bangers', cursive; font-size: 1.7rem !important; color: var(--gold); letter-spacing: 2px !important; }
+        .card.kids-card { background: rgba(255, 204, 0, 0.1); border: 2px solid var(--gold); }
+        .kids-title { font-family: 'Bangers', cursive; font-size: 1.7rem !important; color: var(--gold); }
 
         .card-icon { width: 60px; height: 60px; border-radius: 16px; background: rgba(255,255,255,0.03); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; border: 1px solid var(--border); }
         .card-title { font-size: 0.8rem; font-weight: 900; letter-spacing: 1px; }
         .card-desc { font-size: 0.6rem; color: #777; margin-top: 5px; }
 
-        /* --- Neural Overlay --- */
         #broadcast-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999;
             display: none; align-items: center; justify-content: center; padding: 40px;
             backdrop-filter: blur(10px);
         }
-        .broadcast-box {
-            border: 2px solid var(--green); padding: 40px; background: #050810; 
-            max-width: 600px; width: 100%; box-shadow: 0 0 50px rgba(0, 255, 136, 0.2); 
-            text-align: center; border-radius: 20px;
-        }
+        .broadcast-box { border: 2px solid var(--green); padding: 40px; background: #050810; max-width: 600px; width: 100%; border-radius: 20px; text-align: center; }
 
         @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
         @media (max-width: 850px) { .content-stack { grid-template-columns: 1fr; } }
@@ -121,7 +103,7 @@
     <header>
         <div class="user-info">
             <h2 id="display-name">LOADING...</h2>
-            <span id="display-rank">SYNCING_DATA...</span>
+            <span id="display-rank">SYNCING...</span>
         </div>
         <div style="display:flex; gap:15px; align-items:center;">
              <div id="active-timer" style="color:var(--gold); font-size:1rem; font-weight:900;">00:00</div>
@@ -143,17 +125,15 @@
             </div>
             <div id="m-percent" style="font-size:1.8rem; font-weight:900; color:var(--purple);">0%</div>
         </div>
-        <div class="progress-container">
-            <div id="progress-bar"></div>
-        </div>
+        <div class="progress-container"><div id="progress-bar"></div></div>
     </div>
 
     <div class="content-stack">
         <a href="kids_ninja.html" class="card kids-card">
-            <div class="card-icon" style="background: rgba(255,204,0,0.1); border-color: var(--gold);">🥋</div>
+            <div class="card-icon">🥋</div>
             <div class="card-content">
                 <div class="card-title kids-title">KIDS DOJO</div>
-                <div class="card-desc" style="color: #fff; opacity: 0.9;">Harmony Quest, Runner, and Chord Hero</div>
+                <div class="card-desc">Harmony Quest & Chord Hero</div>
             </div>
         </a>
 
@@ -161,7 +141,7 @@
             <div class="card-icon" style="color:var(--gold)">👂</div>
             <div class="card-content">
                 <div class="card-title">EAR TRAINING HUB</div>
-                <div class="card-desc">Pitch recognition and interval matrix.</div>
+                <div class="card-desc">Pitch recognition matrix.</div>
             </div>
         </a>
 
@@ -169,7 +149,7 @@
             <div class="card-icon" style="color:var(--blue)">🎹</div>
             <div class="card-content">
                 <div class="card-title">PIANO LAB</div>
-                <div class="card-desc">Visual chord mastery and scales.</div>
+                <div class="card-desc">Visual chord mastery.</div>
             </div>
         </a>
 
@@ -177,7 +157,7 @@
             <div class="card-icon" style="color:var(--green)">⚡</div>
             <div class="card-content">
                 <div class="card-title">RHYTHM HUB</div>
-                <div class="card-desc">Beat precision and tempo strike.</div>
+                <div class="card-desc">Beat precision strike.</div>
             </div>
         </a>
 
@@ -185,7 +165,7 @@
             <div class="card-icon" style="color:var(--purple)">📓</div>
             <div class="card-content">
                 <div class="card-title">THEORY VAULT</div>
-                <div class="card-desc" id="vault-desc" style="color:var(--green)">ACCESS GRANTED: OPEN DOORS</div>
+                <div class="card-desc" style="color:var(--green)">ACCESS GRANTED: OPEN DOORS</div>
             </div>
         </a>
     </div>
@@ -196,41 +176,49 @@
 
         function syncHub() {
             const masterRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-            const myData = masterRoster[ninjaUser] || { xp: 0, status: "LEVEL 01 ACADEMY" };
+            const myData = masterRoster[ninjaUser] || { xp: 0, status: "LEVEL 01" };
 
             document.getElementById('display-name').innerText = ninjaUser.toUpperCase();
-            
             const typeLabel = localStorage.getItem('userType') === 'GUEST' ? "VISITOR" : "OFFICIAL";
             document.getElementById('display-rank').innerText = `${myData.status} // ${typeLabel} // XP: ${myData.xp.toLocaleString()}`;
 
+            // Announcement
             const msg = localStorage.getItem('academy_announcement');
+            const annBar = document.getElementById('announcement-bar');
             if (msg && msg.trim() !== "") {
-                document.getElementById('announcement-bar').style.display = 'block';
+                annBar.style.display = 'block';
                 document.getElementById('announcement-text').innerText = msg;
-            } else {
-                document.getElementById('announcement-bar').style.display = 'none';
-            }
+            } else { annBar.style.display = 'none'; }
 
+            // Mission
             const mission = JSON.parse(localStorage.getItem('active_mission'));
             const tracker = document.getElementById('mission-tracker');
             if (mission && mission.active) {
                 tracker.style.display = 'block';
                 document.getElementById('m-name').innerText = mission.name.toUpperCase();
-                document.getElementById('m-desc').innerText = `Objective: Reach ${mission.goal} XP`;
-                
+                document.getElementById('m-desc').innerText = `Objective: ${mission.goal} XP`;
                 let progress = Math.min((myData.xp / mission.goal) * 100, 100);
                 document.getElementById('m-percent').innerText = Math.floor(progress) + "%";
                 document.getElementById('progress-bar').style.width = progress + "%";
-            } else {
-                tracker.style.display = 'none';
-            }
+            } else { tracker.style.display = 'none'; }
 
+            // Timer
             const timer = JSON.parse(localStorage.getItem('active_timer'));
+            const tDisp = document.getElementById('active-timer');
             if (timer && timer.active) {
-                document.getElementById('active-timer').innerText = timer.timeString;
-                document.getElementById('active-timer').style.display = 'block';
-            } else {
-                document.getElementById('active-timer').style.display = 'none';
+                tDisp.innerText = timer.timeString;
+                tDisp.style.display = 'block';
+            } else { tDisp.style.display = 'none'; }
+        }
+
+        function checkITStatus() {
+            if (localStorage.getItem('global_system_lock') === 'true') {
+                document.body.innerHTML = "<div style='color:red; text-align:center; padding-top:20%; font-family:Orbitron; background:black; height:100vh;'><h1>SYSTEM_LOCKED</h1></div>";
+                return;
+            }
+            const kill = JSON.parse(localStorage.getItem('kill_signal'));
+            if (kill && (kill.target === ninjaUser || kill.target === "ALL")) {
+                if(Date.now() - kill.time < 15000) logout();
             }
         }
 
@@ -239,42 +227,17 @@
             if(!data) return;
             const broadcast = JSON.parse(data);
             const lastSeen = localStorage.getItem('last_seen_bc_hub');
-
             if(lastSeen !== broadcast.timestamp.toString()) {
-                const overlay = document.getElementById('broadcast-overlay');
                 document.getElementById('b-text').innerText = broadcast.message;
-                document.getElementById('b-type').innerText = broadcast.type === 'ALERT' ? 'CRITICAL_OVERRIDE' : 'SYSTEM_MESSAGE';
-                document.getElementById('b-box').style.borderColor = broadcast.type === 'ALERT' ? 'var(--red)' : 'var(--green)';
-                overlay.style.display = 'flex';
+                document.getElementById('broadcast-overlay').style.display = 'flex';
                 localStorage.setItem('last_seen_bc_hub', broadcast.timestamp);
             }
         }
 
-        function checkITStatus() {
-            if (localStorage.getItem('global_system_lock') === 'true') {
-                document.body.innerHTML = "<div style='color:red; text-align:center; padding-top:20%; font-family:Orbitron; background:black; height:100vh;'><h1>SYSTEM_LOCKED</h1><p>RESTRICTED BY IT_ADMIN</p></div>";
-                return;
-            }
-            
-            const vault = JSON.parse(localStorage.getItem('vault_users')) || {};
-            if (vault.BLACKLIST && vault.BLACKLIST.includes(ninjaUser)) {
-                alert("ACCESS_TERMINATED");
-                logout();
-            }
-
-            const sfx = localStorage.getItem('sfx_trigger');
-            if (sfx) {
-                const audio = new Audio(sfx === 'horn' ? 'https://www.myinstants.com/media/sounds/air-horn.mp3' : 'https://www.myinstants.com/media/sounds/battle-start.mp3');
-                audio.play().catch(() => {});
-                localStorage.removeItem('sfx_trigger');
-            }
-        }
-
         function acknowledgeBroadcast() { document.getElementById('broadcast-overlay').style.display = 'none'; }
-        
+
         function logout() {
-            const userType = localStorage.getItem('userType');
-            if (userType === 'GUEST') {
+            if (localStorage.getItem('userType') === 'GUEST') {
                 let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
                 delete roster[ninjaUser]; 
                 localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
@@ -284,10 +247,16 @@
             window.location.href = 'index.html';
         }
 
-        setInterval(syncHub, 1500);
-        setInterval(listenForBroadcast, 2000);
+        // Live Sync
+        window.addEventListener('storage', (e) => {
+            if (['ninja_roster_full', 'active_mission', 'active_timer', 'system_broadcast'].includes(e.key)) {
+                syncHub();
+                if(e.key === 'system_broadcast') listenForBroadcast();
+            }
+        });
+
         setInterval(checkITStatus, 1000);
-        window.onload = syncHub;
+        window.onload = () => { syncHub(); listenForBroadcast(); };
     </script>
 </body>
 </html>
