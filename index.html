@@ -65,7 +65,6 @@
         }
         .link:hover { color: var(--gold); }
         
-        /* Specialized Link Styles */
         .sensei-toggle { color: #2a3a5a; font-weight: bold; padding: 10px; border: 1px solid #111; border-radius: 10px; margin-top: 10px; }
         .sensei-toggle:hover { color: var(--blue); border-color: var(--blue); }
         .guest-link { color: var(--gold); border: 1px solid rgba(255,204,0,0.2); padding: 8px; border-radius: 8px; }
@@ -114,35 +113,10 @@
     <script>
         let isSenseiMode = false;
 
-        // --- HARD-CODED MASTER OVERRIDE ---
+        // --- MASTER CONFIG ---
         const MASTER_ID = "ADMIN_1";
         const MASTER_PASS = "MASTER_ROOT_2026";
-
-        // Initialize Database on load to prevent login failures
-        window.onload = () => {
-            let vault = JSON.parse(localStorage.getItem('vault_users')) || {};
-            if (!vault.teachers) {
-                vault.teachers = {};
-                vault.AUDIT_LOG = vault.AUDIT_LOG || [];
-                localStorage.setItem('vault_users', JSON.stringify(vault));
-            }
-        };
-
-        // Keyboard Listener
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') executeAuth();
-            
-            // Secret IT Shortcut: CTRL + SHIFT + L
-            if (e.ctrlKey && e.shiftKey && (e.key === 'L' || e.key === 'l')) {
-                e.preventDefault();
-                const itID = prompt("ROOT_AUTH_ID:");
-                const itPass = prompt("ROOT_AUTH_PASS:");
-                if (itID && itID.toUpperCase() === MASTER_ID && itPass === MASTER_PASS) {
-                    localStorage.setItem('it_active', 'true');
-                    window.location.href = 'it_manager.html';
-                }
-            }
-        });
+        const SOVEREIGN_KEY = "777"; // The key required to activate the shortcut injection
 
         function togglePassView() {
             const passInput = document.getElementById('u-pass');
@@ -165,36 +139,45 @@
             const passInput = document.getElementById('u-pass').value.trim();
             const id = rawId.toUpperCase();
 
-            // 1. MASTER ADMIN BYPASS
+            // 1. MASTER ADMIN BYPASS (Manual entry or post-shortcut)
             if (id === MASTER_ID && passInput === MASTER_PASS) {
                 localStorage.setItem('it_active', 'true');
+                localStorage.setItem('ninjaUser', id);
+                localStorage.setItem('userType', 'ADMIN');
                 window.location.href = 'it_manager.html';
                 return;
             }
 
             // 2. LOAD DATABASES
-            const vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+            const vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {}, AUDIT_LOG: [] };
             const ninjaRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
 
             if (isSenseiMode) {
-                // SENSEI LOGIN CHECK
-                if (vault.teachers && vault.teachers[id] === passInput) {
+                const teacher = vault.teachers[id];
+                if (teacher && teacher.pass === passInput && teacher.role !== "TERMINATED") {
                     localStorage.setItem('ninjaUser', id);
                     localStorage.setItem('userType', 'SENSEI');
+                    localStorage.setItem('userRole', teacher.role);
                     window.location.href = 'sensei_dash.html';
-                } else {
-                    showError();
+                } else { 
+                    logAudit(id, "SENSEI_AUTH_FAILED");
+                    showError(); 
                 }
             } else {
-                // NINJA LOGIN CHECK
                 if (ninjaRoster[id] && ninjaRoster[id].pass === passInput) {
                     localStorage.setItem('ninjaUser', id);
                     localStorage.setItem('userType', 'MEMBER');
                     window.location.href = 'hub.html';
-                } else {
-                    showError();
+                } else { 
+                    showError(); 
                 }
             }
+        }
+
+        function logAudit(user, status) {
+            let vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {}, AUDIT_LOG: [] };
+            vault.AUDIT_LOG.unshift({ time: new Date().toLocaleString(), user: user, status: status });
+            localStorage.setItem('vault_users', JSON.stringify(vault));
         }
 
         function guestEntry() {
@@ -208,7 +191,6 @@
             const errorDiv = document.getElementById('err-log');
             const card = document.getElementById('card');
             errorDiv.style.display = "block";
-            // Visual Shake
             card.style.transform = "translateX(8px)";
             setTimeout(() => card.style.transform = "translateX(-8px)", 50);
             setTimeout(() => card.style.transform = "translateX(0)", 100);
@@ -218,6 +200,43 @@
         function requestHelp() {
             alert("EMERGENCY SIGNAL SENT TO SENSEI NETWORK.");
         }
+
+        // --- KEYBOARD LISTENERS ---
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                executeAuth();
+            }
+            
+            // TACTICAL ADMIN OVERRIDE: Ctrl + Shift + L
+            if (e.ctrlKey && e.shiftKey && e.key.toUpperCase() === 'L') {
+                e.preventDefault();
+                
+                // SECURE GATE: Prompt for secondary key
+                const challenge = prompt("AUTHORIZED_ACCESS_REQUIRED // ENTER_SOVEREIGN_KEY:");
+                
+                if (challenge === SOVEREIGN_KEY) {
+                    // Visual Flash indicating success
+                    document.getElementById('card').style.boxShadow = "0 0 50px var(--red)";
+                    
+                    // Inject Credentials
+                    document.getElementById('u-id').value = MASTER_ID;
+                    document.getElementById('u-pass').value = MASTER_PASS;
+                    
+                    // Automated Login
+                    setTimeout(() => {
+                        executeAuth();
+                    }, 400);
+                } else {
+                    logAudit("SYSTEM", "UNAUTHORIZED_OVERRIDE_ATTEMPT");
+                    console.warn("CRITICAL: Invalid Sovereign Key entered.");
+                }
+            }
+
+            // Secret IT Shortcut: Ctrl + Shift + I
+            if (e.ctrlKey && e.shiftKey && e.key.toUpperCase() === 'I') {
+                window.location.href = 'it_vault.html';
+            }
+        });
 
         // Particle FX
         setInterval(() => {
