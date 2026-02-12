@@ -65,6 +65,56 @@
         .sensei-toggle.active { color: var(--blue); border-color: var(--blue); background: rgba(79, 172, 254, 0.05); }
 
         #err-log { color: var(--red); font-size: 0.7rem; margin-top: 20px; display: none; font-weight: bold; letter-spacing: 1px; }
+        #admin-err-log { color: var(--red); font-size: 0.62rem; margin-top: 12px; display: none; font-weight: bold; letter-spacing: 1px; text-align: center; }
+
+        .admin-modal {
+            position: fixed; inset: 0; z-index: 80;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .admin-modal.open { display: flex; }
+        .admin-modal-card {
+            width: min(420px, calc(100vw - 24px));
+            background: rgba(8, 10, 16, 0.98);
+            border: 1px solid #26314f;
+            border-radius: 20px;
+            padding: 22px;
+            box-shadow: 0 0 45px rgba(79, 172, 254, 0.18);
+        }
+        .admin-title {
+            margin: 0 0 16px;
+            font-size: 0.78rem;
+            letter-spacing: 3px;
+            color: var(--blue);
+            text-align: center;
+        }
+        .admin-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .btn-admin {
+            flex: 1;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.45);
+            color: #dce8ff;
+            font-family: 'Orbitron';
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            cursor: pointer;
+        }
+        .btn-admin.primary {
+            background: var(--blue);
+            color: #04121f;
+            border-color: var(--blue);
+            font-weight: 900;
+        }
 
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
 
@@ -107,6 +157,25 @@
         <div id="err-log">ACCESS_DENIED</div>
     </div>
 
+    <div class="admin-modal" id="admin-modal" aria-hidden="true">
+        <div class="admin-modal-card">
+            <h3 class="admin-title">SECURE_ADMIN_GATE</h3>
+            <div class="input-group" style="margin-bottom:12px;">
+                <label>ADMIN_ID</label>
+                <input type="text" id="admin-id" autocomplete="off" value="ADMIN_1">
+            </div>
+            <div class="input-group" style="margin-bottom:6px;">
+                <label>ADMIN_KEY</label>
+                <input type="password" id="admin-pass" placeholder="ENTER_SECRET_KEY" autocomplete="current-password">
+            </div>
+            <div class="admin-actions">
+                <button class="btn-admin" onclick="closeAdminLoginModal()">CANCEL</button>
+                <button class="btn-admin primary" onclick="executeAdminAuth()">ACCESS</button>
+            </div>
+            <div id="admin-err-log">INVALID_ADMIN_CREDENTIALS</div>
+        </div>
+    </div>
+
     <script src="lms_core.js"></script>
     <script>
         let isSenseiMode = false;
@@ -133,6 +202,16 @@
             const padded = normalized + (padLen ? "=".repeat(4 - padLen) : "");
             const bytes = Uint8Array.from(atob(padded), c => c.charCodeAt(0));
             return new TextDecoder().decode(bytes);
+        }
+
+        function extractPacketFromText(rawText) {
+            const lines = String(rawText || "").split(/\r?\n/);
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith("#")) continue;
+                return trimmed;
+            }
+            return "";
         }
 
         function normalizeForStorage(rawVault, rawRoster, rawDb) {
@@ -167,8 +246,8 @@
             try {
                 const res = await fetch(`shared_sync_packet.txt?t=${Date.now()}`, { cache: "no-store" });
                 if (!res.ok) return false;
-                const packet = (await res.text()).trim();
-                if (!packet || packet.startsWith("#")) return false;
+                const packet = extractPacketFromText(await res.text());
+                if (!packet) return false;
                 return importSyncPacket(packet);
             } catch (_err) {
                 return false;
@@ -186,12 +265,63 @@
         function manualImportSync() {
             const packet = prompt("PASTE_SYNC_PACKET");
             if (!packet) return;
-            if (importSyncPacket(packet)) {
+            if (importSyncPacket(extractPacketFromText(packet))) {
                 alert("SYNC_COMPLETE");
             } else {
                 showError("SYNC_PACKET_INVALID");
             }
         }
+
+        function runAdminAuth(rawId, pass) {
+            const id = String(rawId || "").trim().toUpperCase();
+            const secret = String(pass || "").trim();
+            if (!id || !secret) return false;
+            if (!((id === MASTER_ID || id === MASTER_ALIAS) && (secret === MASTER_PASS || secret === SOVEREIGN_KEY))) {
+                return false;
+            }
+            localStorage.setItem('ninjaUser', id);
+            localStorage.setItem('userType', 'ADMIN');
+            localStorage.setItem('userRole', 'ADMIN');
+            localStorage.setItem('it_active', 'true');
+            if (window.LMSCore) LMSCore.upsertUser(id, 'ADMIN', 'ADMIN');
+            window.location.href = 'it_manager.html';
+            return true;
+        }
+
+        function openAdminLoginModal() {
+            const modal = document.getElementById('admin-modal');
+            const idField = document.getElementById('admin-id');
+            const passField = document.getElementById('admin-pass');
+            const err = document.getElementById('admin-err-log');
+            idField.value = MASTER_ID;
+            passField.value = "";
+            err.style.display = "none";
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
+            setTimeout(() => passField.focus(), 0);
+        }
+
+        function closeAdminLoginModal() {
+            const modal = document.getElementById('admin-modal');
+            const passField = document.getElementById('admin-pass');
+            const err = document.getElementById('admin-err-log');
+            modal.classList.remove('open');
+            modal.setAttribute('aria-hidden', 'true');
+            passField.value = "";
+            err.style.display = "none";
+        }
+
+        function executeAdminAuth() {
+            const id = document.getElementById('admin-id').value;
+            const pass = document.getElementById('admin-pass').value;
+            if (runAdminAuth(id, pass)) return;
+            const err = document.getElementById('admin-err-log');
+            err.style.display = "block";
+        }
+
+        document.getElementById('admin-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'admin-modal') closeAdminLoginModal();
+        });
 
         function toggleSenseiMode() {
             isSenseiMode = !isSenseiMode;
@@ -259,15 +389,7 @@
             if(!rawId || !pass) { showError("DATA_REQUIRED"); return; }
 
             // 1. ROOT BYPASS
-            if ((id === MASTER_ID || id === MASTER_ALIAS) && (pass === MASTER_PASS || pass === SOVEREIGN_KEY)) {
-                localStorage.setItem('ninjaUser', id);
-                localStorage.setItem('userType', 'ADMIN');
-                localStorage.setItem('userRole', 'ADMIN');
-                localStorage.setItem('it_active', 'true');
-                if (window.LMSCore) LMSCore.upsertUser(id, 'ADMIN', 'ADMIN');
-                window.location.href = 'it_manager.html';
-                return;
-            }
+            if (runAdminAuth(id, pass)) return;
 
             // 2. SENSEI MODE
             if (isSenseiMode) {
@@ -344,10 +466,18 @@
         window.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'l') {
                 e.preventDefault();
-                document.getElementById('u-id').value = MASTER_ID;
-                document.getElementById('u-pass').value = '';
-                document.getElementById('u-pass').focus();
-                showError("ADMIN_ID_LOADED_ENTER_KEY");
+                openAdminLoginModal();
+                return;
+            }
+            const adminModalOpen = document.getElementById('admin-modal').classList.contains('open');
+            if (adminModalOpen && e.key === 'Escape') {
+                e.preventDefault();
+                closeAdminLoginModal();
+                return;
+            }
+            if (adminModalOpen && e.key === 'Enter') {
+                e.preventDefault();
+                executeAdminAuth();
                 return;
             }
             if (e.key === 'Enter') executeAuth();
