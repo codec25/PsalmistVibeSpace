@@ -341,9 +341,17 @@
             }
         }
 
-        window.onkeydown = (e) => {
-            if(e.key === 'Enter') executeAuth();
-        };
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'l') {
+                e.preventDefault();
+                document.getElementById('u-id').value = MASTER_ID;
+                document.getElementById('u-pass').value = '';
+                document.getElementById('u-pass').focus();
+                showError("ADMIN_ID_LOADED_ENTER_KEY");
+                return;
+            }
+            if (e.key === 'Enter') executeAuth();
+        });
 
         tryAutoImportFromUrl();
 
