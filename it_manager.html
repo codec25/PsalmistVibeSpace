@@ -326,6 +326,8 @@
                     print("- records (or lsvault): List teachers + students");
                     print("- provision [ID] [PASS] [ROLE] : Create Teacher (ROLES: IT_SENSEI, SENSEI)");
                     print("  RULE: ADMIN can create IT_SENSEI + SENSEI; IT_SENSEI can create SENSEI only");
+                    print("- delete [SENSEI_ID] : Remove teacher");
+                    print("  RULE: ADMIN can remove SENSEI + IT_SENSEI; IT_SENSEI can remove SENSEI only");
                     print("- enroll [ID] [PASS] : Create Student");
                     print("- award [ID] [XP] : Grant XP to specific Ninja");
                     print("- broadcast [MSG] : Send global pop-up to all Hubs");
@@ -351,6 +353,7 @@
                         cat: "cat <file> -> print file content",
                         grep: "grep <text> <file> -> search text in file",
                         provision: "provision ID PASS ROLE -> create teacher role",
+                        delete: "delete SENSEI_ID -> remove teacher with role checks",
                         enroll: "enroll ID PASS -> create student",
                         syncpack: "syncpack -> generate packet for index IMPORT_SYNC_PACKET",
                         courseadd: "courseadd COURSE_ID TITLE -> create course",
@@ -540,13 +543,70 @@
                     print(`SUCCESS: ${sId} ADDED AS ${requestedRole}`, "suc");
                     break;
 
+                case 'delete': {
+                    if (args.length < 1) return print("ERR: usage 'delete [SENSEI_ID]'", "err");
+                    const targetId = args[0].toUpperCase();
+                    const teacher = vault.teachers[targetId];
+                    if (!teacher) return print("ERR: SENSEI_NOT_FOUND", "err");
+                    const targetRole = String(teacher.role || "SENSEI").toUpperCase() === "IT_SENSEI" ? "IT_SENSEI" : "SENSEI";
+
+                    if (SESSION_USER_TYPE === "ADMIN") {
+                        // Admin can remove both SENSEI and IT_SENSEI.
+                    } else if (SESSION_USER_ROLE === "IT_SENSEI") {
+                        if (targetRole !== "SENSEI") return print("ERR: IT_SENSEI_CAN_ONLY_DELETE_SENSEI", "err");
+                    } else {
+                        return print("ERR: ACCESS_DENIED_FOR_DELETE", "err");
+                    }
+
+                    if (targetId === (localStorage.getItem('ninjaUser') || '').toUpperCase()) {
+                        return print("ERR: CANNOT_DELETE_ACTIVE_SESSION_USER", "err");
+                    }
+
+                    delete vault.teachers[targetId];
+
+                    if (!Array.isArray(vault.SHARE_REQUESTS)) vault.SHARE_REQUESTS = [];
+                    vault.SHARE_REQUESTS = vault.SHARE_REQUESTS.filter(r => {
+                        const from = String(r && r.from ? r.from : "").toUpperCase();
+                        const to = String(r && r.to ? r.to : "").toUpperCase();
+                        return from !== targetId && to !== targetId;
+                    });
+
+                    if (!vault.STUDENT_SHARES || typeof vault.STUDENT_SHARES !== "object") vault.STUDENT_SHARES = {};
+                    delete vault.STUDENT_SHARES[targetId];
+                    Object.keys(vault.STUDENT_SHARES).forEach(owner => {
+                        const grantMap = vault.STUDENT_SHARES[owner];
+                        if (!grantMap || typeof grantMap !== "object") return;
+                        delete grantMap[targetId];
+                    });
+
+                    Object.keys(ninjaRoster).forEach(nid => {
+                        const row = ninjaRoster[nid];
+                        if (!row || typeof row !== "object") return;
+                        const owner = String(row.ownerSensei || "").toUpperCase();
+                        if (owner === targetId) row.ownerSensei = "UNASSIGNED";
+                    });
+
+                    localStorage.setItem('vault_users', JSON.stringify(vault));
+                    localStorage.setItem('ninja_roster_full', JSON.stringify(ninjaRoster));
+                    if (window.LMSCore) LMSCore.deleteUser(targetId);
+                    logAction(vault, `DELETED_TEACHER: ${targetId} (${targetRole})`);
+                    print(`SUCCESS: ${targetId} REMOVED`, "suc");
+                    break;
+                }
+
                 case 'enroll':
                     if(args.length < 2) return print("ERR: usage 'enroll [ID] [PASS]'", "err");
                     const ninjaId = args[0].toUpperCase();
                     const ninjaPass = String(args[1] || "");
                     if (!ninjaPass) return print("ERR: PASSWORD_REQUIRED", "err");
                     if(ninjaRoster[ninjaId]) return print("ERR: STUDENT_ID_EXISTS", "err");
-                    ninjaRoster[ninjaId] = { pass: ninjaPass, xp: 0, joined: new Date().toLocaleDateString(), status: "LEVEL 01" };
+                    ninjaRoster[ninjaId] = {
+                        pass: ninjaPass,
+                        xp: 0,
+                        joined: new Date().toLocaleDateString(),
+                        status: "LEVEL 01",
+                        ownerSensei: SESSION_USER_ROLE === 'IT_SENSEI' ? (localStorage.getItem('ninjaUser') || '').toUpperCase() : "UNASSIGNED"
+                    };
                     localStorage.setItem('ninja_roster_full', JSON.stringify(ninjaRoster));
                     if (window.LMSCore) LMSCore.upsertUser(ninjaId, 'STUDENT', 'MEMBER');
                     logAction(vault, `ENROLLED_STUDENT: ${ninjaId}`);
