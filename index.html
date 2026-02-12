@@ -94,7 +94,7 @@
         </div>
         <div class="input-group">
             <label>SECURITY_KEY</label>
-            <input type="password" id="u-pass" placeholder="PASSWORD_REQUIRED">
+            <input type="password" id="u-pass" placeholder="PASSWORD_REQUIRED" autocomplete="current-password">
         </div>
 
         <button class="btn btn-main" id="main-btn" onclick="executeAuth()">INITIALIZE</button>
@@ -102,7 +102,6 @@
         <div class="sub-links">
             <a class="link" onclick="guestEntry()">GUEST_ENTRY (TEMP)</a>
             <a class="link sensei-toggle" id="mode-btn" onclick="toggleSenseiMode()">ARE YOU A SENSEI?</a>
-            <a class="link" onclick="manualImportSync()">IMPORT_SYNC_PACKET</a>
         </div>
 
         <div id="err-log">ACCESS_DENIED</div>
@@ -116,8 +115,8 @@
         // --- MASTER SYSTEM KEYS ---
         const MASTER_ID = "ADMIN_1";
         const MASTER_ALIAS = "ADMIN";
-        const MASTER_PASS = "MASTER_ROOT_2026";
-        const SOVEREIGN_KEY = "777"; 
+        const MASTER_PASS = "777444";
+        const SOVEREIGN_KEY = "777444"; 
 
         function parseJSON(raw, fallback) {
             try {
@@ -159,6 +158,18 @@
                 normalizeDatabases();
                 if (window.LMSCore) LMSCore.init();
                 return true;
+            } catch (_err) {
+                return false;
+            }
+        }
+
+        async function tryLoadSharedSyncFile() {
+            try {
+                const res = await fetch(`shared_sync_packet.txt?t=${Date.now()}`, { cache: "no-store" });
+                if (!res.ok) return false;
+                const packet = (await res.text()).trim();
+                if (!packet || packet.startsWith("#")) return false;
+                return importSyncPacket(packet);
             } catch (_err) {
                 return false;
             }
@@ -238,7 +249,7 @@
             localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
         }
 
-        function executeAuth() {
+        async function executeAuth() {
             normalizeDatabases();
             if (window.LMSCore) LMSCore.init();
             const rawId = document.getElementById('u-id').value.trim();
@@ -260,7 +271,11 @@
 
             // 2. SENSEI MODE
             if (isSenseiMode) {
-                const vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+                let vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+                if (!vault.teachers || !vault.teachers[id]) {
+                    const synced = await tryLoadSharedSyncFile();
+                    if (synced) vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+                }
                 // Ensure teachers exists and look up by ID
                 if (vault.teachers && vault.teachers[id]) {
                     const teacher = vault.teachers[id];
@@ -270,14 +285,9 @@
                         localStorage.setItem('ninjaUser', id);
                         localStorage.setItem('userType', 'SENSEI');
                         localStorage.setItem('userRole', role);
+                        localStorage.removeItem('it_active');
                         if (window.LMSCore) LMSCore.upsertUser(id, role, 'SENSEI');
-                        if (role === 'IT_SENSEI') {
-                            localStorage.setItem('it_active', 'true');
-                            window.location.href = 'it_manager.html';
-                        } else {
-                            localStorage.removeItem('it_active');
-                            window.location.href = 'sensei_dash.html';
-                        }
+                        window.location.href = 'sensei_dash.html';
                         return;
                     }
                 }
@@ -333,14 +343,6 @@
 
         window.onkeydown = (e) => {
             if(e.key === 'Enter') executeAuth();
-            if(e.ctrlKey && e.shiftKey && e.key.toUpperCase() === 'L') {
-                const k = prompt("SOVEREIGN_KEY:");
-                if(k === SOVEREIGN_KEY) {
-                    document.getElementById('u-id').value = MASTER_ID;
-                    document.getElementById('u-pass').value = MASTER_PASS;
-                    executeAuth();
-                }
-            }
         };
 
         tryAutoImportFromUrl();
@@ -356,5 +358,6 @@
             setTimeout(() => n.remove(), 15000);
         }, 2000);
     </script>
+<script src="jarvis.js"></script>
 </body>
 </html>

@@ -3,60 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SENSEI_DASH // Command Center</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>Teacher Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg: #010204; --panel: rgba(7, 10, 17, 0.98); 
-            --blue: #4facfe; --gold: #ffcc00; --border: #1e2544; 
-            --green: #00ff88; --red: #ff4b2b; --purple: #a18cd1;
+            --bg: #dce4f0;
+            --bg-accent: #cfdcf0;
+            --panel: rgba(230, 238, 250, 0.95);
+            --text: #1d2a40;
+            --blue: #3f74d6;
+            --gold: #bc8f2f;
+            --border: #d4dfef;
+            --green: #2f9e69;
+            --red: #d95f48;
+            --purple: #7a5bc4;
         }
 
         body { 
-            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            margin: 0; color: var(--text); font-family: 'Nunito', sans-serif; 
             display: flex; flex-direction: column; align-items: center; min-height: 100vh;
-            background-image: radial-gradient(circle at 50% 50%, #0a1324 0%, #010204 100%);
-            padding: 20px; overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 12% 10%, #ece4b7 0%, transparent 40%),
+                radial-gradient(circle at 85% 12%, #c7ddf8 0%, transparent 40%),
+                linear-gradient(180deg, var(--bg) 0%, var(--bg-accent) 100%);
+            padding: 18px; overflow-x: hidden;
         }
 
         .dash-container { width: 100%; max-width: 1400px; }
 
         header {
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 30px;
+            border-bottom: 1px solid var(--border); padding: 10px 6px 20px 6px; margin-bottom: 26px;
         }
 
-        .it-status { display: flex; align-items: center; gap: 10px; font-size: 0.6rem; color: #555; }
-        .light { width: 10px; height: 10px; border-radius: 50%; background: #222; transition: 0.3s; }
+        .it-status { display: flex; align-items: center; gap: 10px; font-size: 0.72rem; color: #627186; font-weight: 700; }
+        .light { width: 10px; height: 10px; border-radius: 50%; background: #bfc9d8; transition: 0.3s; }
         .light.watching { background: var(--red); box-shadow: 0 0 10px var(--red); }
 
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
         .panel { 
             background: var(--panel); border: 1px solid var(--border); 
-            padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            padding: 20px; border-radius: 18px;
+            box-shadow: 0 16px 30px rgba(67, 103, 154, 0.12);
+            backdrop-filter: blur(4px);
         }
 
-        h3 { font-size: 0.7rem; color: var(--blue); letter-spacing: 3px; margin-top: 0; text-transform: uppercase; border-bottom: 1px solid #111; padding-bottom: 10px; margin-bottom: 15px; }
+        h1 { font-family: 'Fraunces', serif; font-size: 1.45rem; letter-spacing: 1px; margin: 0; color: #1c2d44; }
+        h3 { font-size: 0.8rem; color: var(--blue); letter-spacing: 1px; margin-top: 0; text-transform: uppercase; border-bottom: 1px solid #e9eef8; padding-bottom: 10px; margin-bottom: 15px; }
 
         input, select, textarea {
-            width: 100%; background: #000; border: 1px solid var(--border); 
-            color: #fff; padding: 10px; font-family: 'Orbitron'; font-size: 0.7rem; margin-bottom: 10px; border-radius: 8px;
+            width: 100%; background: #fff; border: 1px solid var(--border); 
+            color: #2c3a52; padding: 10px; font-family: 'Nunito'; font-size: 0.8rem; margin-bottom: 10px; border-radius: 10px;
         }
+        input::placeholder, textarea::placeholder { color: #8a98ad; }
 
         .btn {
-            width: 100%; padding: 12px; background: transparent; border: 1px solid var(--blue);
-            color: var(--blue); font-family: 'Orbitron'; cursor: pointer; border-radius: 8px;
-            font-size: 0.6rem; transition: 0.3s; font-weight: 900; text-transform: uppercase;
+            width: 100%; padding: 12px; background: #dce8f9; border: 1px solid #b5cdee;
+            color: #2f5fb6; font-family: 'Nunito'; cursor: pointer; border-radius: 10px;
+            font-size: 0.75rem; transition: 0.2s; font-weight: 800; text-transform: none;
         }
-        .btn:hover { background: var(--blue); color: #000; box-shadow: 0 0 10px var(--blue); }
+        .btn:hover { background: #cfdef7; transform: translateY(-1px); }
         .btn-red { border-color: var(--red); color: var(--red); }
-        .btn-red:hover { background: var(--red); color: #fff; }
+        .btn-red:hover { background: #ffece8; color: #a33f2f; }
         
-        .leaderboard-box { height: 250px; overflow-y: auto; background: #000; padding: 10px; border-radius: 8px; border: 1px solid #111; }
+        .leaderboard-box { height: 250px; overflow-y: auto; background: #e7effc; padding: 10px; border-radius: 12px; border: 1px solid #cddcf3; }
         
-        .bracket-slot { width: 100%; background: #000; border: 1px solid var(--border); color: #fff; font-size: 0.6rem; padding: 8px; margin-bottom: 5px; border-radius: 4px; }
+        .bracket-slot { width: 100%; background: #e1ebf9; border: 1px solid var(--border); color: #31435f; font-size: 0.75rem; padding: 8px; margin-bottom: 5px; border-radius: 8px; }
         
-        #dash-timer-preview { text-align:center; font-size:2.5rem; color:var(--gold); font-weight:900; text-shadow: 0 0 15px var(--gold); }
+        #dash-timer-preview { text-align:center; font-size:2.5rem; color:#415e8e; font-weight:900; }
+
+        @media (max-width: 1100px) {
+            .grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 760px) {
+            body { padding: 10px; }
+            .grid { grid-template-columns: 1fr; }
+            header { flex-direction: column; gap: 12px; align-items: flex-start; }
+        }
     </style>
   <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
@@ -65,51 +88,51 @@
 <div class="dash-container">
     <header>
         <div>
-            <h1 style="font-size: 1.2rem; letter-spacing: 5px; margin:0;">SENSEI_DASH // <span id="sensei-name-display">...</span></h1>
+            <h1>Teacher Hub // <span id="sensei-name-display">...</span></h1>
             <div class="it-status">
                 <div id="it-light" class="light"></div>
-                <span id="it-text">IT_SURVEILLANCE: PASSIVE</span>
+                <span id="it-text">Session Monitor: Off</span>
             </div>
         </div>
         <div style="display:flex; gap:10px;">
-            <button id="vault-access-btn" class="btn" style="display:none; border-color:var(--gold); color:var(--gold);" onclick="window.location.href='it_vault.html'">IT_VAULT</button>
+            <button id="vault-access-btn" class="btn" style="display:none; border-color:var(--gold); color:var(--gold);" onclick="window.location.href='it_vault.html'">Admin Vault</button>
             <button class="btn btn-red" style="width:auto; padding: 10px 25px;" onclick="logout()">LOGOUT</button>
         </div>
     </header>
 
     <div class="grid">
         <div class="panel">
-            <h3>NINJA_ENROLLMENT</h3>
+            <h3>Student Enrollment</h3>
             <input type="text" id="new-ninja-id" placeholder="STUDENT_ID (Ex: NINJA_01)">
             <input type="password" id="new-ninja-pass" placeholder="PASSWORD">
             <button class="btn" style="border-color:var(--green); color:var(--green);" onclick="enrollNinja()">ENROLL_NINJA</button>
             <hr style="border:0; border-top:1px solid #222; margin:20px 0;">
-            <h3>QUICK_ACTIONS</h3>
+            <h3>Quick Actions</h3>
             <button class="btn" style="border-color:var(--purple); color:var(--purple);" onclick="bulkXP()">GRANT_GLOBAL_XP (+500)</button>
         </div>
 
         <div class="panel">
-            <h3>ROSTER_OVERWATCH</h3>
+            <h3>Student Roster</h3>
             <input type="text" id="roster-search" placeholder="SEARCH_ID..." onkeyup="refreshUI()">
             <div id="leaderboard-list" class="leaderboard-box"></div>
             <div id="total-xp-pool" style="font-size:0.6rem; color:var(--gold); margin-top:10px; text-align:right;">TOTAL_POWER: 0</div>
         </div>
 
         <div class="panel">
-            <h3>TEACHER_SHARE_LINK</h3>
+            <h3>Sharing Between Teachers</h3>
             <input type="text" id="share-student-id" placeholder="STUDENT_ID">
             <input type="text" id="share-target-sensei" placeholder="TARGET_SENSEI_ID">
             <button class="btn" style="border-color:var(--blue); color:var(--blue);" onclick="sendShareRequest()">SEND_SHARE_REQUEST</button>
             <hr style="border:0; border-top:1px solid #222; margin:12px 0;">
-            <h3>PENDING_REQUESTS</h3>
+            <h3>Pending Requests</h3>
             <div id="share-requests-list" class="leaderboard-box" style="height:140px;"></div>
             <hr style="border:0; border-top:1px solid #222; margin:12px 0;">
-            <h3>ACTIVE_SHARED_ACCESS</h3>
+            <h3>Shared Access</h3>
             <div id="share-grants-list" class="leaderboard-box" style="height:120px;"></div>
         </div>
 
         <div class="panel">
-            <h3>LMS_CONTROL</h3>
+            <h3>Class & Grading</h3>
             <input type="text" id="course-id" placeholder="COURSE_ID (EX: PIANO_101)">
             <input type="text" id="course-title" placeholder="COURSE_TITLE">
             <button class="btn" onclick="createCourse()">CREATE_COURSE</button>
@@ -132,7 +155,7 @@
         </div>
 
         <div class="panel">
-            <h3>SESSION_COMMAND</h3>
+            <h3>Class Timer & Sounds</h3>
             <div id="dash-timer-preview">00:00</div>
             <div style="display:flex; gap:5px; margin-top:10px;">
                 <input type="number" id="timer-input" value="60" style="margin:0;">
@@ -145,8 +168,8 @@
         </div>
 
         <div class="panel" style="grid-column: span 3;">
-            <h3>TOURNAMENT_BRACKET_ENGINE</h3>
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:40px; background:#000; padding:20px; border-radius:10px;">
+            <h3>Class Bracket</h3>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:40px; background:#dae6f7; padding:20px; border-radius:12px; border:1px solid #c2d5ef;">
                 <div>
                     <input type="text" class="bracket-slot" id="q1" placeholder="QUALIFIER_1">
                     <input type="text" class="bracket-slot" id="q2" placeholder="QUALIFIER_2">
@@ -553,11 +576,12 @@
         setInterval(() => {
             const watched = localStorage.getItem('it_active') === 'true';
             document.getElementById('it-light').className = watched ? 'light watching' : 'light';
-            document.getElementById('it-text').innerText = watched ? "IT_SURVEILLANCE: ACTIVE" : "IT_SURVEILLANCE: PASSIVE";
+            document.getElementById('it-text').innerText = watched ? "Session Monitor: On" : "Session Monitor: Off";
             refreshShareUI();
         }, 2000);
     };
 </script>
 
+<script src="jarvis.js"></script>
 </body>
 </html>

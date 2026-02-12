@@ -141,8 +141,8 @@
         // Security Gate
         const SESSION_USER_TYPE = (localStorage.getItem('userType') || '').toUpperCase();
         const SESSION_USER_ROLE = (localStorage.getItem('userRole') || '').toUpperCase();
-        const HAS_IT_POWER = SESSION_USER_TYPE === 'ADMIN' || SESSION_USER_ROLE === 'IT_SENSEI';
-        if (localStorage.getItem('it_active') !== 'true' || !HAS_IT_POWER) {
+        const IS_ADMIN_SESSION = SESSION_USER_TYPE === 'ADMIN';
+        if (localStorage.getItem('it_active') !== 'true' || !IS_ADMIN_SESSION) {
             window.location.href = 'index.html';
         }
         if (window.LMSCore) LMSCore.init();
@@ -186,6 +186,7 @@
 
         let currentDir = "/root";
         const commandHistory = [];
+        let historyIndex = -1;
 
         const vfs = {
             type: "dir",
@@ -193,6 +194,10 @@
                 root: {
                     type: "dir",
                     children: {
+                        Desktop: { type: "dir", children: {} },
+                        Documents: { type: "dir", children: {} },
+                        Downloads: { type: "dir", children: {} },
+                        "Trash Bin": { type: "dir", children: {} },
                         "README.txt": {
                             type: "file",
                             content: [
@@ -203,7 +208,26 @@
                         }
                     }
                 },
-                home: { type: "dir", children: {} },
+                home: {
+                    type: "dir",
+                    children: {
+                        shared: {
+                            type: "dir",
+                            children: {
+                                "welcome.txt": { type: "file", content: "Shared practice area for shell drills." }
+                            }
+                        }
+                    }
+                },
+                hoome: {
+                    type: "dir",
+                    children: {
+                        notes: {
+                            type: "file",
+                            content: "Alias training folder. Use /home for standard Linux path."
+                        }
+                    }
+                },
                 etc: {
                     type: "dir",
                     children: {
@@ -231,6 +255,26 @@
                 const val = cmdField.value.trim();
                 if (val) executeBash(val);
                 cmdField.value = "";
+                historyIndex = -1;
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (!commandHistory.length) return;
+                if (historyIndex < commandHistory.length - 1) historyIndex++;
+                cmdField.value = commandHistory[commandHistory.length - 1 - historyIndex];
+                return;
+            }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (!commandHistory.length) return;
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    cmdField.value = commandHistory[commandHistory.length - 1 - historyIndex];
+                } else {
+                    historyIndex = -1;
+                    cmdField.value = "";
+                }
             }
         });
 
@@ -287,6 +331,27 @@
             return line.match(/(?:[^\s"]+|"[^"]*")+/g)?.map(t => t.replace(/^"|"$/g, "")) || [];
         }
 
+        function renderNodeSize(node){
+            if (!node) return 0;
+            if (node.type === "file") return String(node.content || "").length;
+            return Object.keys(node.children || {}).length;
+        }
+
+        function cloneNode(node){
+            if (!node) return null;
+            return JSON.parse(JSON.stringify(node));
+        }
+
+        function walkNodes(node, prefix, acc){
+            if (!node || node.type !== "dir") return;
+            Object.keys(node.children || {}).forEach(name => {
+                const child = node.children[name];
+                const p = `${prefix}/${name}`.replace(/\/+/g, "/");
+                acc.push({ path: p, node: child });
+                if (child.type === "dir") walkNodes(child, p, acc);
+            });
+        }
+
         function encodePacket(payload) {
             const bytes = new TextEncoder().encode(JSON.stringify(payload));
             let binary = "";
@@ -322,6 +387,10 @@
                     print("- pwd, ls [path], cd [path], cat <file>, mkdir <dir>, touch <file>");
                     print("- rm <path>, mv <src> <dst>, cp <src> <dst>, grep <text> <file>");
                     print("- echo <text>, history, clear, whoami, id, man <cmd>");
+                    print("- uname, date, hostname, ps, uptime");
+                    print("- head [-n N] <file>, tail [-n N] <file>, wc <file>");
+                    print("- sort <file>, uniq <file>, find <path> <text>, tree [path]");
+                    print("- stat <path>, chmod <mode> <path>, ln -s <src> <dst>, basename <path>, dirname <path>");
                     print("ADMIN_COMMANDS:", "blue");
                     print("- records (or lsvault): List teachers + students");
                     print("- provision [ID] [PASS] [ROLE] : Create Teacher (ROLES: IT_SENSEI, SENSEI)");
@@ -352,6 +421,14 @@
                         pwd: "pwd -> print working directory",
                         cat: "cat <file> -> print file content",
                         grep: "grep <text> <file> -> search text in file",
+                        find: "find <path> <text> -> recursively find names containing text",
+                        head: "head [-n N] <file> -> print first N lines (default 10)",
+                        tail: "tail [-n N] <file> -> print last N lines (default 10)",
+                        wc: "wc <file> -> line/word/byte counts",
+                        sort: "sort <file> -> sort lines ascending",
+                        uniq: "uniq <file> -> remove adjacent duplicate lines",
+                        tree: "tree [path] -> show directory tree",
+                        chmod: "chmod <mode> <path> -> set pseudo file mode metadata",
                         provision: "provision ID PASS ROLE -> create teacher role",
                         delete: "delete SENSEI_ID -> remove teacher with role checks",
                         enroll: "enroll ID PASS -> create student",
@@ -380,6 +457,29 @@
                     commandHistory.slice(-30).forEach((c, i) => print(`${i+1}  ${c}`));
                     break;
 
+                case 'date':
+                    print(new Date().toString());
+                    break;
+
+                case 'uname':
+                    print("Linux harmony-kernel 5.15.0-harmony #1 SMP PREEMPT");
+                    break;
+
+                case 'hostname':
+                    print("harmony");
+                    break;
+
+                case 'uptime':
+                    print(document.getElementById('uptime').innerText.replace("UPTIME: ", "up "));
+                    break;
+
+                case 'ps':
+                    print("PID TTY          TIME CMD", "blue");
+                    print("1   pts/0    00:00:01 harmony_bash");
+                    print("7   pts/0    00:00:00 watcher_daemon");
+                    print("9   pts/0    00:00:00 lms_sync_loop");
+                    break;
+
                 case 'cd': {
                     const dest = resolvePath(args[0] || "/root");
                     const node = getNode(dest);
@@ -394,12 +494,38 @@
                     const node = getNode(dest);
                     if (!node) return print("ls: cannot access: No such file or directory", "err");
                     if (node.type === "file") return print(args[0] || currentDir);
+                    const longView = args.includes("-l") || args.includes("-la") || args.includes("-al");
+                    const showAll = args.includes("-a") || args.includes("-la") || args.includes("-al");
                     const names = Object.keys(node.children).sort();
                     if (!names.length) return print("(empty)");
                     names.forEach(n => {
+                        if (!showAll && n.startsWith(".")) return;
                         const child = node.children[n];
-                        print(child.type === "dir" ? `${n}/` : n, child.type === "dir" ? "blue" : "res");
+                        if (longView) {
+                            const mode = child.mode || (child.type === "dir" ? "drwxr-xr-x" : "-rw-r--r--");
+                            const size = String(renderNodeSize(child)).padStart(5, " ");
+                            print(`${mode} 1 root root ${size} ${n}${child.type === "dir" ? "/" : ""}`, child.type === "dir" ? "blue" : "res");
+                        } else {
+                            print(child.type === "dir" ? `${n}/` : n, child.type === "dir" ? "blue" : "res");
+                        }
                     });
+                    break;
+                }
+
+                case 'tree': {
+                    const dest = resolvePath(args[0] || currentDir);
+                    const node = getNode(dest);
+                    if (!node || node.type !== "dir") return print("tree: not a directory", "err");
+                    print(dest, "blue");
+                    function draw(n, depth) {
+                        const indent = "&nbsp;".repeat(depth * 2);
+                        Object.keys(n.children || {}).sort().forEach(name => {
+                            const child = n.children[name];
+                            print(`${indent}|-- ${name}${child.type === "dir" ? "/" : ""}`, child.type === "dir" ? "blue" : "res");
+                            if (child.type === "dir") draw(child, depth + 1);
+                        });
+                    }
+                    draw(node, 1);
                     break;
                 }
 
@@ -408,6 +534,55 @@
                     const node = getNode(filePath);
                     if (!node || node.type !== "file") return print("cat: file not found", "err");
                     print((node.content || "").replace(/\n/g, "<br>"));
+                    break;
+                }
+
+                case 'head':
+                case 'tail': {
+                    const nFlagIndex = args.indexOf("-n");
+                    const count = nFlagIndex >= 0 ? Math.max(1, parseInt(args[nFlagIndex + 1], 10) || 10) : 10;
+                    const fileArg = nFlagIndex >= 0 ? args[nFlagIndex + 2] : args[0];
+                    if (!fileArg) return print(`usage: ${cmd} [-n N] <file>`, "err");
+                    const filePath = resolvePath(fileArg);
+                    const node = getNode(filePath);
+                    if (!node || node.type !== "file") return print(`${cmd}: file not found`, "err");
+                    const lines = String(node.content || "").split("\n");
+                    const out = cmd === "head" ? lines.slice(0, count) : lines.slice(Math.max(0, lines.length - count));
+                    print(out.join("<br>"));
+                    break;
+                }
+
+                case 'wc': {
+                    const filePath = resolvePath(args[0] || "");
+                    const node = getNode(filePath);
+                    if (!node || node.type !== "file") return print("wc: file not found", "err");
+                    const content = String(node.content || "");
+                    const lines = content ? content.split("\n").length : 0;
+                    const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+                    const bytes = content.length;
+                    print(`${lines} ${words} ${bytes} ${args[0] || filePath}`);
+                    break;
+                }
+
+                case 'sort': {
+                    const filePath = resolvePath(args[0] || "");
+                    const node = getNode(filePath);
+                    if (!node || node.type !== "file") return print("sort: file not found", "err");
+                    const sorted = String(node.content || "").split("\n").sort((a, b) => a.localeCompare(b));
+                    print(sorted.join("<br>"));
+                    break;
+                }
+
+                case 'uniq': {
+                    const filePath = resolvePath(args[0] || "");
+                    const node = getNode(filePath);
+                    if (!node || node.type !== "file") return print("uniq: file not found", "err");
+                    const lines = String(node.content || "").split("\n");
+                    const out = [];
+                    lines.forEach(line => {
+                        if (!out.length || out[out.length - 1] !== line) out.push(line);
+                    });
+                    print(out.join("<br>"));
                     break;
                 }
 
@@ -426,7 +601,7 @@
                     const { parent, name } = getParentAndName(dirPath);
                     if (!parent || parent.type !== "dir" || !name) return print("mkdir: invalid path", "err");
                     if (parent.children[name]) return print("mkdir: file exists", "err");
-                    parent.children[name] = { type: "dir", children: {} };
+                    parent.children[name] = { type: "dir", children: {}, mode: "drwxr-xr-x" };
                     break;
                 }
 
@@ -465,6 +640,19 @@
                     break;
                 }
 
+                case 'ln': {
+                    if (args[0] !== "-s" || args.length < 3) return print("usage: ln -s <src> <dst>", "err");
+                    const src = resolvePath(args[1]);
+                    const dst = resolvePath(args[2]);
+                    const srcNode = getNode(src);
+                    if (!srcNode) return print("ln: source not found", "err");
+                    const dstRef = getParentAndName(dst);
+                    if (!dstRef.parent || dstRef.parent.type !== "dir") return print("ln: destination invalid", "err");
+                    dstRef.parent.children[dstRef.name] = cloneNode(srcNode);
+                    print(`linked ${args[2]} -> ${args[1]}`);
+                    break;
+                }
+
                 case 'grep': {
                     if (args.length < 2) return print("usage: grep <text> <file>", "err");
                     const pattern = args[0].toLowerCase();
@@ -480,6 +668,54 @@
                         }
                     });
                     if (!hits) print("grep: no matches");
+                    break;
+                }
+
+                case 'find': {
+                    if (args.length < 2) return print("usage: find <path> <text>", "err");
+                    const startPath = resolvePath(args[0]);
+                    const query = String(args[1] || "").toLowerCase();
+                    const startNode = getNode(startPath);
+                    if (!startNode || startNode.type !== "dir") return print("find: path must be directory", "err");
+                    const all = [];
+                    walkNodes(startNode, startPath === "/" ? "" : startPath, all);
+                    const matches = all.filter(item => item.path.toLowerCase().includes(query));
+                    if (!matches.length) return print("find: no matches");
+                    matches.forEach(m => print(m.path + (m.node.type === "dir" ? "/" : "")));
+                    break;
+                }
+
+                case 'basename':
+                    if (!args[0]) return print("usage: basename <path>", "err");
+                    print(pathParts(resolvePath(args[0])).pop() || "/");
+                    break;
+
+                case 'dirname':
+                    if (!args[0]) return print("usage: dirname <path>", "err");
+                    const dParts = pathParts(resolvePath(args[0]));
+                    dParts.pop();
+                    print("/" + dParts.join("/"));
+                    break;
+
+                case 'stat': {
+                    const p = resolvePath(args[0] || "");
+                    const node = getNode(p);
+                    if (!node) return print("stat: path not found", "err");
+                    print(`File: ${p}`);
+                    print(`Type: ${node.type}`);
+                    print(`Mode: ${node.mode || (node.type === "dir" ? "drwxr-xr-x" : "-rw-r--r--")}`);
+                    print(`Size: ${renderNodeSize(node)} bytes`);
+                    break;
+                }
+
+                case 'chmod': {
+                    if (args.length < 2) return print("usage: chmod <mode> <path>", "err");
+                    const mode = String(args[0]);
+                    const p = resolvePath(args[1]);
+                    const node = getNode(p);
+                    if (!node) return print("chmod: path not found", "err");
+                    node.mode = mode;
+                    print(`mode of ${p} changed to ${mode}`);
                     break;
                 }
 
@@ -518,6 +754,7 @@
                     print(packet, "res");
                     print("SYNC_PACKET_END", "gold");
                     print("Use index IMPORT_SYNC_PACKET on another device, or open index.html?sync=<packet>", "blue");
+                    print("For GitHub-wide login sync: paste this packet into shared_sync_packet.txt and publish.", "blue");
                     break;
                 }
 
@@ -773,5 +1010,6 @@
 
         document.addEventListener('fullscreenchange', updateFullscreenButton);
     </script>
+<script src="jarvis.js"></script>
 </body>
 </html>
