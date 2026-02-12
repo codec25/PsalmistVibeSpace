@@ -287,6 +287,13 @@
             return line.match(/(?:[^\s"]+|"[^"]*")+/g)?.map(t => t.replace(/^"|"$/g, "")) || [];
         }
 
+        function encodePacket(payload) {
+            const bytes = new TextEncoder().encode(JSON.stringify(payload));
+            let binary = "";
+            bytes.forEach(b => { binary += String.fromCharCode(b); });
+            return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        }
+
         function printRecords(vault, ninjaRoster){
             print("--- VAULT_RECORDS ---", "blue");
             const teachers = Object.keys(vault.teachers || {});
@@ -330,6 +337,7 @@
                     print("- assign [COURSE_ID] [ASSIGN_ID] [MAX_POINTS] [TITLE] : Create assignment");
                     print("- grade [ASSIGN_ID] [STUDENT_ID] [SCORE] [FEEDBACK?] : Grade assignment");
                     print("- progress [STUDENT_ID] : Student LMS summary");
+                    print("- syncpack : Generate cross-device login sync packet");
                     print("- ls [path] : List files/folders");
                     print("- top : View recent system logs");
                     break;
@@ -344,6 +352,7 @@
                         grep: "grep <text> <file> -> search text in file",
                         provision: "provision ID PASS ROLE -> create teacher role",
                         enroll: "enroll ID PASS -> create student",
+                        syncpack: "syncpack -> generate packet for index IMPORT_SYNC_PACKET",
                         courseadd: "courseadd COURSE_ID TITLE -> create course",
                         assign: "assign COURSE_ID ASSIGN_ID MAX_POINTS TITLE -> create assignment"
                     };
@@ -494,6 +503,20 @@
                 case 'lsvault':
                     printRecords(vault, ninjaRoster);
                     break;
+
+                case 'syncpack': {
+                    const db = JSON.parse(localStorage.getItem('lms_db_v1') || 'null');
+                    const packet = encodePacket({
+                        vault_users: vault,
+                        ninja_roster_full: ninjaRoster,
+                        lms_db_v1: db
+                    });
+                    print("SYNC_PACKET_BEGIN", "gold");
+                    print(packet, "res");
+                    print("SYNC_PACKET_END", "gold");
+                    print("Use index IMPORT_SYNC_PACKET on another device, or open index.html?sync=<packet>", "blue");
+                    break;
+                }
 
                 case 'provision':
                     if(args.length < 3) return print("ERR: usage 'provision [ID] [PASS] [ROLE]'", "err");

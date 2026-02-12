@@ -65,6 +65,34 @@
     return db.users[key];
   }
 
+  function deleteUser(id) {
+    var key = String(id || "").trim().toUpperCase();
+    if (!key) return { ok: false, error: "USER_ID_REQUIRED" };
+    var db = getDB();
+    if (db.users[key]) delete db.users[key];
+
+    Object.keys(db.enrollments).forEach(function (cid) {
+      var list = db.enrollments[cid];
+      if (!Array.isArray(list)) return;
+      db.enrollments[cid] = list.filter(function (sid) {
+        return String(sid || "").toUpperCase() !== key;
+      });
+    });
+
+    Object.keys(db.submissions).forEach(function (aid) {
+      var subMap = db.submissions[aid];
+      if (!subMap || typeof subMap !== "object") return;
+      Object.keys(subMap).forEach(function (sid) {
+        if (String(sid || "").toUpperCase() === key) {
+          delete subMap[sid];
+        }
+      });
+    });
+
+    setDB(db);
+    return { ok: true };
+  }
+
   function initFromLegacy() {
     var db = getDB();
     var vault = safeParse(localStorage.getItem("vault_users"), { teachers: {} });
@@ -245,6 +273,7 @@
     getDB: getDB,
     setDB: setDB,
     upsertUser: upsertUser,
+    deleteUser: deleteUser,
     createCourse: createCourse,
     listCourses: listCourses,
     enrollStudent: enrollStudent,

@@ -102,6 +102,7 @@
         <div class="sub-links">
             <a class="link" onclick="guestEntry()">GUEST_ENTRY (TEMP)</a>
             <a class="link sensei-toggle" id="mode-btn" onclick="toggleSenseiMode()">ARE YOU A SENSEI?</a>
+            <a class="link" onclick="manualImportSync()">IMPORT_SYNC_PACKET</a>
         </div>
 
         <div id="err-log">ACCESS_DENIED</div>
@@ -117,6 +118,69 @@
         const MASTER_ALIAS = "ADMIN";
         const MASTER_PASS = "MASTER_ROOT_2026";
         const SOVEREIGN_KEY = "777"; 
+
+        function parseJSON(raw, fallback) {
+            try {
+                const parsed = JSON.parse(raw);
+                return parsed && typeof parsed === "object" ? parsed : fallback;
+            } catch (_err) {
+                return fallback;
+            }
+        }
+
+        function decodePacket(encoded) {
+            const normalized = String(encoded || "").trim().replace(/-/g, '+').replace(/_/g, '/');
+            const padLen = normalized.length % 4;
+            const padded = normalized + (padLen ? "=".repeat(4 - padLen) : "");
+            const bytes = Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+            return new TextDecoder().decode(bytes);
+        }
+
+        function normalizeForStorage(rawVault, rawRoster, rawDb) {
+            const vault = rawVault && typeof rawVault === "object" ? rawVault : {};
+            if (!vault.teachers || typeof vault.teachers !== "object") vault.teachers = {};
+            if (!Array.isArray(vault.AUDIT_LOG)) vault.AUDIT_LOG = [];
+
+            const roster = rawRoster && typeof rawRoster === "object" ? rawRoster : {};
+            const db = rawDb && typeof rawDb === "object" ? rawDb : null;
+            return { vault, roster, db };
+        }
+
+        function importSyncPacket(encodedPacket) {
+            if (!encodedPacket) return false;
+            try {
+                const json = decodePacket(encodedPacket);
+                const payload = parseJSON(json, null);
+                if (!payload || typeof payload !== "object") throw new Error("INVALID_PACKET");
+                const normalized = normalizeForStorage(payload.vault_users, payload.ninja_roster_full, payload.lms_db_v1);
+                localStorage.setItem('vault_users', JSON.stringify(normalized.vault));
+                localStorage.setItem('ninja_roster_full', JSON.stringify(normalized.roster));
+                if (normalized.db) localStorage.setItem('lms_db_v1', JSON.stringify(normalized.db));
+                normalizeDatabases();
+                if (window.LMSCore) LMSCore.init();
+                return true;
+            } catch (_err) {
+                return false;
+            }
+        }
+
+        function tryAutoImportFromUrl() {
+            const syncToken = new URLSearchParams(window.location.search).get('sync');
+            if (!syncToken) return;
+            const ok = importSyncPacket(syncToken);
+            if (!ok) showError("SYNC_PACKET_INVALID");
+            history.replaceState(null, "", window.location.pathname);
+        }
+
+        function manualImportSync() {
+            const packet = prompt("PASTE_SYNC_PACKET");
+            if (!packet) return;
+            if (importSyncPacket(packet)) {
+                alert("SYNC_COMPLETE");
+            } else {
+                showError("SYNC_PACKET_INVALID");
+            }
+        }
 
         function toggleSenseiMode() {
             isSenseiMode = !isSenseiMode;
@@ -278,6 +342,8 @@
                 }
             }
         };
+
+        tryAutoImportFromUrl();
 
         // FX
         setInterval(() => {
