@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LMS // ANALYTICS_DASHBOARD</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #05070a; --gold: #ffcc00; --blue: #4facfe; 
+            --border: #1e2544; --green: #00ff88; --red: #ff4b2b; 
+        }
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 50%, #0a111a 0%, #05070a 100%);
+        }
+        .container { 
+            width: 900px; background: rgba(10, 15, 25, 0.98); border: 1px solid var(--border); 
+            padding: 40px; box-shadow: 0 0 50px #000; border-radius: 15px;
+        }
+        header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 1px solid #111; padding-bottom: 20px; }
+        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 4px; color: var(--blue); }
+        .btn-back { background: none; border: 1px solid #444; color: #888; padding: 8px 15px; cursor: pointer; text-decoration: none; font-size: 0.6rem; border-radius: 2px; transition: 0.3s; }
+        .btn-back:hover { border-color: var(--blue); color: var(--blue); }
+
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 300px; gap: 40px; }
+        
+        .chart-box { background: #000; padding: 20px; border: 1px solid #111; border-radius: 8px; position: relative; }
+        
+        .stats-panel { display: flex; flex-direction: column; gap: 20px; }
+        .stat-card { background: #0a111a; border: 1px solid #1e2544; padding: 20px; border-radius: 8px; }
+        .stat-label { font-size: 0.6rem; color: #666; letter-spacing: 2px; margin-bottom: 5px; }
+        .stat-value { font-size: 2rem; font-weight: 900; color: var(--gold); }
+        .level-badge { color: var(--blue); font-size: 1.2rem; }
+
+        .rank-box { margin-top: auto; padding: 15px; border-top: 1px solid #222; font-size: 0.7rem; color: var(--green); text-align: center; }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div>
+            <h1>STUDENT_PROGRESS_REPORT</h1>
+            <div style="font-size: 0.6rem; color: #444; margin-top: 5px;">USER: <span id="display-user" style="color:var(--gold)">---</span> // DATA_SYNC: SECURE</div>
+        </div>
+        <a href="hub.html" class="btn-back">RETURN_TO_HUB</a>
+    </header>
+
+    <div class="dashboard-grid">
+        <div class="chart-box">
+            <canvas id="skillChart"></canvas>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stat-card">
+                <div class="stat-label">CURRENT_PHASE</div>
+                <div class="stat-value level-badge">LEVEL <span id="display-lvl">1</span></div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-label">TOTAL_EXPERIENCE</div>
+                <div class="stat-value" id="display-xp">00000</div>
+            </div>
+
+            <div class="rank-box">
+                <div class="stat-label" style="color: #444; margin-bottom: 10px;">CLASS_RANKING</div>
+                <div id="display-rank" style="font-size: 1rem; font-weight: bold; letter-spacing: 2px;">NEURAL_INITIATE</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function initDashboard() {
+        // 1. Get logged-in user
+        const ninjaName = localStorage.getItem('ninjaUser') || "GUEST";
+        document.getElementById('display-user').innerText = ninjaName.toUpperCase();
+
+        // 2. Fetch data from central roster
+        const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        const myData = roster[ninjaName] || { xp: 0, level: 1, status: "ACADEMY_NINJA" };
+
+        // 3. Update UI
+        document.getElementById('display-lvl').innerText = myData.level || Math.floor(myData.xp / 2500) + 1;
+        document.getElementById('display-xp').innerText = myData.xp.toString().padStart(5, '0');
+        
+        // 4. Calculate Rank Title
+        const ranks = ["INITIATE", "PULSE_READER", "BEAT_SYNCER", "RHYTHM_ARCHITECT", "TEMPORAL_MASTER"];
+        const rankIdx = Math.min(Math.floor((myData.level || 1) / 2), ranks.length - 1);
+        document.getElementById('display-rank').innerText = ranks[rankIdx];
+
+        // 5. Build Radar Chart
+        // Since individual skills aren't in the main roster yet, we derive them 
+        // roughly from XP or use defaults for the visualization.
+        const baseSkill = Math.min(myData.xp / 10, 100); 
+        const skills = {
+            recognition: baseSkill * 0.8,
+            timing: baseSkill * 0.9,
+            reading: baseSkill * 0.7,
+            creation: baseSkill * 0.6
+        };
+
+        renderChart(skills);
+    }
+
+    function renderChart(skills) {
+        const ctx = document.getElementById('skillChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['RECOGNITION', 'TIMING', 'READING', 'CREATION'],
+                datasets: [{
+                    label: 'SKILL_LEVEL',
+                    data: [skills.recognition, skills.timing, skills.reading, skills.creation],
+                    fill: true,
+                    backgroundColor: 'rgba(79, 172, 254, 0.2)',
+                    borderColor: '#4facfe',
+                    pointBackgroundColor: '#00ff88',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        angleLines: { color: '#1e2544' },
+                        grid: { color: '#1e2544' },
+                        pointLabels: { color: '#888', font: { family: 'Orbitron', size: 10 } },
+                        ticks: { display: false, stepSize: 20 },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    window.onload = initDashboard;
+</script>
+
+<script src="jarvis.js"></script>
+</body>
+</html>

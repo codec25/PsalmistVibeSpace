@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TEMPO_STRIKE // Rhythm Protocol R1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #020408; --green: #00ff88; --border: #1e2544; --red: #ff4b2b; --blue: #4facfe; --gold: #ffcc00; }
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;
+            overflow-x: hidden; overflow-y: auto;
+            transition: background 0.2s ease;
+        }
+        .hud { position: absolute; top: 20px; width: 90%; display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--green); letter-spacing: 2px; }
+        
+        .btn-hub {
+            text-decoration: none; color: #555; border: 1px solid #333;
+            padding: 5px 10px; border-radius: 4px; font-size: 0.6rem; transition: 0.3s;
+        }
+        .btn-hub:hover { color: var(--blue); border-color: var(--blue); }
+
+        .strike-zone {
+            width: 300px; height: 300px; border: 2px solid var(--border); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; position: relative;
+            cursor: pointer; transition: 0.1s; background: rgba(255,255,255,0.02);
+        }
+        .strike-zone.active { border-color: var(--green); transform: scale(0.98); box-shadow: 0 0 30px rgba(0,255,136,0.2); }
+        
+        .pulse-ring {
+            position: absolute; border: 2px solid var(--green); border-radius: 50%;
+            width: 100%; height: 100%; opacity: 0; pointer-events: none; transition: 0.2s;
+        }
+
+        .shadow-ring {
+            position: absolute; border: 1px solid rgba(79, 172, 254, 0.3); border-radius: 50%;
+            width: 200%; height: 200%; pointer-events: none; opacity: 0;
+        }
+
+        .accuracy-readout { margin-top: 40px; text-align: center; }
+        #feedback { font-size: 2rem; font-weight: 900; color: var(--green); height: 50px; text-shadow: 0 0 10px var(--green); }
+        
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; z-index: 10; }
+        .btn-start { 
+            background: transparent; border: 1px solid var(--green); color: var(--green); 
+            padding: 15px 30px; cursor: pointer; font-family: 'Orbitron'; font-size: 0.8rem;
+        }
+        .btn-challenge { 
+            background: transparent; border: 1px solid var(--red); color: var(--red); 
+            padding: 15px 30px; cursor: pointer; font-family: 'Orbitron'; font-size: 0.8rem;
+        }
+        .btn-quit { 
+            display: none; background: transparent; border: 1px solid var(--red); color: var(--red); 
+            padding: 15px 30px; cursor: pointer; font-family: 'Orbitron'; font-size: 0.8rem;
+        }
+        .btn-new {
+            display: none; background: var(--blue); border: 1px solid var(--blue); color: #000;
+            padding: 15px 30px; cursor: pointer; font-family: 'Orbitron'; font-size: 0.8rem; font-weight: 900;
+        }
+
+        #life-counter { color: var(--red); font-size: 1.2rem; margin-top: 10px; display: none; }
+        #guide-overlay { font-size: 0.8rem; color: var(--blue); margin-bottom: 10px; height: 20px; }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+    <div class="hud">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <a href="rhythm_hub.html" class="btn-hub">⇽ HUB</a>
+            <div>PROTOCOL_R1: <span style="color:#fff">TEMPO_STRIKE</span></div>
+        </div>
+        <div>TARGET_BPM: <span id="bpm-val" style="color:#fff">100</span></div>
+    </div>
+
+    <div id="guide-overlay">SELECT MODE TO START</div>
+    
+    <div class="controls" id="control-panel">
+        <button id="start-btn" class="btn-start" onclick="startTrial(false)">TUTORIAL_DRILL</button>
+        <button id="challenge-btn" class="btn-challenge" onclick="startTrial(true)">SURVIVAL_MODE</button>
+        <button id="new-btn" class="btn-new" onclick="resetPattern()">NEW_PATTERN</button>
+        <button id="quit-btn" class="btn-quit" onclick="stopGame(true)">QUIT_TRIAL</button>
+    </div>
+
+    <div class="strike-zone" id="pad" onmousedown="handleStrike()">
+        <div class="shadow-ring" id="shadow"></div>
+        <div class="pulse-ring" id="ring"></div>
+        <div id="countdown-text" style="font-size: 3rem; font-weight: 900; color: var(--blue); pointer-events: none;"></div>
+        <div id="strike-hint" style="position: absolute; bottom: 40px; font-size: 0.5rem; color: #555; pointer-events: none;">STRIKE_HERE [SPACE]</div>
+    </div>
+
+    <div class="accuracy-readout">
+        <div id="feedback">READY?</div>
+        <div id="life-counter">LIVES: ♥♥♥</div>
+        <div style="font-size: 0.6rem; color: #8892b0; margin-top: 10px;">AVERAGE_OFFSET: <span id="offset">0</span>ms</div>
+    </div>
+
+    <script>
+        let bpm = 100;
+        let beatInterval = (60 / bpm) * 1000;
+        let startTime;
+        let isRunning = false;
+        let isChallenge = false;
+        let lives = 3;
+        let audioCtx;
+        let strikeCount = 0;
+        let totalOffset = 0;
+        let countdownActive = false;
+        let countdownTimer;
+        let visualTimer;
+        
+        let currentFreq = 440;
+        let currentWave = 'sine';
+
+        window.addEventListener('keydown', function(e) {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (!isRunning && !countdownActive) startTrial(false);
+                else if (isRunning) handleStrike();
+            }
+        });
+
+        function stopGame(isManualQuit) {
+            isRunning = false;
+            countdownActive = false;
+            clearInterval(countdownTimer);
+            cancelAnimationFrame(visualTimer);
+            
+            document.getElementById('shadow').style.opacity = "0";
+            document.getElementById('countdown-text').innerText = "";
+            
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('challenge-btn').style.display = 'none';
+            document.getElementById('quit-btn').style.display = 'block';
+            document.getElementById('new-btn').style.display = 'block';
+            
+            if(isManualQuit) {
+                document.getElementById('feedback').innerText = "TRIAL_ABORTED";
+                document.getElementById('feedback').style.color = "var(--red)";
+            } else if (strikeCount >= 4) {
+                const avg = Math.round(totalOffset / 4);
+                document.getElementById('feedback').innerText = `SCORE: ${avg}ms`;
+                document.getElementById('feedback').style.color = "var(--blue)";
+                document.getElementById('guide-overlay').innerText = "TRIAL COMPLETE";
+            }
+            
+            document.getElementById('life-counter').style.display = 'none';
+        }
+
+        function resetPattern() {
+            isRunning = false;
+            countdownActive = false;
+            document.getElementById('new-btn').style.display = 'none';
+            document.getElementById('quit-btn').style.display = 'none';
+            document.getElementById('start-btn').style.display = 'block';
+            document.getElementById('challenge-btn').style.display = 'block';
+            document.getElementById('feedback').innerText = "READY?";
+            document.getElementById('feedback').style.color = "var(--green)";
+            document.getElementById('guide-overlay').innerText = "SELECT MODE TO START";
+        }
+
+        function playSynth(freq, type, vol, decay) {
+            if (!audioCtx || (!isRunning && !countdownActive)) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + decay);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + decay);
+        }
+
+        async function startTrial(challenge) {
+            if (isRunning || countdownActive) return;
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+            countdownActive = true;
+            isChallenge = challenge;
+            lives = 3;
+            strikeCount = 0;
+            totalOffset = 0;
+            bpm = 80 + Math.floor(Math.random() * 60);
+            
+            const waves = ['sine', 'triangle', 'square'];
+            currentWave = waves[Math.floor(Math.random() * waves.length)];
+            currentFreq = 220 + Math.floor(Math.random() * 660);
+
+            updateBpmValues();
+            
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('challenge-btn').style.display = 'none';
+            document.getElementById('new-btn').style.display = 'none';
+            document.getElementById('quit-btn').style.display = 'block';
+
+            document.getElementById('feedback').innerText = "MIMIC TONE...";
+            document.getElementById('guide-overlay').innerText = "4 STRIKES REMAINING";
+            document.getElementById('life-counter').style.display = challenge ? 'block' : 'none';
+            document.getElementById('life-counter').innerText = "LIVES: ♥♥♥";
+            
+            let count = 4;
+            countdownTimer = setInterval(() => {
+                if (!countdownActive) {
+                    clearInterval(countdownTimer);
+                    return;
+                }
+                playSynth(currentFreq * (count === 1 ? 1.5 : 1), currentWave, 0.15, 0.15);
+                document.getElementById('countdown-text').innerText = count;
+                count--;
+                if (count < 0) {
+                    clearInterval(countdownTimer);
+                    document.getElementById('countdown-text').innerText = "";
+                    startTime = Date.now();
+                    isRunning = true;
+                    countdownActive = false;
+                    document.getElementById('feedback').innerText = "STRIKE!";
+                    requestAnimationFrame(updateVisuals);
+                }
+            }, beatInterval);
+        }
+
+        function updateVisuals() {
+            if (!isRunning) return;
+            const elapsed = Date.now() - startTime;
+            const progress = (elapsed % beatInterval) / beatInterval;
+            const shadow = document.getElementById('shadow');
+            
+            const scale = 2 - progress;
+            shadow.style.opacity = progress > 0.8 ? "0" : "0.5";
+            shadow.style.transform = `scale(${scale})`;
+            
+            visualTimer = requestAnimationFrame(updateVisuals);
+        }
+
+        function updateBpmValues() {
+            beatInterval = (60 / bpm) * 1000;
+            document.getElementById('bpm-val').innerText = bpm;
+        }
+
+        function accelerate() {
+            bpm += 5;
+            const oldInterval = beatInterval;
+            updateBpmValues();
+            const elapsed = Date.now() - startTime;
+            const beatsPassed = Math.round(elapsed / oldInterval);
+            startTime = Date.now() - (beatsPassed * beatInterval);
+            
+            document.body.style.background = "#0a1a33";
+            setTimeout(() => { document.body.style.background = "var(--bg)"; }, 200);
+        }
+
+        function handleStrike() {
+            if (!isRunning) return;
+            const now = Date.now();
+            const elapsed = now - startTime;
+            const beatsPassed = Math.round(elapsed / beatInterval);
+            const target = beatsPassed * beatInterval;
+            const diff = Math.abs(elapsed - target);
+            
+            playSynth(currentFreq, currentWave, 0.1, 0.1);
+
+            const pad = document.getElementById('pad');
+            const ring = document.getElementById('ring');
+            pad.classList.add('active');
+            ring.style.opacity = "1";
+            ring.style.transform = "scale(1.5)";
+            setTimeout(() => { 
+                pad.classList.remove('active');
+                ring.style.opacity = "0"; 
+                ring.style.transform = "scale(1)";
+            }, 100);
+
+            let rating = "PERFECT";
+            let color = "var(--green)";
+            
+            if (diff > 40) { rating = "GREAT"; color = "var(--blue)"; }
+            if (diff > 80) { rating = "GOOD"; color = "var(--gold)"; }
+            if (diff > 130) { 
+                rating = "OFF_BEAT"; 
+                color = "var(--red)";
+                if (isChallenge) {
+                    lives--;
+                    updateLives();
+                }
+            }
+            
+            strikeCount++;
+            totalOffset += diff;
+            
+            const feedbackEl = document.getElementById('feedback');
+            feedbackEl.innerText = rating;
+            feedbackEl.style.color = color;
+            document.getElementById('offset').innerText = Math.round(diff);
+            document.getElementById('guide-overlay').innerText = (4 - strikeCount) + " STRIKES REMAINING";
+
+            if (strikeCount >= 4) {
+                stopGame(false);
+            } else if (isChallenge && strikeCount % 2 === 0) {
+                accelerate();
+            }
+        }
+
+        function updateLives() {
+            const l = document.getElementById('life-counter');
+            l.innerText = "LIVES: " + "♥".repeat(Math.max(0, lives)) + "♡".repeat(Math.max(0, 3 - lives));
+            if (lives <= 0) {
+                stopGame(true);
+                document.getElementById('feedback').innerText = "FAILED";
+                document.getElementById('feedback').style.color = "var(--red)";
+            }
+        }
+    </script>
+<script src="jarvis.js"></script>
+</body>
+</html>

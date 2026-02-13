@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>PSALMIST VIBES // NINJA_PORTAL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #010204; --panel: rgba(7, 10, 17, 0.98); 
+            --blue: #4facfe; --gold: #ffcc00; --border: #1e2544; 
+            --green: #00ff88; --red: #ff4b2b; 
+        }
+
+        * { box-sizing: border-box; outline: none; }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 50%, #0a1324 0%, #010204 100%);
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding: max(12px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom)) 12px;
+        }
+
+        .portal-frame {
+            width: min(420px, calc(100vw - 24px)); padding: clamp(26px, 7vw, 60px) clamp(18px, 5vw, 40px); background: var(--panel);
+            border: 1px solid var(--border); border-radius: 40px;
+            box-shadow: 0 0 60px rgba(0,0,0,0.9);
+            text-align: center; position: relative; z-index: 10;
+            backdrop-filter: blur(15px); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .musical-header { font-size: 1.5rem; color: var(--gold); margin-bottom: 10px; letter-spacing: 15px; cursor: pointer; }
+        h2 { font-size: 1.1rem; letter-spacing: 8px; margin-bottom: 40px; color: var(--green); text-transform: uppercase; }
+
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; font-size: 0.55rem; color: #555; margin-bottom: 8px; letter-spacing: 2px; }
+        
+        input {
+            width: 100%; padding: 18px; background: rgba(0,0,0,0.5); border: 1px solid var(--border);
+            color: #fff; border-radius: 15px; font-family: 'Orbitron'; text-align: center;
+            font-size: 16px; transition: 0.3s;
+        }
+        input:focus { border-color: var(--green); box-shadow: 0 0 15px rgba(0, 255, 136, 0.2); }
+
+        .btn {
+            width: 100%; padding: 20px; border: none; border-radius: 15px; font-family: 'Orbitron';
+            font-weight: 900; cursor: pointer; transition: 0.3s; text-transform: uppercase;
+            letter-spacing: 4px; margin-top: 15px;
+        }
+
+        .btn-main { background: var(--green); color: #000; }
+        .btn-main:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,255,136,0.2); }
+
+        .sub-links { margin-top: 30px; display: flex; flex-direction: column; gap: 15px; }
+        
+        .link { color: #444; font-size: 0.65rem; text-decoration: none; cursor: pointer; letter-spacing: 2px; transition: 0.3s; }
+        .link:hover { color: var(--gold); }
+        
+        .sensei-toggle { 
+            color: #2a3a5a; font-weight: bold; padding: 12px; border: 1px solid #1a253a; 
+            border-radius: 12px; transition: 0.3s;
+        }
+        .sensei-toggle.active { color: var(--blue); border-color: var(--blue); background: rgba(79, 172, 254, 0.05); }
+
+        #err-log { color: var(--red); font-size: 0.7rem; margin-top: 20px; display: none; font-weight: bold; letter-spacing: 1px; }
+        #admin-err-log { color: var(--red); font-size: 0.62rem; margin-top: 12px; display: none; font-weight: bold; letter-spacing: 1px; text-align: center; }
+
+        .admin-modal {
+            position: fixed; inset: 0; z-index: 80;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .admin-modal.open { display: flex; }
+        .admin-modal-card {
+            width: min(420px, calc(100vw - 24px));
+            background: rgba(8, 10, 16, 0.98);
+            border: 1px solid #26314f;
+            border-radius: 20px;
+            padding: 22px;
+            box-shadow: 0 0 45px rgba(79, 172, 254, 0.18);
+        }
+        .admin-title {
+            margin: 0 0 16px;
+            font-size: 0.78rem;
+            letter-spacing: 3px;
+            color: var(--blue);
+            text-align: center;
+        }
+        .admin-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .btn-admin {
+            flex: 1;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.45);
+            color: #dce8ff;
+            font-family: 'Orbitron';
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            cursor: pointer;
+        }
+        .btn-admin.primary {
+            background: var(--blue);
+            color: #04121f;
+            border-color: var(--blue);
+            font-weight: 900;
+        }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+        /* Floating particles */
+        .note { position: absolute; color: rgba(0,255,136,0.05); pointer-events: none; animation: float 15s infinite linear; }
+        @keyframes float { from { transform: translateY(100vh) rotate(0deg); } to { transform: translateY(-10vh) rotate(360deg); } }
+
+        @media (max-width: 640px) {
+            .portal-frame { border-radius: 24px; }
+            .musical-header { font-size: 1.2rem; letter-spacing: 10px; }
+            h2 { font-size: 0.95rem; letter-spacing: 4px; margin-bottom: 24px; }
+            .btn { padding: 16px; letter-spacing: 2px; }
+            .sub-links { margin-top: 20px; gap: 10px; }
+        }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+
+    <div class="portal-frame" id="card">
+        <div class="musical-header" onclick="debugCounter()">♩ ♪ ♫ ♬</div>
+        <h2 id="portal-title">NINJA_PORTAL</h2>
+        
+        <div class="input-group">
+            <label>IDENTITY_CODE</label>
+            <input type="text" id="u-id" placeholder="ID_REQUIRED" autocomplete="off">
+        </div>
+        <div class="input-group">
+            <label>SECURITY_KEY</label>
+            <input type="password" id="u-pass" placeholder="PASSWORD_REQUIRED" autocomplete="current-password">
+        </div>
+
+        <button class="btn btn-main" id="main-btn" onclick="executeAuth()">INITIALIZE</button>
+
+        <div class="sub-links">
+            <a class="link" onclick="guestEntry()">GUEST_ENTRY (TEMP)</a>
+            <a class="link sensei-toggle" id="mode-btn" onclick="toggleSenseiMode()">ARE YOU A SENSEI?</a>
+            <a class="link" onclick="manualImportSync()">IMPORT_SYNC_PACKET</a>
+        </div>
+
+        <div id="err-log">ACCESS_DENIED</div>
+    </div>
+
+    <div class="admin-modal" id="admin-modal" aria-hidden="true">
+        <div class="admin-modal-card">
+            <h3 class="admin-title">SECURE_ADMIN_GATE</h3>
+            <div class="input-group" style="margin-bottom:12px;">
+                <label>ADMIN_ID</label>
+                <input type="text" id="admin-id" autocomplete="off" value="ADMIN_1">
+            </div>
+            <div class="input-group" style="margin-bottom:6px;">
+                <label>ADMIN_KEY</label>
+                <input type="password" id="admin-pass" placeholder="ENTER_SECRET_KEY" autocomplete="current-password">
+            </div>
+            <div class="admin-actions">
+                <button class="btn-admin" onclick="closeAdminLoginModal()">CANCEL</button>
+                <button class="btn-admin primary" onclick="executeAdminAuth()">ACCESS</button>
+            </div>
+            <div id="admin-err-log">INVALID_ADMIN_CREDENTIALS</div>
+        </div>
+    </div>
+
+    <script src="lms_core.js"></script>
+    <script>
+        let isSenseiMode = false;
+        let dClicks = 0;
+
+        // --- MASTER SYSTEM KEYS ---
+        const MASTER_ID = "ADMIN_1";
+        const MASTER_ALIAS = "ADMIN";
+        const MASTER_PASS = "777444";
+        const SOVEREIGN_KEY = "777444"; 
+
+        function parseJSON(raw, fallback) {
+            try {
+                const parsed = JSON.parse(raw);
+                return parsed && typeof parsed === "object" ? parsed : fallback;
+            } catch (_err) {
+                return fallback;
+            }
+        }
+
+        function decodePacket(encoded) {
+            const normalized = String(encoded || "").trim().replace(/-/g, '+').replace(/_/g, '/');
+            const padLen = normalized.length % 4;
+            const padded = normalized + (padLen ? "=".repeat(4 - padLen) : "");
+            const bytes = Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+            return new TextDecoder().decode(bytes);
+        }
+
+        function extractPacketFromText(rawText) {
+            const lines = String(rawText || "").split(/\r?\n/);
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith("#")) continue;
+                return trimmed;
+            }
+            return "";
+        }
+
+        function normalizeForStorage(rawVault, rawRoster, rawDb) {
+            const vault = rawVault && typeof rawVault === "object" ? rawVault : {};
+            if (!vault.teachers || typeof vault.teachers !== "object") vault.teachers = {};
+            if (!Array.isArray(vault.AUDIT_LOG)) vault.AUDIT_LOG = [];
+
+            const roster = rawRoster && typeof rawRoster === "object" ? rawRoster : {};
+            const db = rawDb && typeof rawDb === "object" ? rawDb : null;
+            return { vault, roster, db };
+        }
+
+        function importSyncPacket(encodedPacket) {
+            if (!encodedPacket) return false;
+            try {
+                const json = decodePacket(encodedPacket);
+                const payload = parseJSON(json, null);
+                if (!payload || typeof payload !== "object") throw new Error("INVALID_PACKET");
+                const normalized = normalizeForStorage(payload.vault_users, payload.ninja_roster_full, payload.lms_db_v1);
+                localStorage.setItem('vault_users', JSON.stringify(normalized.vault));
+                localStorage.setItem('ninja_roster_full', JSON.stringify(normalized.roster));
+                if (normalized.db) localStorage.setItem('lms_db_v1', JSON.stringify(normalized.db));
+                normalizeDatabases();
+                if (window.LMSCore) LMSCore.init();
+                return true;
+            } catch (_err) {
+                return false;
+            }
+        }
+
+        async function tryLoadSharedSyncFile() {
+            try {
+                const paths = [`shared_sync_packet.txt?t=${Date.now()}`, `/shared_sync_packet.txt?t=${Date.now()}`];
+                for (const path of paths) {
+                    const res = await fetch(path, { cache: "no-store" });
+                    if (!res.ok) continue;
+                    const packet = extractPacketFromText(await res.text());
+                    if (!packet) continue;
+                    if (importSyncPacket(packet)) return true;
+                }
+                return false;
+            } catch (_err) {
+                return false;
+            }
+        }
+
+        function tryAutoImportFromUrl() {
+            const syncToken = new URLSearchParams(window.location.search).get('sync');
+            if (!syncToken) return;
+            const ok = importSyncPacket(syncToken);
+            if (!ok) showError("SYNC_PACKET_INVALID");
+            history.replaceState(null, "", window.location.pathname);
+        }
+
+        function manualImportSync() {
+            const packet = prompt("PASTE_SYNC_PACKET");
+            if (!packet) return;
+            if (importSyncPacket(extractPacketFromText(packet))) {
+                alert("SYNC_COMPLETE");
+            } else {
+                showError("SYNC_PACKET_INVALID");
+            }
+        }
+
+        async function ensureSenseiRecord(id) {
+            let vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+            let teacher = vault.teachers && vault.teachers[id] ? vault.teachers[id] : null;
+            if (teacher) return { vault, teacher };
+
+            const synced = await tryLoadSharedSyncFile();
+            if (synced) {
+                vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+                teacher = vault.teachers && vault.teachers[id] ? vault.teachers[id] : null;
+                if (teacher) return { vault, teacher };
+            }
+
+            const wantsManualImport = confirm("SENSEI_SYNC_NOT_FOUND. IMPORT_SYNC_PACKET_NOW?");
+            if (wantsManualImport) {
+                manualImportSync();
+                vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+                teacher = vault.teachers && vault.teachers[id] ? vault.teachers[id] : null;
+            }
+            return { vault, teacher };
+        }
+
+        function runAdminAuth(rawId, pass) {
+            const id = String(rawId || "").trim().toUpperCase();
+            const secret = String(pass || "").trim();
+            if (!id || !secret) return false;
+            if (!((id === MASTER_ID || id === MASTER_ALIAS) && (secret === MASTER_PASS || secret === SOVEREIGN_KEY))) {
+                return false;
+            }
+            localStorage.setItem('ninjaUser', id);
+            localStorage.setItem('userType', 'ADMIN');
+            localStorage.setItem('userRole', 'ADMIN');
+            localStorage.setItem('it_active', 'true');
+            if (window.LMSCore) LMSCore.upsertUser(id, 'ADMIN', 'ADMIN');
+            window.location.href = 'it_manager.html';
+            return true;
+        }
+
+        function openAdminLoginModal() {
+            const modal = document.getElementById('admin-modal');
+            const idField = document.getElementById('admin-id');
+            const passField = document.getElementById('admin-pass');
+            const err = document.getElementById('admin-err-log');
+            idField.value = MASTER_ID;
+            passField.value = "";
+            err.style.display = "none";
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
+            setTimeout(() => passField.focus(), 0);
+        }
+
+        function closeAdminLoginModal() {
+            const modal = document.getElementById('admin-modal');
+            const passField = document.getElementById('admin-pass');
+            const err = document.getElementById('admin-err-log');
+            modal.classList.remove('open');
+            modal.setAttribute('aria-hidden', 'true');
+            passField.value = "";
+            err.style.display = "none";
+        }
+
+        function executeAdminAuth() {
+            const id = document.getElementById('admin-id').value;
+            const pass = document.getElementById('admin-pass').value;
+            if (runAdminAuth(id, pass)) return;
+            const err = document.getElementById('admin-err-log');
+            err.style.display = "block";
+        }
+
+        document.getElementById('admin-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'admin-modal') closeAdminLoginModal();
+        });
+
+        function toggleSenseiMode() {
+            isSenseiMode = !isSenseiMode;
+            const title = document.getElementById('portal-title');
+            const btn = document.getElementById('main-btn');
+            const modeBtn = document.getElementById('mode-btn');
+            
+            if(isSenseiMode) {
+                title.innerText = "SENSEI_VAULT";
+                title.style.color = "var(--blue)";
+                btn.innerText = "DECRYPT_SENSEI";
+                btn.style.background = "var(--blue)";
+                modeBtn.classList.add('active');
+            } else {
+                title.innerText = "NINJA_PORTAL";
+                title.style.color = "var(--green)";
+                btn.innerText = "INITIALIZE";
+                btn.style.background = "var(--green)";
+                modeBtn.classList.remove('active');
+            }
+        }
+
+        function normalizeDatabases() {
+            const vault = JSON.parse(localStorage.getItem('vault_users')) || {};
+            if (!vault.teachers || typeof vault.teachers !== "object") vault.teachers = {};
+            Object.keys(vault.teachers).forEach(id => {
+                const t = vault.teachers[id];
+                if (typeof t === "string") {
+                    vault.teachers[id] = { pass: String(t), role: "SENSEI" };
+                    return;
+                }
+                if (!t || typeof t !== "object") {
+                    vault.teachers[id] = { pass: "", role: "SENSEI" };
+                    return;
+                }
+                t.pass = String(t.pass ?? "");
+                t.role = String(t.role || "SENSEI").toUpperCase();
+                if (t.role !== "IT_SENSEI") t.role = "SENSEI";
+            });
+            if (!Array.isArray(vault.AUDIT_LOG)) vault.AUDIT_LOG = [];
+            localStorage.setItem('vault_users', JSON.stringify(vault));
+
+            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            Object.keys(roster).forEach(id => {
+                const entry = roster[id];
+                if (!entry || typeof entry !== "object") {
+                    roster[id] = { pass: "", xp: 0, joined: new Date().toLocaleDateString(), status: "LEVEL 01" };
+                    return;
+                }
+                entry.pass = String(entry.pass ?? "");
+                entry.xp = Number.isFinite(Number(entry.xp)) ? Number(entry.xp) : 0;
+                if (!entry.joined) entry.joined = new Date().toLocaleDateString();
+                if (!entry.status) entry.status = "LEVEL 01";
+            });
+            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+        }
+
+        async function executeAuth() {
+            normalizeDatabases();
+            if (window.LMSCore) LMSCore.init();
+            const rawId = document.getElementById('u-id').value.trim();
+            const pass = document.getElementById('u-pass').value.trim();
+            const id = rawId.toUpperCase(); // Force uppercase for DB matching
+
+            if(!rawId || !pass) { showError("DATA_REQUIRED"); return; }
+
+            // 1. ROOT BYPASS
+            if (runAdminAuth(id, pass)) return;
+
+            // 2. SENSEI MODE
+            if (isSenseiMode) {
+                const result = await ensureSenseiRecord(id);
+                if (result.teacher) {
+                    const teacher = result.teacher;
+                    if (String(teacher.pass) === String(pass)) {
+                        const rawRole = (teacher.role || 'SENSEI').toUpperCase();
+                        const role = rawRole === 'IT_SENSEI' ? 'IT_SENSEI' : 'SENSEI';
+                        localStorage.setItem('ninjaUser', id);
+                        localStorage.setItem('userType', 'SENSEI');
+                        localStorage.setItem('userRole', role);
+                        localStorage.removeItem('it_active');
+                        if (window.LMSCore) LMSCore.upsertUser(id, role, 'SENSEI');
+                        window.location.href = 'sensei_dash.html';
+                        return;
+                    }
+                }
+                showError("SENSEI_NOT_FOUND_OR_INVALID_KEY");
+            } 
+            // 3. NINJA MODE
+            else {
+                const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+                if (roster[id] && String(roster[id].pass) === String(pass)) {
+                    localStorage.setItem('ninjaUser', id);
+                    localStorage.setItem('userType', 'MEMBER');
+                    localStorage.removeItem('userRole');
+                    localStorage.removeItem('it_active');
+                    if (window.LMSCore) LMSCore.upsertUser(id, 'STUDENT', 'MEMBER');
+                    window.location.href = 'hub.html';
+                } else {
+                    showError("INVALID_NINJA_ID_OR_PASS");
+                }
+            }
+        }
+
+        function showError(msg) {
+            const err = document.getElementById('err-log');
+            const card = document.getElementById('card');
+            err.innerText = msg;
+            err.style.display = "block";
+            card.style.animation = "shake 0.3s";
+            setTimeout(() => { card.style.animation = ""; }, 300);
+            setTimeout(() => { err.style.display = "none"; }, 3000);
+        }
+
+        function guestEntry() {
+            const gID = "GUEST_" + Math.floor(1000 + Math.random() * 8999);
+            localStorage.setItem('ninjaUser', gID);
+            localStorage.setItem('userType', 'GUEST');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('it_active');
+            if (window.LMSCore) {
+                LMSCore.init();
+                LMSCore.upsertUser(gID, 'GUEST', 'GUEST');
+            }
+            window.location.href = 'hub.html';
+        }
+
+        function debugCounter() {
+            dClicks++;
+            if(dClicks >= 5) {
+                const vault = localStorage.getItem('vault_users');
+                alert("DEBUG_DATABASE_DUMP:\n" + (vault ? vault : "NO_VAULT_FOUND"));
+                dClicks = 0;
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'l') {
+                e.preventDefault();
+                openAdminLoginModal();
+                return;
+            }
+            const adminModalOpen = document.getElementById('admin-modal').classList.contains('open');
+            if (adminModalOpen && e.key === 'Escape') {
+                e.preventDefault();
+                closeAdminLoginModal();
+                return;
+            }
+            if (adminModalOpen && e.key === 'Enter') {
+                e.preventDefault();
+                executeAdminAuth();
+                return;
+            }
+            if (e.key === 'Enter') executeAuth();
+        });
+
+        tryAutoImportFromUrl();
+
+        // FX
+        setInterval(() => {
+            const n = document.createElement('div');
+            n.className = 'note';
+            n.innerText = ['♩','♪','♫','♬'][Math.floor(Math.random()*4)];
+            n.style.left = Math.random()*100+"vw";
+            n.style.fontSize = (Math.random()*20+10)+"px";
+            document.body.appendChild(n);
+            setTimeout(() => n.remove(), 15000);
+        }, 2000);
+    </script>
+<script src="jarvis.js"></script>
+</body>
+</html>

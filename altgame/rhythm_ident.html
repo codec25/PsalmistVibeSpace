@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RHYTHM_IDENT // Neural LMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <script>
+        const LMS = {
+            profile: { xp: 1685, level: 1, streak: 0 },
+            isUnlocked: (lvl) => lvl <= 2,
+            award: (type, amt) => { 
+                LMS.profile.streak++;
+                let bonus = Math.floor(LMS.profile.streak / 3) * 25;
+                LMS.profile.xp += (amt + bonus); 
+                updateLMSUI(); 
+            },
+            resetStreak: () => { LMS.profile.streak = 0; updateLMSUI(); }
+        };
+    </script>
+    <style>
+        :root { 
+            --bg: #05070a; --gold: #ffcc00; --blue: #4facfe; 
+            --border: #1e2544; --green: #00ff88; --red: #ff4b2b; 
+        }
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; min-height: 100vh;
+        }
+        
+        .container { 
+            width: 100%; max-width: 1100px; margin: auto;
+            background: rgba(10, 15, 25, 0.98); border: 1px solid var(--border); 
+            padding: 20px; box-sizing: border-box;
+            display: grid; grid-template-columns: 1fr; gap: 20px; 
+            box-shadow: 0 0 50px #000; 
+        }
+
+        @media (min-width: 900px) {
+            .container { grid-template-columns: 1fr 350px; padding: 30px; }
+            .main-panel { border-right: 1px solid #111; padding-right: 20px; }
+        }
+        
+        .side-panel { 
+            background: rgba(0,0,0,0.4); padding: 20px; border: 1px solid #222; 
+            border-radius: 4px; display: flex; flex-direction: column; 
+        }
+
+        .top-hud { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .btn-hub { background: none; border: 1px solid #444; color: #888; padding: 8px 15px; cursor: pointer; text-decoration: none; font-size: 0.6rem; border-radius: 2px; text-transform: uppercase; }
+        .xp-display { color: var(--gold); font-size: 1rem; font-weight: 900; letter-spacing: 2px; }
+        .level-tag { color: var(--blue); font-size: 0.6rem; border: 1px solid var(--blue); padding: 2px 8px; border-radius: 10px; margin-left: 10px; }
+        .streak-tag { color: var(--green); font-size: 0.6rem; margin-left: 10px; opacity: 0; }
+
+        .progress-container { width: 100%; height: 4px; background: #111; margin-bottom: 20px; border-radius: 2px; overflow: hidden; }
+        #progress-fill { width: 35%; height: 100%; background: linear-gradient(90deg, var(--blue), var(--green)); transition: 0.5s ease-out; }
+
+        .display-area { 
+            height: 180px; background: #000; margin-bottom: 20px; border: 1px solid #111; 
+            position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+        }
+        @media (min-width: 600px) { .display-area { height: 250px; } }
+
+        #rhythm-visual { font-size: 4rem; color: var(--blue); text-shadow: 0 0 25px var(--blue); transition: 0.1s; }
+        #beat-counter { position: absolute; top: 10px; right: 20px; font-size: 1.5rem; color: var(--gold); opacity: 0.5; }
+        
+        #pedagogy-tip { font-size: 0.6rem; color: #666; margin-top: 15px; min-height: 1.2em; text-transform: uppercase; letter-spacing: 1px; text-align: center; max-width: 90%; line-height: 1.4; }
+
+        .control-row { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 20px; }
+        @media (min-width: 500px) { .control-row { grid-template-columns: 1fr 1fr; } }
+        
+        .control-group { background: #111; padding: 15px; border: 1px solid #222; border-radius: 4px; }
+        .label-mini { font-size: 0.55rem; color: #666; display: block; margin-bottom: 10px; letter-spacing: 2px; font-weight: 900; text-transform: uppercase; }
+        
+        input[type=range] { width: 100%; accent-color: var(--blue); cursor: pointer; margin-bottom: 5px; }
+
+        .switch-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+        .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #222; transition: .4s; border-radius: 20px; }
+        input:checked + .slider { background-color: var(--blue); }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        .pool-selector { display: flex; gap: 8px; margin-bottom: 20px; }
+        .pool-btn { 
+            flex: 1; background: #111; border: 1px solid #333; color: #666; padding: 10px 5px; 
+            font-family: 'Orbitron'; font-size: 0.7rem; cursor: pointer; transition: 0.3s;
+        }
+        .pool-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(79, 172, 254, 0.1); }
+
+        .btn-stack { display: flex; gap: 10px; }
+        .btn-gen { background: var(--blue); color: #000; border: none; padding: 18px; font-weight: 900; font-family: 'Orbitron'; cursor: pointer; flex: 2; letter-spacing: 2px; transition: 0.2s; }
+        .btn-replay { background: #222; color: var(--blue); border: 1px solid var(--blue); padding: 18px; font-weight: 900; font-family: 'Orbitron'; cursor: pointer; flex: 1; transition: 0.2s; }
+        .btn-replay.active-play { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 15px var(--gold); }
+        .btn-stop { background: #1a0505; color: var(--red); border: 1px solid var(--red); cursor: pointer; font-family: 'Orbitron'; font-size: 0.6rem; width: 100%; padding: 10px; margin-top: 10px; border-radius: 4px; }
+
+        #choice-container { flex-grow: 1; display: grid; grid-template-columns: 1fr; gap: 8px; }
+        @media (max-width: 899px) { #choice-container { grid-template-columns: 1fr 1fr; } }
+        
+        .choice-btn { 
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: #fff; 
+            padding: 15px; font-size: 0.65rem; text-align: center; cursor: pointer; 
+            font-family: 'Orbitron'; transition: 0.2s; border-radius: 4px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .choice-btn svg { width: 40px; height: 40px; margin-bottom: 8px; fill: white; }
+        .choice-btn.correct { background: rgba(0, 255, 136, 0.2) !important; border-color: var(--green) !important; color: var(--green); }
+        .choice-btn.incorrect { background: rgba(255, 75, 43, 0.2) !important; border-color: var(--red) !important; color: var(--red); animation: shake 0.3s; }
+        
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+
+<div class="container" id="game-container">
+    <div class="main-panel">
+        <div class="top-hud">
+            <div>
+                <a href="rhythm_hub.html" class="btn-hub">← HUB</a>
+                <span class="level-tag">PHASE <span id="lvl-val">1</span></span>
+                <span id="streak-val" class="streak-tag">STREAK: 0</span>
+            </div>
+            <div class="xp-display">XP: <span id="xp-val">00000</span></div>
+        </div>
+        
+        <div class="progress-container">
+            <div id="progress-fill"></div>
+        </div>
+
+        <div class="display-area">
+            <div id="beat-counter">--</div>
+            <div id="rhythm-visual">--</div>
+            <div id="pedagogy-tip">SYSTEM INITIALIZED // STARTING GUIDANCE:<br>1. TOGGLE METRONOME (LEFT) // 2. SELECT GENERATE</div>
+        </div>
+
+        <div class="control-row">
+            <div class="control-group">
+                <span class="label-mini">TEMPO: <span id="bpm-val" style="color:var(--blue)">80</span> BPM</span>
+                <input type="range" id="tempo-slider" min="40" max="180" value="80">
+                <span class="label-mini" style="margin-top:10px;">METRO_VOL</span>
+                <input type="range" id="metro-vol" min="0" max="100" value="30">
+                <div class="switch-row" style="margin-top:10px;">
+                    <span class="label-mini" style="margin:0">METRONOME</span>
+                    <label class="switch"><input type="checkbox" id="metro-toggle" onchange="toggleMetronome()"><span class="slider"></span></label>
+                </div>
+            </div>
+            <div class="control-group">
+                <span class="label-mini">SIGNAL_VOL (PIANO)</span>
+                <input type="range" id="signal-vol" min="0" max="100" value="70">
+                <div class="switch-row" style="margin-top:10px;">
+                    <span class="label-mini" style="margin:0">HARD_MODE</span>
+                    <label class="switch"><input type="checkbox" id="hard-toggle" onchange="toggleHardMode()"><span class="slider"></span></label>
+                </div>
+                <div class="switch-row" style="margin-top:10px;">
+                    <span class="label-mini" style="margin:0; color:var(--red)">ULTRA_PATTERNS</span>
+                    <label class="switch"><input type="checkbox" id="ultra-toggle"><span class="slider"></span></label>
+                </div>
+            </div>
+        </div>
+        <div class="btn-stack">
+            <button class="btn-gen" onclick="generateChallenge()">GENERATE_NEW</button>
+            <button id="replay-btn" class="btn-replay" onclick="replaySignal()">REPLAY</button>
+        </div>
+    </div>
+
+    <div class="side-panel">
+        <span class="label-mini">MATRIX_COMPLEXITY:</span>
+        <div class="pool-selector">
+            <button class="pool-btn" onclick="setPoolSize(2)">2</button>
+            <button class="pool-btn active" onclick="setPoolSize(4)">4</button>
+            <button class="pool-btn" onclick="setPoolSize(6)">6</button>
+        </div>
+        <span class="label-mini">SELECTION_MATRIX:</span>
+        <div id="choice-container"></div>
+    </div>
+</div>
+
+<script>
+    let audioCtx, currentPattern, isPlaying = false, loopCount = 0;
+    let bpm = 80, poolSize = 4, isHardMode = false;
+    let timeoutRefs = [];
+    let signalNodes = []; 
+    let nextTickTime = 0;
+    let schedulerTimer = null;
+    let metroGain = 0.3;
+    let signalGain = 0.7;
+    let beatNum = 1;
+
+    const SVGS = {
+        quarter: `<svg viewBox="0 0 100 100"><circle cx="40" cy="70" r="15"/><path d="M55 70V20" stroke="white" stroke-width="8" fill="none"/></svg>`,
+        eighths: `<svg viewBox="0 0 100 100"><circle cx="30" cy="70" r="12"/><circle cx="70" cy="70" r="12"/><path d="M42 70V20 H82 V70" stroke="white" stroke-width="8" fill="none"/></svg>`,
+        sixteenths: `<svg viewBox="0 0 100 100"><circle cx="25" cy="70" r="10"/><circle cx="50" cy="70" r="10"/><circle cx="75" cy="70" r="10"/><path d="M25 70V25 H75 V70 M25 40 H75" stroke="white" stroke-width="6" fill="none"/></svg>`,
+        triplet: `<svg viewBox="0 0 100 100"><text x="50" y="25" fill="white" text-anchor="middle" font-size="20">3</text><circle cx="20" cy="70" r="10"/><circle cx="50" cy="70" r="10"/><circle cx="80" cy="70" r="10"/><path d="M20 70V35 H80 V70" stroke="white" stroke-width="5" fill="none"/></svg>`,
+        dotted: `<svg viewBox="0 0 100 100"><circle cx="30" cy="70" r="15"/><circle cx="55" cy="70" r="4" fill="white"/><path d="M45 70V20" stroke="white" stroke-width="8" fill="none"/></svg>`,
+        sync: `<svg viewBox="0 0 100 100"><path d="M20 50 L50 20 L80 50 L50 80 Z" stroke="white" stroke-width="5" fill="none"/></svg>`,
+        ultra1: `<svg viewBox="0 0 100 100"><path d="M10 50 L90 50 M50 10 L50 90" stroke="red" stroke-width="5"/></svg>`, 
+        ultra2: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" stroke="red" stroke-width="5" fill="none"/></svg>`
+    };
+
+    const library = [
+        { name: 'QUARTER NOTE', times: [0, 1, 2, 3], sym: '♩', lvl: 1, tip: "Pulse on every beat.", svg: SVGS.quarter },
+        { name: 'PAIR OF 8THS', times: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5], sym: '♫', lvl: 1, tip: "Two even notes per beat.", svg: SVGS.eighths },
+        { name: '4 SIXTEENTHS', times: [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75], sym: '♬', lvl: 2, tip: "Rapid: 4 notes per beat.", svg: SVGS.sixteenths },
+        { name: '8TH TRIPLET', times: [0, 0.33, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3, 3.33, 3.66], sym: '3', lvl: 1, tip: "Three notes per beat cycle.", svg: SVGS.triplet },
+        { name: 'DOTTED 8TH + 16TH', times: [0, 0.75, 1, 1.75, 2, 2.75, 3, 3.75], sym: '♩.', lvl: 2, tip: "Gallop: Long-short rhythm.", svg: SVGS.dotted },
+        { name: 'SYNCOPATED 8THS', times: [0.5, 1.5, 2.5, 3.5], sym: '&', lvl: 2, tip: "Notes land on off-beats.", svg: SVGS.sync }
+    ];
+
+    const ultraLibrary = [
+        { name: 'REVERSE GALLOP', times: [0, 0.25, 0.5, 1, 1.25, 1.5, 2, 2.25, 2.5, 3, 3.25, 3.5], sym: '.♩', lvl: 3, tip: "Short-short-long pattern.", svg: SVGS.ultra1 },
+        { name: 'TRIPLET 16THS', times: [0, 0.16, 0.33, 0.5, 0.66, 0.83, 1, 1.16, 1.33, 1.5, 1.66, 1.83], sym: '6', lvl: 3, tip: "6 notes per beat pulse.", svg: SVGS.ultra2 }
+    ];
+
+    function updateLMSUI() {
+        document.getElementById('xp-val').innerText = LMS.profile.xp.toString().padStart(5, '0');
+        const sTag = document.getElementById('streak-val');
+        sTag.innerText = `STREAK: ${LMS.profile.streak}`;
+        sTag.style.opacity = LMS.profile.streak > 0 ? 1 : 0;
+        const progress = (LMS.profile.xp % 2000) / 20;
+        document.getElementById('progress-fill').style.width = progress + '%';
+    }
+    updateLMSUI();
+
+    function initAudio() { 
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function setPoolSize(n) { 
+        poolSize = n; 
+        document.querySelectorAll('.pool-btn').forEach(b => b.classList.toggle('active', parseInt(b.innerText) === n));
+    }
+
+    function toggleHardMode() { isHardMode = document.getElementById('hard-toggle').checked; }
+
+    function toggleMetronome() { 
+        initAudio();
+        const isOn = document.getElementById('metro-toggle').checked;
+        if (isOn) { 
+            document.getElementById('pedagogy-tip').innerText = "METRONOME ACTIVE // PRESS 'GENERATE_NEW' TO BEGIN";
+            nextTickTime = audioCtx.currentTime + 0.05;
+            beatNum = 1;
+            scheduler(); 
+        } else if (schedulerTimer) clearTimeout(schedulerTimer);
+    }
+
+    function scheduler() {
+        if (!document.getElementById('metro-toggle').checked) return;
+        while (nextTickTime < audioCtx.currentTime + 0.1) {
+            scheduleTick(nextTickTime, beatNum);
+            nextTickTime += 60.0 / bpm;
+            beatNum = (beatNum % 4) + 1; 
+        }
+        schedulerTimer = setTimeout(scheduler, 25.0);
+    }
+
+    function scheduleTick(time, count) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(count === 1 ? 1000 : 600, time);
+        g.gain.setValueAtTime(metroGain * 0.4, time);
+        g.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(time); osc.stop(time + 0.08);
+        timeoutRefs.push(setTimeout(() => {
+            const bc = document.getElementById('beat-counter');
+            if (bc) bc.innerText = count;
+        }, Math.max(0, (time - audioCtx.currentTime) * 1000)));
+    }
+
+    function stopSignalSounds() {
+        signalNodes.forEach(node => { try { node.stop(); node.disconnect(); } catch(e) {} });
+        signalNodes = [];
+        document.getElementById('replay-btn').classList.remove('active-play');
+    }
+
+    function stopAll() {
+        isPlaying = false;
+        stopSignalSounds();
+        timeoutRefs.forEach(clearTimeout);
+        timeoutRefs = [];
+        if (schedulerTimer) clearTimeout(schedulerTimer);
+        document.getElementById('metro-toggle').checked = false;
+        document.getElementById('rhythm-visual').innerText = "--";
+        document.getElementById('beat-counter').innerText = "--";
+    }
+
+    function generateChallenge() {
+        isPlaying = false;
+        stopSignalSounds();
+        timeoutRefs.forEach(clearTimeout);
+        timeoutRefs = []; 
+        initAudio();
+
+        const useUltra = document.getElementById('ultra-toggle').checked;
+        const currentLibrary = useUltra ? [...library, ...ultraLibrary] : library;
+        
+        let available = currentLibrary.filter(r => LMS.isUnlocked(r.lvl) || useUltra);
+        let choices = available.sort(() => 0.5 - Math.random()).slice(0, poolSize);
+        currentPattern = choices[Math.floor(Math.random() * choices.length)];
+        
+        const container = document.getElementById('choice-container');
+        container.innerHTML = '';
+        choices.forEach(p => {
+            let btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.innerHTML = p.svg + `<span>${p.name}</span>`;
+            btn.onclick = () => check(p.name, btn);
+            container.appendChild(btn);
+        });
+
+        isPlaying = true; 
+        loopCount = 0;
+        document.getElementById('pedagogy-tip').innerText = "SIGNAL TRANSMITTING // MATCH AUDIO TO MATRIX";
+        document.getElementById('replay-btn').classList.add('active-play');
+        playLoop();
+    }
+
+    function playLoop() {
+        if (!isPlaying || loopCount >= 2 || !audioCtx) { 
+            document.getElementById('replay-btn').classList.remove('active-play');
+            return; 
+        }
+
+        const ultraActive = document.getElementById('ultra-toggle').checked;
+        document.getElementById('rhythm-visual').innerText = (isHardMode || ultraActive) ? "??" : currentPattern.sym;
+        
+        const beatLen = 60 / bpm;
+        let startTime = nextTickTime;
+        if (beatNum !== 1) startTime = nextTickTime + ((5 - beatNum) * beatLen);
+
+        currentPattern.times.forEach((t) => {
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(261.63, startTime + (t * beatLen));
+            g.gain.setValueAtTime(0, startTime + (t * beatLen));
+            g.gain.linearRampToValueAtTime(signalGain * 0.4, startTime + (t * beatLen) + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.001, startTime + (t * beatLen) + 0.25);
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.start(startTime + (t * beatLen)); osc.stop(startTime + (t * beatLen) + 0.3);
+            signalNodes.push(osc);
+            timeoutRefs.push(setTimeout(() => {
+                const v = document.getElementById('rhythm-visual');
+                if(v && isPlaying) { 
+                    v.style.transform = 'scale(1.2)'; 
+                    setTimeout(() => v.style.transform = 'scale(1)', 100); 
+                }
+            }, Math.max(0, (startTime - audioCtx.currentTime + (t * beatLen)) * 1000)));
+        });
+
+        loopCount++;
+        timeoutRefs.push(setTimeout(() => { if (isPlaying) playLoop(); }, (startTime - audioCtx.currentTime + (beatLen * 4)) * 1000));
+    }
+
+    function replaySignal() {
+        if (!currentPattern) return;
+        initAudio();
+        stopSignalSounds();
+        isPlaying = true; loopCount = 0;
+        document.getElementById('replay-btn').classList.add('active-play');
+        playLoop();
+    }
+
+    function check(name, btn) {
+        if(name === currentPattern.name) {
+            btn.classList.add('correct');
+            LMS.award('recognition', isHardMode ? 150 : 50);
+            isPlaying = false;
+            stopSignalSounds();
+            document.getElementById('pedagogy-tip').innerText = "SUCCESS // STREAK: " + LMS.profile.streak;
+            setTimeout(generateChallenge, 1000);
+        } else {
+            btn.classList.add('incorrect');
+            LMS.resetStreak();
+            document.getElementById('pedagogy-tip').innerText = "DEVIATION DETECTED // STREAK RESET";
+            setTimeout(() => btn.classList.remove('incorrect'), 500);
+        }
+    }
+
+    document.getElementById('tempo-slider').oninput = (e) => { bpm = e.target.value; document.getElementById('bpm-val').innerText = bpm; };
+    document.getElementById('metro-vol').oninput = (e) => { metroGain = e.target.value / 100; };
+    document.getElementById('signal-vol').oninput = (e) => { signalGain = e.target.value / 100; };
+</script>
+<script src="jarvis.js"></script>
+</body>
+</html>

@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #dce4f0;
+            --bg-accent: #cfdcf0;
+            --panel: rgba(230, 238, 250, 0.95);
+            --text: #1d2a40;
+            --blue: #3f74d6;
+            --gold: #bc8f2f;
+            --border: #d4dfef;
+            --green: #2f9e69;
+            --red: #d95f48;
+            --purple: #7a5bc4;
+        }
+
+        body { 
+            margin: 0; color: var(--text); font-family: 'Nunito', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image:
+                radial-gradient(circle at 12% 10%, #ece4b7 0%, transparent 40%),
+                radial-gradient(circle at 85% 12%, #c7ddf8 0%, transparent 40%),
+                linear-gradient(180deg, var(--bg) 0%, var(--bg-accent) 100%);
+            padding: 18px; overflow-x: hidden;
+        }
+
+        .dash-container { width: 100%; max-width: 1400px; }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); padding: 10px 6px 20px 6px; margin-bottom: 26px;
+        }
+
+        .it-status { display: flex; align-items: center; gap: 10px; font-size: 0.72rem; color: #627186; font-weight: 700; }
+        .light { width: 10px; height: 10px; border-radius: 50%; background: #bfc9d8; transition: 0.3s; }
+        .light.watching { background: var(--red); box-shadow: 0 0 10px var(--red); }
+
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .panel { 
+            background: var(--panel); border: 1px solid var(--border); 
+            padding: 20px; border-radius: 18px;
+            box-shadow: 0 16px 30px rgba(67, 103, 154, 0.12);
+            backdrop-filter: blur(4px);
+        }
+
+        h1 { font-family: 'Fraunces', serif; font-size: 1.45rem; letter-spacing: 1px; margin: 0; color: #1c2d44; }
+        h3 { font-size: 0.8rem; color: var(--blue); letter-spacing: 1px; margin-top: 0; text-transform: uppercase; border-bottom: 1px solid #e9eef8; padding-bottom: 10px; margin-bottom: 15px; }
+
+        input, select, textarea {
+            width: 100%; background: #fff; border: 1px solid var(--border); 
+            color: #2c3a52; padding: 10px; font-family: 'Nunito'; font-size: 0.8rem; margin-bottom: 10px; border-radius: 10px;
+        }
+        input::placeholder, textarea::placeholder { color: #8a98ad; }
+
+        .btn {
+            width: 100%; padding: 12px; background: #dce8f9; border: 1px solid #b5cdee;
+            color: #2f5fb6; font-family: 'Nunito'; cursor: pointer; border-radius: 10px;
+            font-size: 0.75rem; transition: 0.2s; font-weight: 800; text-transform: none;
+        }
+        .btn:hover { background: #cfdef7; transform: translateY(-1px); }
+        .btn-red { border-color: var(--red); color: var(--red); }
+        .btn-red:hover { background: #ffece8; color: #a33f2f; }
+        
+        .leaderboard-box { height: 250px; overflow-y: auto; background: #e7effc; padding: 10px; border-radius: 12px; border: 1px solid #cddcf3; }
+        
+        .bracket-slot { width: 100%; background: #e1ebf9; border: 1px solid var(--border); color: #31435f; font-size: 0.75rem; padding: 8px; margin-bottom: 5px; border-radius: 8px; }
+        
+        #dash-timer-preview { text-align:center; font-size:2.5rem; color:#415e8e; font-weight:900; }
+
+        @media (max-width: 1100px) {
+            .grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 760px) {
+            body { padding: 10px; }
+            .grid { grid-template-columns: 1fr; }
+            header { flex-direction: column; gap: 12px; align-items: flex-start; }
+        }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+
+<div class="dash-container">
+    <header>
+        <div>
+            <h1>Teacher Hub // <span id="sensei-name-display">...</span></h1>
+            <div class="it-status">
+                <div id="it-light" class="light"></div>
+                <span id="it-text">Session Monitor: Off</span>
+            </div>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button id="vault-access-btn" class="btn" style="display:none; border-color:var(--gold); color:var(--gold);" onclick="window.location.href='it_vault.html'">Admin Vault</button>
+            <button class="btn btn-red" style="width:auto; padding: 10px 25px;" onclick="logout()">LOGOUT</button>
+        </div>
+    </header>
+
+    <div class="grid">
+        <div class="panel">
+            <h3>Student Enrollment</h3>
+            <input type="text" id="new-ninja-id" placeholder="STUDENT_ID (Ex: NINJA_01)">
+            <input type="password" id="new-ninja-pass" placeholder="PASSWORD">
+            <button class="btn" style="border-color:var(--green); color:var(--green);" onclick="enrollNinja()">ENROLL_NINJA</button>
+            <hr style="border:0; border-top:1px solid #222; margin:20px 0;">
+            <h3>Quick Actions</h3>
+            <button class="btn" style="border-color:var(--purple); color:var(--purple);" onclick="bulkXP()">GRANT_GLOBAL_XP (+500)</button>
+        </div>
+
+        <div class="panel">
+            <h3>Student Roster</h3>
+            <input type="text" id="roster-search" placeholder="SEARCH_ID..." onkeyup="refreshUI()">
+            <div id="leaderboard-list" class="leaderboard-box"></div>
+            <div id="total-xp-pool" style="font-size:0.6rem; color:var(--gold); margin-top:10px; text-align:right;">TOTAL_POWER: 0</div>
+        </div>
+
+        <div class="panel">
+            <h3>Sharing Between Teachers</h3>
+            <input type="text" id="share-student-id" placeholder="STUDENT_ID">
+            <input type="text" id="share-target-sensei" placeholder="TARGET_SENSEI_ID">
+            <button class="btn" style="border-color:var(--blue); color:var(--blue);" onclick="sendShareRequest()">SEND_SHARE_REQUEST</button>
+            <hr style="border:0; border-top:1px solid #222; margin:12px 0;">
+            <h3>Pending Requests</h3>
+            <div id="share-requests-list" class="leaderboard-box" style="height:140px;"></div>
+            <hr style="border:0; border-top:1px solid #222; margin:12px 0;">
+            <h3>Shared Access</h3>
+            <div id="share-grants-list" class="leaderboard-box" style="height:120px;"></div>
+        </div>
+
+        <div class="panel">
+            <h3>Class & Grading</h3>
+            <input type="text" id="course-id" placeholder="COURSE_ID (EX: PIANO_101)">
+            <input type="text" id="course-title" placeholder="COURSE_TITLE">
+            <button class="btn" onclick="createCourse()">CREATE_COURSE</button>
+            <hr style="border:0; border-top:1px solid #222; margin:12px 0;">
+            <input type="text" id="course-enroll-id" placeholder="COURSE_ID">
+            <input type="text" id="course-student-id" placeholder="STUDENT_ID">
+            <button class="btn" style="border-color:var(--green); color:var(--green);" onclick="enrollStudentToCourse()">ENROLL_TO_COURSE</button>
+            <hr style="border:0; border-top:1px solid #222; margin:12px 0;">
+            <input type="text" id="assignment-course-id" placeholder="COURSE_ID">
+            <input type="text" id="assignment-id" placeholder="ASSIGNMENT_ID">
+            <input type="number" id="assignment-max-points" value="100" placeholder="MAX_POINTS">
+            <input type="text" id="assignment-title" placeholder="ASSIGNMENT_TITLE">
+            <button class="btn" style="border-color:var(--purple); color:var(--purple);" onclick="createAssignment()">CREATE_ASSIGNMENT</button>
+            <hr style="border:0; border-top:1px solid #222; margin:12px 0;">
+            <input type="text" id="grade-assignment-id" placeholder="ASSIGNMENT_ID">
+            <input type="text" id="grade-student-id" placeholder="STUDENT_ID">
+            <input type="number" id="grade-score" placeholder="SCORE">
+            <input type="text" id="grade-feedback" placeholder="FEEDBACK (OPTIONAL)">
+            <button class="btn" style="border-color:var(--gold); color:var(--gold);" onclick="postGrade()">POST_GRADE</button>
+        </div>
+
+        <div class="panel">
+            <h3>Class Timer & Sounds</h3>
+            <div id="dash-timer-preview">00:00</div>
+            <div style="display:flex; gap:5px; margin-top:10px;">
+                <input type="number" id="timer-input" value="60" style="margin:0;">
+                <button class="btn" style="width:auto; border-color:var(--green); color:var(--green);" onclick="startTimer()">START</button>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:15px;">
+                <button class="btn" onclick="fireSFX('horn')">🔔 BELL</button>
+                <button class="btn btn-red" onclick="fireSFX('battle')">💥 CRASH</button>
+            </div>
+        </div>
+
+        <div class="panel" style="grid-column: span 3;">
+            <h3>Class Bracket</h3>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:40px; background:#dae6f7; padding:20px; border-radius:12px; border:1px solid #c2d5ef;">
+                <div>
+                    <input type="text" class="bracket-slot" id="q1" placeholder="QUALIFIER_1">
+                    <input type="text" class="bracket-slot" id="q2" placeholder="QUALIFIER_2">
+                    <div style="height:20px;"></div>
+                    <input type="text" class="bracket-slot" id="q3" placeholder="QUALIFIER_3">
+                    <input type="text" class="bracket-slot" id="q4" placeholder="QUALIFIER_4">
+                </div>
+                <div style="display:flex; flex-direction:column; justify-content:center; gap:50px;">
+                    <input type="text" class="bracket-slot" id="s1" placeholder="SEMI_1" style="border-color:var(--purple);">
+                    <input type="text" class="bracket-slot" id="s2" placeholder="SEMI_2" style="border-color:var(--purple);">
+                </div>
+                <div style="display:flex; flex-direction:column; justify-content:center;">
+                    <input type="text" class="bracket-slot" id="f1" placeholder="GRAND_CHAMPION" style="border-color:var(--gold); height:60px; font-weight:900; text-align:center;">
+                </div>
+            </div>
+            <button class="btn" style="margin-top:10px; border-color:var(--gold); color:var(--gold);" onclick="saveBracket()">SAVE_BRACKET_STATE</button>
+        </div>
+    </div>
+</div>
+
+<script src="lms_core.js"></script>
+<script>
+    // --- DATABASE HANDSHAKE ---
+    const SHARE_ALL = "*";
+    function parseJSON(raw, fallback) {
+        try {
+            const parsed = JSON.parse(raw);
+            return parsed && typeof parsed === "object" ? parsed : fallback;
+        } catch (_err) {
+            return fallback;
+        }
+    }
+    function getVault() {
+        const vault = parseJSON(localStorage.getItem('vault_users'), {}) || {};
+        if (!vault.teachers || typeof vault.teachers !== "object") vault.teachers = {};
+        if (!Array.isArray(vault.AUDIT_LOG)) vault.AUDIT_LOG = [];
+        if (!Array.isArray(vault.SHARE_REQUESTS)) vault.SHARE_REQUESTS = [];
+        if (!vault.STUDENT_SHARES || typeof vault.STUDENT_SHARES !== "object") vault.STUDENT_SHARES = {};
+        localStorage.setItem('vault_users', JSON.stringify(vault));
+        return vault;
+    }
+    const getRoster = () => parseJSON(localStorage.getItem('ninja_roster_full'), {}) || {};
+    if (window.LMSCore) LMSCore.init();
+    function normalizeRoster() {
+        const roster = getRoster();
+        Object.keys(roster).forEach(id => {
+            if (!roster[id] || typeof roster[id] !== 'object') {
+                roster[id] = { pass: '', xp: 0, joined: new Date().toLocaleDateString(), status: 'LEVEL 01', ownerSensei: '' };
+                return;
+            }
+            roster[id].pass = String(roster[id].pass ?? '');
+            roster[id].xp = Number.isFinite(Number(roster[id].xp)) ? Number(roster[id].xp) : 0;
+            if (!roster[id].joined) roster[id].joined = new Date().toLocaleDateString();
+            if (!roster[id].status) roster[id].status = 'LEVEL 01';
+            roster[id].ownerSensei = String(roster[id].ownerSensei || '').toUpperCase();
+        });
+        localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+        return roster;
+    }
+    function normalizeShareMap(vault, ownerId) {
+        const owner = String(ownerId || "").toUpperCase();
+        if (!owner) return {};
+        if (!vault.STUDENT_SHARES[owner] || typeof vault.STUDENT_SHARES[owner] !== "object") {
+            vault.STUDENT_SHARES[owner] = {};
+        }
+        return vault.STUDENT_SHARES[owner];
+    }
+    function hasShareAccess(vault, ownerId, viewerId, studentId) {
+        const owner = String(ownerId || "").toUpperCase();
+        const viewer = String(viewerId || "").toUpperCase();
+        const student = String(studentId || "").toUpperCase();
+        if (!owner || owner === "UNASSIGNED" || owner === viewer) return true;
+        const ownerMap = normalizeShareMap(vault, owner);
+        const allow = ownerMap[viewer];
+        if (!Array.isArray(allow)) return false;
+        return allow.includes(student) || allow.includes(SHARE_ALL);
+    }
+    function getVisibleRosterEntries() {
+        const vault = getVault();
+        const roster = normalizeRoster();
+        return Object.keys(roster)
+            .filter(id => {
+                const owner = String(roster[id].ownerSensei || '').toUpperCase();
+                return hasShareAccess(vault, owner, USER_ID, id);
+            })
+            .map(id => ({ id, ...roster[id] }));
+    }
+    
+    const USER_ID = String(localStorage.getItem('ninjaUser') || '').toUpperCase();
+    const USER_TYPE = localStorage.getItem('userType');
+    const USER_ROLE = String(localStorage.getItem('userRole') || '').toUpperCase();
+
+    // Security Gate
+    if (!USER_ID || USER_TYPE !== 'SENSEI' || !getVault().teachers[USER_ID]) {
+        window.location.href = 'index.html';
+    } else {
+        document.getElementById('sensei-name-display').innerText = USER_ID;
+        if(USER_ROLE === 'IT_SENSEI' || String(getVault().teachers[USER_ID].role || '').toUpperCase() === 'IT_SENSEI') {
+            document.getElementById('vault-access-btn').style.display = 'block';
+        }
+    }
+
+    // --- ENROLLMENT ---
+    function enrollNinja() {
+        const id = document.getElementById('new-ninja-id').value.trim().toUpperCase();
+        const pass = document.getElementById('new-ninja-pass').value.trim();
+        if(!id || !pass) return alert("MISSING_DATA");
+
+        let roster = getRoster();
+        if(roster[id]) return alert("ID_EXISTS");
+
+        roster[id] = {
+            pass: String(pass),
+            xp: 0,
+            joined: new Date().toLocaleDateString(),
+            status: "LEVEL 01",
+            ownerSensei: USER_ID
+        };
+        localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+        
+        document.getElementById('new-ninja-id').value = "";
+        document.getElementById('new-ninja-pass').value = "";
+        refreshUI();
+        refreshShareUI();
+        alert("NINJA_ENROLLED: " + id);
+    }
+
+    function refreshUI() {
+        const list = document.getElementById('leaderboard-list');
+        const filter = document.getElementById('roster-search').value.toUpperCase();
+        let total = 0;
+        const sorted = getVisibleRosterEntries()
+            .filter(n => n.id.includes(filter))
+            .sort((a,b) => b.xp - a.xp);
+
+        list.innerHTML = sorted.map((n, i) => {
+            total += (Number.isFinite(Number(n.xp)) ? Number(n.xp) : 0);
+            const ownerLabel = n.ownerSensei && n.ownerSensei !== "UNASSIGNED" ? n.ownerSensei : "OPEN";
+            return `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #111;">
+                    <span style="font-size:0.6rem;">#${i+1} ${n.id} <span style="color:#777;">[${ownerLabel}]</span></span>
+                    <span style="color:var(--green); font-size:0.7rem;">${(Number.isFinite(Number(n.xp)) ? Number(n.xp) : 0).toLocaleString()}</span>
+                    <div style="display:flex; gap:5px;">
+                        <button onclick="modifyXP('${n.id}', 100)" style="background:none; border:1px solid var(--blue); color:var(--blue); font-size:0.5rem; cursor:pointer;">+100</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        document.getElementById('total-xp-pool').innerText = "TOTAL_POWER: " + total.toLocaleString();
+    }
+
+    function modifyXP(id, amt) {
+        let roster = normalizeRoster();
+        const vault = getVault();
+        if (!roster[id]) return;
+        const owner = String(roster[id].ownerSensei || '').toUpperCase();
+        if (!hasShareAccess(vault, owner, USER_ID, id)) return alert("ACCESS_DENIED");
+        const cur = Number.isFinite(Number(roster[id].xp)) ? Number(roster[id].xp) : 0;
+        roster[id].xp = cur + Number(amt || 0);
+        localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+        refreshUI();
+    }
+
+    function bulkXP() {
+        if(!confirm("AWARD 500 XP TO VISIBLE STUDENTS?")) return;
+        let roster = normalizeRoster();
+        const vault = getVault();
+        const visible = getVisibleRosterEntries().map(n => n.id);
+        visible.forEach(id => {
+            if (!roster[id]) return;
+            const owner = String(roster[id].ownerSensei || '').toUpperCase();
+            if (!hasShareAccess(vault, owner, USER_ID, id)) return;
+            const cur = Number.isFinite(Number(roster[id].xp)) ? Number(roster[id].xp) : 0;
+            roster[id].xp = cur + 500;
+        });
+        localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+        localStorage.setItem('system_broadcast', JSON.stringify({ message: `SENSEI ${USER_ID} GRANTED +500 XP TO VISIBLE STUDENTS!`, timestamp: Date.now() }));
+        refreshUI();
+    }
+
+    // --- SHARE REQUEST FLOW ---
+    function sendShareRequest() {
+        const studentId = document.getElementById('share-student-id').value.trim().toUpperCase();
+        const targetSensei = document.getElementById('share-target-sensei').value.trim().toUpperCase();
+        if (!studentId || !targetSensei) return alert("STUDENT_AND_SENSEI_REQUIRED");
+        const roster = normalizeRoster();
+        if (!roster[studentId]) return alert("STUDENT_NOT_FOUND");
+        const owner = String(roster[studentId].ownerSensei || '').toUpperCase();
+        if (!owner || owner === "UNASSIGNED") return alert("STUDENT_IS_OPEN_ALREADY");
+        if (owner === USER_ID) return alert("YOU_ALREADY_OWN_THIS_STUDENT");
+        if (owner !== targetSensei) return alert("TARGET_MUST_BE_STUDENT_OWNER");
+
+        const vault = getVault();
+        if (!vault.teachers[targetSensei]) return alert("TARGET_SENSEI_NOT_FOUND");
+        const openExists = vault.SHARE_REQUESTS.some(r =>
+            String(r.status || '').toUpperCase() === "PENDING" &&
+            String(r.from || '').toUpperCase() === USER_ID &&
+            String(r.to || '').toUpperCase() === targetSensei &&
+            String(r.studentId || '').toUpperCase() === studentId
+        );
+        if (openExists) return alert("REQUEST_ALREADY_PENDING");
+
+        vault.SHARE_REQUESTS.unshift({
+            id: `REQ_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+            from: USER_ID,
+            to: targetSensei,
+            studentId: studentId,
+            status: "PENDING",
+            requestedAt: Date.now()
+        });
+        localStorage.setItem('vault_users', JSON.stringify(vault));
+        document.getElementById('share-student-id').value = "";
+        document.getElementById('share-target-sensei').value = "";
+        refreshShareUI();
+        alert(`REQUEST_SENT_TO_${targetSensei}`);
+    }
+
+    function resolveShareRequest(reqId, shouldApprove) {
+        const vault = getVault();
+        const req = vault.SHARE_REQUESTS.find(r => String(r.id || '') === String(reqId || ''));
+        if (!req) return alert("REQUEST_NOT_FOUND");
+        if (String(req.to || '').toUpperCase() !== USER_ID) return alert("ACCESS_DENIED");
+        if (String(req.status || '').toUpperCase() !== "PENDING") return alert("REQUEST_ALREADY_RESOLVED");
+
+        req.status = shouldApprove ? "APPROVED" : "DENIED";
+        req.resolvedAt = Date.now();
+        req.resolvedBy = USER_ID;
+        if (shouldApprove) {
+            const ownerMap = normalizeShareMap(vault, USER_ID);
+            const target = String(req.from || '').toUpperCase();
+            if (!Array.isArray(ownerMap[target])) ownerMap[target] = [];
+            if (!ownerMap[target].includes(req.studentId)) ownerMap[target].push(req.studentId);
+        }
+        localStorage.setItem('vault_users', JSON.stringify(vault));
+        refreshUI();
+        refreshShareUI();
+    }
+
+    function renderIncomingRequests() {
+        const vault = getVault();
+        const wrap = document.getElementById('share-requests-list');
+        const incoming = vault.SHARE_REQUESTS.filter(r =>
+            String(r.status || '').toUpperCase() === "PENDING" &&
+            String(r.to || '').toUpperCase() === USER_ID
+        );
+        if (!incoming.length) {
+            wrap.innerHTML = `<div style="font-size:0.6rem; color:#666;">NO_PENDING_REQUESTS</div>`;
+            return;
+        }
+        wrap.innerHTML = incoming.map(r => `
+            <div style="padding:8px; border-bottom:1px solid #111;">
+                <div style="font-size:0.58rem; color:#ccc;">FROM ${String(r.from || '').toUpperCase()} -> ${String(r.studentId || '').toUpperCase()}</div>
+                <div style="display:flex; gap:5px; margin-top:6px;">
+                    <button class="btn" style="padding:6px; border-color:var(--green); color:var(--green);" onclick="resolveShareRequest('${String(r.id || '')}', true)">APPROVE</button>
+                    <button class="btn btn-red" style="padding:6px;" onclick="resolveShareRequest('${String(r.id || '')}', false)">DENY</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderActiveGrants() {
+        const vault = getVault();
+        const wrap = document.getElementById('share-grants-list');
+        const roster = normalizeRoster();
+        const lines = [];
+
+        const myOutgoing = normalizeShareMap(vault, USER_ID);
+        Object.keys(myOutgoing).forEach(target => {
+            const ids = Array.isArray(myOutgoing[target]) ? myOutgoing[target] : [];
+            ids.forEach(studentId => lines.push(`YOU_SHARED ${studentId} -> ${target}`));
+        });
+
+        Object.keys(vault.STUDENT_SHARES || {}).forEach(owner => {
+            const grantMap = vault.STUDENT_SHARES[owner];
+            if (!grantMap || typeof grantMap !== "object" || owner === USER_ID) return;
+            const mine = Array.isArray(grantMap[USER_ID]) ? grantMap[USER_ID] : [];
+            mine.forEach(studentId => {
+                if (!roster[studentId]) return;
+                lines.push(`${owner} SHARED ${studentId} -> YOU`);
+            });
+        });
+
+        if (!lines.length) {
+            wrap.innerHTML = `<div style="font-size:0.6rem; color:#666;">NO_ACTIVE_SHARED_ACCESS</div>`;
+            return;
+        }
+        wrap.innerHTML = lines.map(line => `<div style="padding:7px; border-bottom:1px solid #111; font-size:0.58rem;">${line}</div>`).join('');
+    }
+
+    function refreshShareUI() {
+        renderIncomingRequests();
+        renderActiveGrants();
+    }
+
+    // --- LMS ACTIONS ---
+    function createCourse() {
+        if (!window.LMSCore) return alert("LMS_CORE_UNAVAILABLE");
+        const courseId = document.getElementById('course-id').value.trim().toUpperCase();
+        const title = document.getElementById('course-title').value.trim();
+        if (!courseId) return alert("COURSE_ID_REQUIRED");
+        const result = LMSCore.createCourse(courseId, title || courseId, USER_ID);
+        if (!result.ok) return alert(result.error);
+        document.getElementById('course-id').value = '';
+        document.getElementById('course-title').value = '';
+        alert("COURSE_CREATED: " + courseId);
+    }
+
+    function enrollStudentToCourse() {
+        if (!window.LMSCore) return alert("LMS_CORE_UNAVAILABLE");
+        const courseId = document.getElementById('course-enroll-id').value.trim().toUpperCase();
+        const studentId = document.getElementById('course-student-id').value.trim().toUpperCase();
+        if (!courseId || !studentId) return alert("COURSE_AND_STUDENT_REQUIRED");
+        const roster = normalizeRoster();
+        const vault = getVault();
+        if (!roster[studentId]) return alert("STUDENT_NOT_FOUND");
+        if (!hasShareAccess(vault, roster[studentId].ownerSensei, USER_ID, studentId)) return alert("STUDENT_ACCESS_DENIED");
+        const result = LMSCore.enrollStudent(courseId, studentId);
+        if (!result.ok) return alert(result.error);
+        document.getElementById('course-enroll-id').value = '';
+        document.getElementById('course-student-id').value = '';
+        alert(`ENROLLED: ${studentId} -> ${courseId}`);
+    }
+
+    function createAssignment() {
+        if (!window.LMSCore) return alert("LMS_CORE_UNAVAILABLE");
+        const courseId = document.getElementById('assignment-course-id').value.trim().toUpperCase();
+        const assignmentId = document.getElementById('assignment-id').value.trim().toUpperCase();
+        const maxPoints = parseInt(document.getElementById('assignment-max-points').value, 10);
+        const title = document.getElementById('assignment-title').value.trim();
+        if (!courseId || !assignmentId) return alert("COURSE_AND_ASSIGNMENT_REQUIRED");
+        if (!Number.isFinite(maxPoints) || maxPoints <= 0) return alert("MAX_POINTS_INVALID");
+        const result = LMSCore.createAssignment(courseId, assignmentId, title || assignmentId, maxPoints, USER_ID);
+        if (!result.ok) return alert(result.error);
+        document.getElementById('assignment-course-id').value = '';
+        document.getElementById('assignment-id').value = '';
+        document.getElementById('assignment-title').value = '';
+        alert(`ASSIGNMENT_CREATED: ${assignmentId}`);
+    }
+
+    function postGrade() {
+        if (!window.LMSCore) return alert("LMS_CORE_UNAVAILABLE");
+        const assignmentId = document.getElementById('grade-assignment-id').value.trim().toUpperCase();
+        const studentId = document.getElementById('grade-student-id').value.trim().toUpperCase();
+        const score = parseInt(document.getElementById('grade-score').value, 10);
+        const feedback = document.getElementById('grade-feedback').value.trim();
+        if (!assignmentId || !studentId) return alert("ASSIGNMENT_AND_STUDENT_REQUIRED");
+        if (!Number.isFinite(score)) return alert("SCORE_INVALID");
+        const roster = normalizeRoster();
+        const vault = getVault();
+        if (!roster[studentId]) return alert("STUDENT_NOT_FOUND");
+        if (!hasShareAccess(vault, roster[studentId].ownerSensei, USER_ID, studentId)) return alert("STUDENT_ACCESS_DENIED");
+        const result = LMSCore.gradeAssignment(assignmentId, studentId, score, feedback);
+        if (!result.ok) return alert(result.error);
+        document.getElementById('grade-assignment-id').value = '';
+        document.getElementById('grade-student-id').value = '';
+        document.getElementById('grade-score').value = '';
+        document.getElementById('grade-feedback').value = '';
+        alert(`GRADE_POSTED: ${studentId} ${result.submission.score}/${result.submission.maxPoints}`);
+    }
+
+    // --- UTILITIES ---
+    let tClock;
+    function startTimer() {
+        let s = parseInt(document.getElementById('timer-input').value);
+        clearInterval(tClock);
+        tClock = setInterval(() => {
+            s--;
+            let m = Math.floor(s/60).toString().padStart(2,'0');
+            let sec = (s%60).toString().padStart(2,'0');
+            let timeStr = `${m}:${sec}`;
+            document.getElementById('dash-timer-preview').innerText = timeStr;
+            localStorage.setItem('active_timer', JSON.stringify({ time: timeStr, active: s > 0 }));
+            if(s <= 0) { clearInterval(tClock); fireSFX('battle'); }
+        }, 1000);
+    }
+
+    function fireSFX(type) {
+        localStorage.setItem('sfx_trigger', JSON.stringify({ type: type, time: Date.now() }));
+    }
+
+    function saveBracket() {
+        const b = {};
+        ['q1','q2','q3','q4','s1','s2','f1'].forEach(id => b[id] = document.getElementById(id).value);
+        localStorage.setItem('tournament_bracket', JSON.stringify(b));
+        alert("BRACKET_SAVED");
+    }
+
+    function logout() {
+        localStorage.removeItem('ninjaUser');
+        localStorage.removeItem('userType');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('it_active');
+        window.location.href = 'index.html';
+    }
+
+    window.onload = () => {
+        getVault();
+        normalizeRoster();
+        refreshUI();
+        refreshShareUI();
+        const saved = JSON.parse(localStorage.getItem('tournament_bracket'));
+        if(saved) Object.keys(saved).forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = saved[id]; });
+        
+        setInterval(() => {
+            const watched = localStorage.getItem('it_active') === 'true';
+            document.getElementById('it-light').className = watched ? 'light watching' : 'light';
+            document.getElementById('it-text').innerText = watched ? "Session Monitor: On" : "Session Monitor: Off";
+            refreshShareUI();
+        }, 2000);
+    };
+</script>
+
+<script src="jarvis.js"></script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SYSTEM_DIAGNOSTICS // Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Fira+Code&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #050505; --green: #00ff88; --red: #ff4b2b; --blue: #4facfe; --gold: #ffcc00; }
+        body { background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; padding: 40px; }
+        .log { background: #000; border: 1px solid #222; padding: 30px; font-family: 'Fira Code', monospace; font-size: 0.85rem; line-height: 1.8; border-radius: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,1); }
+        .status-pass { color: var(--green); text-shadow: 0 0 5px var(--green); }
+        .status-fail { color: var(--red); text-shadow: 0 0 5px var(--red); font-weight: bold; }
+        .status-warn { color: var(--gold); }
+        .header { border-bottom: 2px solid #222; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .btn { padding: 12px 25px; background: transparent; border: 1px solid #333; color: #555; font-family: 'Orbitron'; cursor: pointer; transition: 0.3s; margin-right: 10px; font-size: 0.7rem; }
+        .btn:hover { border-color: var(--blue); color: var(--blue); }
+        .pulse { animation: pulse-text 2s infinite; }
+        @keyframes pulse-text { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1 style="margin:0; letter-spacing: 5px;">DIAGNOSTIC_SCAN</h1>
+            <p style="font-size:0.7rem; color:#555; margin-top:5px;">ACADEMY_INTEGRITY_CHECK_v5.2 // ENCRYPTED_SESSION</p>
+        </div>
+        <div id="scan-time" style="font-size: 0.7rem; color: var(--blue);"></div>
+    </div>
+
+    <div class="log" id="diag-log">
+        <span class="pulse">> INITIALIZING_SECURE_SCAN...</span><br>
+    </div>
+
+    <div style="margin-top:30px;">
+        <button class="btn" onclick="runDiagnostics()" style="border-color: var(--blue); color: var(--blue);">RUN_RE-SCAN</button>
+        <button class="btn" onclick="window.location.href='it_manager.html'">EXIT_DIAGNOSTICS</button>
+        <button class="btn" onclick="exportLogs()" style="border-color: var(--gold); color: var(--gold);">EXPORT_SNAPSHOT</button>
+    </div>
+
+    <script>
+        function log(msg, type) {
+            const container = document.getElementById('diag-log');
+            let colorClass = '';
+            if(type === 'pass') colorClass = 'status-pass';
+            if(type === 'fail') colorClass = 'status-fail';
+            if(type === 'warn') colorClass = 'status-warn';
+            
+            container.innerHTML += `<span class="${colorClass}">[${new Date().toLocaleTimeString()}] > ${msg}</span><br>`;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function runDiagnostics() {
+            document.getElementById('diag-log').innerHTML = "<span class='pulse'>> SCAN_IN_PROGRESS...</span><br>";
+            document.getElementById('scan-time').innerText = "LAST_SCAN: " + new Date().toLocaleTimeString();
+
+            setTimeout(() => {
+                document.getElementById('diag-log').innerHTML = "";
+                
+                // 1. Core Database Integrity
+                const vault = JSON.parse(localStorage.getItem('vault_users'));
+                if(vault) {
+                    log("CORE_VAULT: ONLINE", 'pass');
+                    if(vault.teachers) log(`SENSEI_REGISTRY: ${Object.keys(vault.teachers).length} VERIFIED_KEYS`, 'pass');
+                    else log("SENSEI_REGISTRY: NO_DATA_FOUND", 'warn');
+                } else {
+                    log("CORE_VAULT: NOT_FOUND (SYSTEM_UNSTABLE)", 'fail');
+                }
+
+                // 2. Ninja Roster Check (Synced with Hub & Sensei Dash)
+                const rosterFull = JSON.parse(localStorage.getItem('ninja_roster_full'));
+                if(rosterFull) {
+                    const count = Object.keys(rosterFull).length;
+                    log(`NINJA_ROSTER_FULL: ${count} OPERATIVES_IN_DB`, 'pass');
+                } else {
+                    log("NINJA_ROSTER_FULL: MISSING (STUDENTS_CANNOT_LOG_IN)", 'fail');
+                }
+
+                // 3. Vault Snippets (The Secret Scrolls)
+                const snippets = JSON.parse(localStorage.getItem('vault_snippets')) || [];
+                log(`STORAGE_DRIVE: ${snippets.length} SECRET_SCROLLS_ARCHIVED`, 'pass');
+
+                // 4. Ghost Protocol Status
+                const ghost = localStorage.getItem('ghost_enabled') === 'true';
+                log(`GHOST_PROTOCOL: ${ghost ? 'ACTIVE_STEALTH' : 'BROADCAST_VISIBLE'}`, ghost ? 'warn' : 'pass');
+
+                // 5. Lockdown & Freeze Status
+                const globalLock = localStorage.getItem('global_system_lock') === 'true';
+                if(globalLock) log("GLOBAL_LOCKDOWN: ACTIVE", 'fail');
+                else log("GLOBAL_LOCKDOWN: DEACTIVATED", 'pass');
+
+                // 6. Security Blacklist
+                if(vault && vault.BLACKLIST) {
+                    log(`SECURITY_BLACKLIST: ${vault.BLACKLIST.length} IDs_RESTRICTED`, vault.BLACKLIST.length > 0 ? 'warn' : 'pass');
+                }
+
+                // 7. Tournament Synchronization
+                const bracket = JSON.parse(localStorage.getItem('tournament_bracket'));
+                if(bracket && Object.keys(bracket).length > 0) log("TOURNAMENT_ENGINE: DATA_SYNCED", 'pass');
+                else log("TOURNAMENT_ENGINE: IDLE", 'warn');
+
+                log("<br>--- SCAN_COMPLETE: ALL_SYSTEMS_OPERATIONAL ---", 'pass');
+            }, 800);
+        }
+
+        function exportLogs() {
+            const data = localStorage.getItem('vault_users');
+            const blob = new Blob([data], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `SYSTEM_BACKUP_${new Date().getTime()}.json`;
+            a.click();
+            log("DATABASE_SNAPSHOT_EXPORTED", 'pass');
+        }
+
+        window.onload = runDiagnostics;
+    </script>
+<script src="jarvis.js"></script>
+</body>
+</html>

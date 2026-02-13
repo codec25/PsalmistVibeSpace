@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ROOT_OVERRIDE // v6 Master Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --red: #ff0000; --dark-red: #550000; --gold: #ffcc00; --cyan: #00d4ff; }
+        body { background: #050000; color: var(--red); font-family: 'Fira Code', monospace; padding: 40px; margin: 0; }
+        .panel { border: 1px solid var(--red); padding: 25px; background: #000; margin-bottom: 20px; box-shadow: 0 0 20px rgba(255,0,0,0.2); }
+        h1 { font-family: 'Orbitron'; color: white; border-bottom: 2px solid var(--red); letter-spacing: 5px; margin-top: 0; }
+        h3 { color: var(--red); text-transform: uppercase; font-size: 0.9rem; margin-top: 0; }
+        
+        table { width: 100%; text-align: left; border-collapse: collapse; margin-top: 15px; font-size: 0.75rem; }
+        th { color: var(--dark-red); border-bottom: 2px solid var(--dark-red); padding: 10px; }
+        td { padding: 8px 10px; border-bottom: 1px solid #220000; color: #ff4444; }
+        
+        input, select { background: #110000; border: 1px solid var(--red); color: white; padding: 10px; font-family: 'Fira Code'; outline: none; margin-bottom: 10px; width: 100%; box-sizing: border-box; }
+        
+        .btn-danger { background: var(--red); color: #000; border: none; padding: 12px 20px; font-weight: 900; cursor: pointer; font-family: 'Orbitron'; transition: 0.3s; width: 100%; }
+        .btn-danger:hover { background: white; color: red; }
+        .btn-outline { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 10px 15px; cursor: pointer; font-family: 'Orbitron'; font-size: 0.7rem; transition: 0.3s; }
+        .btn-outline:hover { background: var(--red); color: black; }
+        
+        .warning-box { color: var(--gold); border: 1px dashed var(--gold); padding: 15px; margin-bottom: 20px; font-size: 0.7rem; line-height: 1.4; }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+    <h1>ROOT_SYSTEM_OVERRIDE</h1>
+    
+    <div class="warning-box">
+        <strong>CRITICAL ACCESS:</strong> YOU ARE OPERATING BEYOND THE NEURAL FIREWALL. <br>
+        USE THIS INTERFACE ONLY IF THE IT_MANAGER OR VAULT BECOME UNRESPONSIVE.
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 350px; gap: 20px;">
+        <div>
+            <div class="panel">
+                <h3>DEEP_AUDIT_LOG (SYSTEM_PULSE)</h3>
+                <div style="max-height: 500px; overflow-y: auto;">
+                    <table id="audit-table">
+                        <thead>
+                            <tr><th>TIME</th><th>USER</th><th>EVENT</th></tr>
+                        </thead>
+                        <tbody id="audit-body"></tbody>
+                    </table>
+                </div>
+                <button class="btn-outline" style="margin-top: 15px;" onclick="renderAudit()">REFRESH_LOGS</button>
+            </div>
+        </div>
+
+        <aside>
+            <div class="panel">
+                <h3>FORCE_SYSTEM_UNLOCK</h3>
+                <p style="font-size: 0.6rem; color: #666;">Purges all Kill Signals & Emergency Locks.</p>
+                <button class="btn-outline" style="width: 100%; border-color: #00ff88; color: #00ff88;" onclick="forceUnlock()">EXECUTE_FORCE_UNLOCK</button>
+            </div>
+
+            <div class="panel">
+                <h3>SENSEI_RECOVERY</h3>
+                <p style="font-size: 0.6rem; color: #666;">Inject credentials directly into the encrypted object.</p>
+                <input type="text" id="rec-id" placeholder="SENSEI_ID">
+                <input type="text" id="rec-pass" placeholder="NEW_PASSWORD">
+                <select id="rec-role">
+                    <option value="SENSEI">SENSEI</option>
+                    <option value="IT_SENSEI">IT_SENSEI (VAULT_ACCESS)</option>
+                </select>
+                <button class="btn-danger" onclick="injectSensei()">INJECT_CREDENTIALS</button>
+            </div>
+
+            <div class="panel" style="border-color: #333;">
+                <h3>HARD_RESET</h3>
+                <button class="btn-outline" style="width: 100%; font-size: 0.6rem; border-color: #555; color: #555;" onclick="nukeSystem()">NUKE_ALL_LOCAL_STORAGE</button>
+            </div>
+        </aside>
+    </div>
+
+    <div style="margin-top: 20px; display: flex; gap: 20px; align-items: center;">
+        <button class="btn-danger" style="background:white; color: black; width: auto;" onclick="window.location.href='index.html'">EXIT_TO_LOGIN</button>
+        <div id="system-status" style="font-size: 0.7rem; color: #444;">KERNEL_STABLE // NO_ERRORS_DETECTED</div>
+    </div>
+
+    <script>
+        window.onload = renderAudit;
+
+        function logEmergency(status) {
+            let db = JSON.parse(localStorage.getItem('vault_users')) || { AUDIT_LOG: [] };
+            if(!db.AUDIT_LOG) db.AUDIT_LOG = [];
+            db.AUDIT_LOG.unshift({ 
+                time: new Date().toLocaleTimeString(), 
+                user: "ROOT", 
+                status: status 
+            });
+            localStorage.setItem('vault_users', JSON.stringify(db));
+            renderAudit();
+        }
+
+        function renderAudit() {
+            const db = JSON.parse(localStorage.getItem('vault_users'));
+            const body = document.getElementById('audit-body');
+            body.innerHTML = "";
+            
+            if(db && db.AUDIT_LOG) {
+                db.AUDIT_LOG.slice(0, 30).forEach(log => {
+                    body.innerHTML += `
+                        <tr>
+                            <td>${log.time || '--:--'}</td>
+                            <td style="font-weight:bold; color:var(--cyan);">${log.user || 'SYS'}</td>
+                            <td>${log.status || '...'}</td>
+                        </tr>`;
+                });
+            } else {
+                body.innerHTML = "<tr><td colspan='3'>EMPTY_RELIQUARY</td></tr>";
+            }
+        }
+
+        function forceUnlock() {
+            localStorage.removeItem('kill_signal'); // Purge active kill commands
+            localStorage.setItem('it_active', 'false'); // Disable surveillance light
+            logEmergency(`<span style="color:var(--gold)">EMERGENCY_UNLOCK_PURGE_COMPLETE</span>`);
+            alert("SYSTEM UNLOCKED: All Kill Signals and Locks have been purged.");
+        }
+
+        function injectSensei() {
+            const id = document.getElementById('rec-id').value.trim().toUpperCase();
+            const pass = document.getElementById('rec-pass').value.trim();
+            const roleRaw = document.getElementById('rec-role').value;
+            const role = roleRaw === 'IT_SENSEI' ? 'IT_SENSEI' : 'SENSEI';
+            
+            if(!id || !pass) return alert("MISSING_DATA");
+
+            let db = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+            if(!db.teachers) db.teachers = {};
+            
+            // Re-sync with the Object Security Model
+            db.teachers[id] = { 
+                pass: pass, 
+                role: role 
+            };
+            
+            localStorage.setItem('vault_users', JSON.stringify(db));
+            
+            logEmergency(`RECOVERY_INJECTION: ${id} as ${role}`);
+            alert(`SUCCESS: ${id} has been restored as ${role}.`);
+            document.getElementById('rec-id').value = "";
+            document.getElementById('rec-pass').value = "";
+        }
+
+        function nukeSystem() {
+            if(confirm("DANGER: This WIPES the entire database (XP, Teachers, Logins). Continue?")) {
+                if(confirm("FINAL CONFIRMATION: DATA IS IRREVERSIBLE.")) {
+                    localStorage.clear();
+                    alert("TOTAL SYSTEM PURGE COMPLETE. REBOOTING...");
+                    window.location.href = 'index.html';
+                }
+            }
+        }
+
+        // Auto-refresh when other tabs change the DB
+        window.addEventListener('storage', () => renderAudit());
+    </script>
+<script src="jarvis.js"></script>
+</body>
+</html>

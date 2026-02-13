@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PSALMIST_NINJA // Hero Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Bangers&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #020406; 
+            --panel: rgba(15, 20, 30, 0.7); 
+            --blue: #4facfe; 
+            --gold: #ffcc00; 
+            --border: rgba(79, 172, 254, 0.2); 
+            --red: #ff4b2b;
+            --purple: #a18cd1;
+            --green: #00ff88;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(79, 172, 254, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(255, 204, 0, 0.08) 0%, transparent 40%);
+            overflow-x: hidden;
+            padding: env(safe-area-inset-top) 20px 40px 20px;
+        }
+
+        header {
+            width: 100%; max-width: 1100px; padding: 25px 0;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 20px;
+        }
+
+        .user-info h2 { margin: 0; font-size: 1rem; letter-spacing: 2px; color: var(--gold); }
+        .user-info span { font-size: 0.6rem; color: var(--blue); text-transform: uppercase; display: block; margin-top: 4px; }
+
+        .btn-logout {
+            background: rgba(255, 75, 43, 0.1); border: 1px solid var(--red); color: var(--red);
+            padding: 10px 18px; border-radius: 12px; font-family: 'Orbitron'; font-size: 0.6rem;
+            font-weight: 900; cursor: pointer; transition: 0.3s; letter-spacing: 1.5px;
+        }
+        .btn-logout:hover { background: var(--red); color: #fff; }
+
+        #mission-tracker {
+            display: none; width: 100%; max-width: 1100px; 
+            background: linear-gradient(90deg, rgba(161, 140, 209, 0.15), rgba(15, 20, 30, 0.8));
+            border: 1px solid var(--purple); border-radius: 20px; padding: 25px; 
+            margin-bottom: 25px; position: relative; overflow: hidden;
+            animation: slideIn 0.5s ease-out;
+        }
+        .mission-glow { position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--purple); box-shadow: 0 0 15px var(--purple); }
+        
+        .progress-container { width: 100%; height: 10px; background: #000; border-radius: 5px; margin-top: 15px; border: 1px solid var(--border); overflow: hidden; }
+        #progress-bar { height: 100%; width: 0%; background: var(--purple); transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px var(--purple); }
+
+        #announcement-bar {
+            display: none; width: 100%; max-width: 1100px; background: rgba(255, 204, 0, 0.1); 
+            border: 1px solid var(--gold); color: var(--gold); padding: 12px; border-radius: 12px; 
+            margin-bottom: 20px; font-size: 0.65rem; text-align: center; letter-spacing: 1px;
+        }
+
+        .content-stack { width: 100%; max-width: 1100px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .card {
+            background: var(--panel); backdrop-filter: blur(15px); border: 1px solid var(--border);
+            border-radius: 20px; padding: 25px; text-decoration: none; color: inherit;
+            display: flex; align-items: center; gap: 20px; transition: 0.3s;
+        }
+        .card:hover { transform: translateY(-5px); border-color: var(--blue); background: rgba(79, 172, 254, 0.05); }
+        
+        .card.kids-card { background: rgba(255, 204, 0, 0.1); border: 2px solid var(--gold); }
+        .kids-title { font-family: 'Bangers', cursive; font-size: 1.7rem !important; color: var(--gold); }
+
+        .card-icon { width: 60px; height: 60px; border-radius: 16px; background: rgba(255,255,255,0.03); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; border: 1px solid var(--border); }
+        .card-title { font-size: 0.8rem; font-weight: 900; letter-spacing: 1px; }
+        .card-desc { font-size: 0.6rem; color: #777; margin-top: 5px; }
+
+        #broadcast-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999;
+            display: none; align-items: center; justify-content: center; padding: 40px;
+            backdrop-filter: blur(10px);
+        }
+        .broadcast-box { border: 2px solid var(--green); padding: 40px; background: #050810; max-width: 600px; width: 100%; border-radius: 20px; text-align: center; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        @media (max-width: 850px) { .content-stack { grid-template-columns: 1fr; } }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+
+    <div id="broadcast-overlay">
+        <div class="broadcast-box" id="b-box">
+            <h1 id="b-type" style="color:var(--green); letter-spacing:10px; margin-top:0; font-size: 1rem;">SYSTEM_MESSAGE</h1>
+            <p id="b-text" style="font-size:1.1rem; line-height:1.6; color:#fff; font-family:monospace; margin: 25px 0;"></p>
+            <button class="btn-logout" style="border-color:var(--green); color:var(--green); background:transparent; width:100%;" onclick="acknowledgeBroadcast()">ACKNOWLEDGE_RECEIPT</button>
+        </div>
+    </div>
+
+    <header>
+        <div class="user-info">
+            <h2 id="display-name">LOADING...</h2>
+            <span id="display-rank">SYNCING...</span>
+        </div>
+        <div style="display:flex; gap:15px; align-items:center;">
+             <div id="active-timer" style="color:var(--gold); font-size:1rem; font-weight:900;">00:00</div>
+             <button class="btn-logout" onclick="logout()">EXIT_HUB ⏻</button>
+        </div>
+    </header>
+
+    <div id="announcement-bar">
+        <strong>SENSEI_NOTICE:</strong> <span id="announcement-text"></span>
+    </div>
+
+    <div id="mission-tracker">
+        <div class="mission-glow"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <div style="color:var(--purple); font-size:0.6rem; letter-spacing:2px; font-weight:bold;">ACTIVE_SENSEI_MISSION</div>
+                <h2 id="m-name" style="margin:5px 0; letter-spacing:2px;">OPERATION: PENDING</h2>
+                <p id="m-desc" style="font-size:0.75rem; color:#888; margin:0;"></p>
+            </div>
+            <div id="m-percent" style="font-size:1.8rem; font-weight:900; color:var(--purple);">0%</div>
+        </div>
+        <div class="progress-container"><div id="progress-bar"></div></div>
+    </div>
+
+    <div class="content-stack">
+        <a href="kids_ninja.html" class="card kids-card">
+            <div class="card-icon">🥋</div>
+            <div class="card-content">
+                <div class="card-title kids-title">KIDS DOJO</div>
+                <div class="card-desc">Harmony Quest & Chord Hero</div>
+            </div>
+        </a>
+
+        <a href="pitch_hub.html" class="card">
+            <div class="card-icon" style="color:var(--gold)">👂</div>
+            <div class="card-content">
+                <div class="card-title">EAR TRAINING HUB</div>
+                <div class="card-desc">Pitch recognition matrix.</div>
+            </div>
+        </a>
+
+        <a href="piano_lab.html" class="card">
+            <div class="card-icon" style="color:var(--blue)">🎹</div>
+            <div class="card-content">
+                <div class="card-title">PIANO LAB</div>
+                <div class="card-desc">Visual chord mastery.</div>
+            </div>
+        </a>
+
+        <a href="rhythm_hub.html" class="card">
+            <div class="card-icon" style="color:var(--green)">⚡</div>
+            <div class="card-content">
+                <div class="card-title">RHYTHM HUB</div>
+                <div class="card-desc">Beat precision strike.</div>
+            </div>
+        </a>
+
+        <a href="theory_vault.html" class="card" id="theory-link">
+            <div class="card-icon" style="color:var(--purple)">📓</div>
+            <div class="card-content">
+                <div class="card-title">THEORY VAULT</div>
+                <div class="card-desc" style="color:var(--green)">ACCESS GRANTED: OPEN DOORS</div>
+            </div>
+        </a>
+    </div>
+
+    <script src="lms_core.js"></script>
+    <script>
+        const ninjaUser = localStorage.getItem('ninjaUser');
+        if (!ninjaUser) window.location.href = 'index.html';
+        if (window.LMSCore) LMSCore.init();
+
+        function normalizeRoster() {
+            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            Object.keys(roster).forEach(id => {
+                if (!roster[id] || typeof roster[id] !== "object") {
+                    roster[id] = { pass: "", xp: 0, status: "LEVEL 01", joined: new Date().toLocaleDateString() };
+                    return;
+                }
+                roster[id].pass = String(roster[id].pass ?? "");
+                roster[id].xp = Number.isFinite(Number(roster[id].xp)) ? Number(roster[id].xp) : 0;
+                if (!roster[id].status) roster[id].status = "LEVEL 01";
+                if (!roster[id].joined) roster[id].joined = new Date().toLocaleDateString();
+            });
+            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+            return roster;
+        }
+
+        function syncHub() {
+            if (window.LMSCore) {
+                const userType = (localStorage.getItem('userType') || 'MEMBER').toUpperCase();
+                const role = userType === 'GUEST' ? 'GUEST' : 'STUDENT';
+                LMSCore.upsertUser(ninjaUser, role, userType);
+            }
+            const masterRoster = normalizeRoster();
+            const myData = masterRoster[ninjaUser] || { xp: 0, status: "LEVEL 01" };
+
+            document.getElementById('display-name').innerText = ninjaUser.toUpperCase();
+            const typeLabel = localStorage.getItem('userType') === 'GUEST' ? "VISITOR" : "OFFICIAL";
+            const myXP = Number.isFinite(Number(myData.xp)) ? Number(myData.xp) : 0;
+            document.getElementById('display-rank').innerText = `${myData.status} // ${typeLabel} // XP: ${myXP.toLocaleString()}`;
+
+            // Announcement
+            const msg = localStorage.getItem('academy_announcement');
+            const annBar = document.getElementById('announcement-bar');
+            if (msg && msg.trim() !== "") {
+                annBar.style.display = 'block';
+                document.getElementById('announcement-text').innerText = msg;
+            } else { annBar.style.display = 'none'; }
+
+            // Mission
+            const mission = JSON.parse(localStorage.getItem('active_mission'));
+            const tracker = document.getElementById('mission-tracker');
+            if (mission && mission.active) {
+                tracker.style.display = 'block';
+                document.getElementById('m-name').innerText = mission.name.toUpperCase();
+                document.getElementById('m-desc').innerText = `Objective: ${mission.goal} XP`;
+                let progress = Math.min((myXP / mission.goal) * 100, 100);
+                document.getElementById('m-percent').innerText = Math.floor(progress) + "%";
+                document.getElementById('progress-bar').style.width = progress + "%";
+            } else { tracker.style.display = 'none'; }
+
+            // Timer
+            const timer = JSON.parse(localStorage.getItem('active_timer'));
+            const tDisp = document.getElementById('active-timer');
+            if (timer && timer.active) {
+                tDisp.innerText = timer.timeString || timer.time || "00:00";
+                tDisp.style.display = 'block';
+            } else { tDisp.style.display = 'none'; }
+        }
+
+        function checkITStatus() {
+            if (localStorage.getItem('global_system_lock') === 'true') {
+                document.body.innerHTML = "<div style='color:red; text-align:center; padding-top:20%; font-family:Orbitron; background:black; height:100vh;'><h1>SYSTEM_LOCKED</h1></div>";
+                return;
+            }
+            const kill = JSON.parse(localStorage.getItem('kill_signal'));
+            if (kill && (kill.target === ninjaUser || kill.target === "ALL")) {
+                if(Date.now() - kill.time < 15000) logout();
+            }
+        }
+
+        function listenForBroadcast() {
+            const data = localStorage.getItem('system_broadcast');
+            if(!data) return;
+            const broadcast = JSON.parse(data);
+            const lastSeen = localStorage.getItem('last_seen_bc_hub');
+            if(lastSeen !== broadcast.timestamp.toString()) {
+                document.getElementById('b-text').innerText = broadcast.message;
+                document.getElementById('broadcast-overlay').style.display = 'flex';
+                localStorage.setItem('last_seen_bc_hub', broadcast.timestamp);
+            }
+        }
+
+        function acknowledgeBroadcast() { document.getElementById('broadcast-overlay').style.display = 'none'; }
+
+        function purgeGuestData(userId) {
+            const guestId = String(userId || '').trim();
+            if (!guestId) return;
+
+            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            if (roster[guestId]) {
+                delete roster[guestId];
+                localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+            }
+
+            const presence = JSON.parse(localStorage.getItem('psalmist_teachers')) || {};
+            if (presence[guestId]) {
+                delete presence[guestId];
+                localStorage.setItem('psalmist_teachers', JSON.stringify(presence));
+            }
+
+            const freezeKey = `freeze_${guestId}`;
+            const xpKey = `xp_${guestId}`;
+            localStorage.removeItem(freezeKey);
+            localStorage.removeItem(xpKey);
+            localStorage.removeItem('totalXP');
+            localStorage.removeItem('currentLevel');
+
+            if (window.LMSCore && typeof LMSCore.deleteUser === 'function') {
+                LMSCore.deleteUser(guestId);
+            }
+        }
+
+        function logout() {
+            if (localStorage.getItem('userType') === 'GUEST') {
+                purgeGuestData(ninjaUser);
+            }
+            localStorage.removeItem('ninjaUser');
+            localStorage.removeItem('userType');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('it_active');
+            window.location.href = 'index.html';
+        }
+
+        // Live Sync
+        window.addEventListener('storage', (e) => {
+            if (['ninja_roster_full', 'active_mission', 'active_timer', 'system_broadcast'].includes(e.key)) {
+                syncHub();
+                if(e.key === 'system_broadcast') listenForBroadcast();
+            }
+        });
+
+        setInterval(checkITStatus, 1000);
+        window.onload = () => { syncHub(); listenForBroadcast(); };
+    </script>
+<script src="jarvis.js"></script>
+</body>
+</html>

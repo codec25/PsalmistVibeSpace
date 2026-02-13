@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PROTOCOL_01: PITCH_RECOGNITION</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #020406; --panel: rgba(15, 20, 30, 0.7); --blue: #4facfe; 
+            --gold: #ffcc00; --green: #00ff88; --border: rgba(79, 172, 254, 0.2); --red: #ff4b2b;
+        }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #020406 100%);
+            overflow-x: hidden;
+            padding: env(safe-area-inset-top) 15px 40px 15px;
+        }
+
+        /* --- Guidance System --- */
+        .protocol-briefing {
+            width: 100%; max-width: 600px; background: rgba(79, 172, 254, 0.1);
+            border: 1px solid var(--blue); border-radius: 12px; padding: 15px;
+            margin-bottom: 20px; font-size: 0.65rem; line-height: 1.5; color: var(--blue);
+            animation: fadeIn 0.8s ease-out; position: relative;
+        }
+        .briefing-close { position: absolute; top: 10px; right: 10px; cursor: pointer; color: #fff; font-size: 0.8rem; }
+        
+        .hint-text {
+            font-size: 0.6rem; color: #555; letter-spacing: 2px; margin-bottom: 8px;
+            text-transform: uppercase; text-align: center; width: 100%; min-height: 12px;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- UI Elements --- */
+        .hud-top {
+            width: 100%; max-width: 800px; padding: 20px 0;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); margin-bottom: 20px;
+        }
+        .hud-top div { font-size: 0.6rem; letter-spacing: 2px; }
+        .xp-display { color: var(--gold); font-weight: 700; }
+        .exit-link { color: var(--blue); text-decoration: none; font-weight: 900; }
+
+        .main-stage { width: 100%; max-width: 600px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+
+        .controls-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 100%; }
+        .config-box { 
+            background: var(--panel); border: 1px solid var(--border); padding: 8px 12px; 
+            border-radius: 12px; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px);
+        }
+        .config-box label { font-size: 0.5rem; color: var(--blue); letter-spacing: 1px; text-transform: uppercase; }
+        
+        .toggle-btn { 
+            background: rgba(255,255,255,0.05); border: 1px solid transparent; color: #666; 
+            padding: 5px 10px; font-family: 'Orbitron'; font-size: 0.55rem; cursor: pointer; border-radius: 6px;
+        }
+        .toggle-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(255, 204, 0, 0.1); }
+
+        select { background: none; color: #fff; border: 1px solid var(--border); font-family: 'Orbitron'; font-size: 0.6rem; border-radius: 4px; padding: 2px; }
+
+        .view-container { 
+            width: 100%; min-height: 140px; display: flex; justify-content: center; align-items: center;
+            background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px inset var(--border);
+        }
+        .hidden { display: none !important; }
+
+        .pitch-orb { 
+            width: 60px; height: 60px; border-radius: 50%; background: var(--blue); opacity: 0.1; 
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
+        .pitch-orb.active { opacity: 1; box-shadow: 0 0 40px var(--blue); background: #fff; transform: scale(1.2); }
+
+        .piano-view { display: flex; gap: 2px; padding: 15px; background: #000; border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; max-width: 100%; }
+        .key { width: 30px; height: 100px; background: #ddd; border-radius: 0 0 4px 4px; flex-shrink: 0; }
+        .key.black { background: #222; width: 20px; height: 65px; margin-left: -10px; margin-right: -10px; z-index: 2; border: 1px solid #000; }
+        .key.active { background: var(--blue) !important; box-shadow: 0 0 20px var(--blue); transform: translateY(2px); }
+
+        .choices-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
+        .choice-btn { 
+            background: var(--panel); border: 1px solid var(--border); color: #fff; padding: 20px;
+            font-family: 'Orbitron'; font-size: 0.9rem; font-weight: 700; cursor: pointer; border-radius: 15px;
+            backdrop-filter: blur(10px); transition: 0.2s;
+        }
+        .choice-btn:active { transform: scale(0.95); background: rgba(79, 172, 254, 0.2); }
+
+        .action-btns { width: 100%; display: flex; gap: 15px; margin-top: 10px; }
+        .btn-main { 
+            flex: 2; background: var(--blue); color: #000; border: none; padding: 20px; 
+            font-family: 'Orbitron'; font-weight: 900; border-radius: 15px; cursor: pointer; letter-spacing: 2px;
+        }
+        .btn-sub { 
+            flex: 1; background: none; color: var(--gold); border: 1px solid var(--gold); 
+            padding: 20px; font-family: 'Orbitron'; border-radius: 15px; cursor: pointer; font-size: 0.6rem;
+        }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+
+    <div class="hud-top">
+        <div>PROTOCOL_01: <span style="color:var(--blue)">PITCH_REC</span></div>
+        <div id="global-xp" class="xp-display">XP: 00000</div>
+        <a href="pitch_hub.html" class="exit-link">EXIT</a>
+    </div>
+
+    <div class="main-stage">
+        
+        <div id="briefing" class="protocol-briefing">
+            <span class="briefing-close" onclick="this.parentElement.style.display='none'">[X]</span>
+            <strong>NINJA_PROTOCOL:</strong> Listen to the frequency. Match the note to the grid below. 
+            Enable <strong>COACH</strong> if you need a visual prompt on the ORB or PIANO.
+        </div>
+
+        <div class="controls-row">
+            <div class="config-box">
+                <label>View</label>
+                <button class="toggle-btn active" id="view-screen" onclick="setView('screen')">ORB</button>
+                <button class="toggle-btn" id="view-piano" onclick="setView('piano')">PIANO</button>
+            </div>
+            <div class="config-box">
+                <label>Coach</label>
+                <button class="toggle-btn" id="coach-toggle" onclick="toggleCoach()">OFF</button>
+            </div>
+            <div class="config-box">
+                <label>Pool</label>
+                <select id="choiceCount" onchange="setupButtons()">
+                    <option value="3">3</option>
+                    <option value="6" selected>6</option>
+                    <option value="12">12</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="view-container">
+            <div class="viz-window" id="screen-display">
+                <div class="pitch-orb" id="orb"></div>
+            </div>
+            <div class="piano-view hidden" id="piano-display"></div>
+        </div>
+
+        <div class="choices-grid" id="choices-container"></div>
+
+        <div class="hint-text" id="action-hint">READY FOR SIGNAL INPUT</div>
+
+        <div class="action-btns">
+            <button class="btn-main" onclick="generateNewSignal()">NEW SIGNAL</button>
+            <button class="btn-sub" onclick="playSignal()">REPEAT</button>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        let currentMidi, coachMode = false, currentView = 'screen';
+
+        function getCurrentNinjaName() {
+            return localStorage.getItem('ninjaUser') || 'GUEST_NINJA';
+        }
+
+        function getRosterSafe() {
+            try {
+                return JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            } catch {
+                return {};
+            }
+        }
+
+        function setRosterSafe(roster) {
+            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+        }
+
+        function ensureNinjaXPEntry() {
+            const ninjaName = getCurrentNinjaName();
+            const roster = getRosterSafe();
+            if (!roster[ninjaName] || typeof roster[ninjaName] !== 'object') {
+                roster[ninjaName] = {
+                    pass: "",
+                    xp: 0,
+                    joined: new Date().toLocaleDateString(),
+                    status: "LEVEL 01"
+                };
+            }
+            const numericXP = Number(roster[ninjaName].xp);
+            roster[ninjaName].xp = Number.isFinite(numericXP) && numericXP > 0 ? Math.floor(numericXP) : 0;
+            if (!roster[ninjaName].joined) roster[ninjaName].joined = new Date().toLocaleDateString();
+            if (!roster[ninjaName].status) roster[ninjaName].status = "LEVEL 01";
+            setRosterSafe(roster);
+            return { ninjaName, roster };
+        }
+
+        function syncXPCompat(xpValue) {
+            const safeXP = Number.isFinite(xpValue) && xpValue > 0 ? Math.floor(xpValue) : 0;
+            const ninjaName = getCurrentNinjaName();
+            localStorage.setItem('totalXP', String(safeXP));
+            localStorage.setItem(`xp_${ninjaName}`, String(safeXP));
+            localStorage.setItem('currentLevel', String(Math.floor(safeXP / 2500) + 1));
+        }
+
+        function getCanonicalXP() {
+            const { ninjaName, roster } = ensureNinjaXPEntry();
+            const xp = roster[ninjaName].xp;
+            syncXPCompat(xp);
+            return xp;
+        }
+
+        function adjustCanonicalXP(delta) {
+            const { ninjaName, roster } = ensureNinjaXPEntry();
+            const currentXP = Number(roster[ninjaName].xp) || 0;
+            const nextXP = Math.max(0, Math.floor(currentXP + delta));
+            roster[ninjaName].xp = nextXP;
+            setRosterSafe(roster);
+            syncXPCompat(nextXP);
+            return nextXP;
+        }
+
+        function setView(view) {
+            currentView = view;
+            document.getElementById('view-screen').classList.toggle('active', view === 'screen');
+            document.getElementById('view-piano').classList.toggle('active', view === 'piano');
+            document.getElementById('screen-display').classList.toggle('hidden', view !== 'screen');
+            document.getElementById('piano-display').classList.toggle('hidden', view !== 'piano');
+            clearVisuals();
+        }
+
+        function toggleCoach() {
+            coachMode = !coachMode;
+            const btn = document.getElementById('coach-toggle');
+            btn.innerText = coachMode ? "ON" : "OFF";
+            btn.classList.toggle('active', coachMode);
+            if(!coachMode) clearVisuals();
+            document.getElementById('action-hint').innerText = coachMode ? "COACH_ACTIVE: VISUAL DATA ENABLED" : "COACH_OFF: PURE AUDIO PROTOCOL";
+        }
+
+        function initPiano() {
+            const bed = document.getElementById('piano-display');
+            for(let i=0; i<13; i++) {
+                const k = document.createElement('div');
+                k.className = [1,3,6,8,10].includes(i%12) ? 'key black' : 'key';
+                k.id = `key-${i+60}`;
+                bed.appendChild(k);
+            }
+            refreshXP();
+        }
+
+        function generateNewSignal() {
+            currentMidi = 60 + Math.floor(Math.random() * 12);
+            document.getElementById('action-hint').innerText = "SIGNAL_ACTIVE: SELECT MATCHING NODE";
+            playSignal();
+            setupButtons();
+        }
+
+        function playSignal() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const freq = 440 * Math.pow(2, (currentMidi - 69) / 12);
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.connect(g); g.connect(audioCtx.destination);
+            g.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+            osc.frequency.value = freq;
+            osc.start(); osc.stop(audioCtx.currentTime + 1.2);
+            if(coachMode) triggerVisuals();
+        }
+
+        function triggerVisuals() {
+            clearVisuals();
+            if(currentView === 'screen') {
+                document.getElementById('orb').classList.add('active');
+            } else {
+                const key = document.getElementById(`key-${currentMidi}`);
+                if(key) key.classList.add('active');
+            }
+            setTimeout(clearVisuals, 800);
+        }
+
+        function clearVisuals() {
+            document.getElementById('orb').classList.remove('active');
+            document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+        }
+
+        function setupButtons() {
+            const container = document.getElementById('choices-container');
+            container.innerHTML = '';
+            const count = parseInt(document.getElementById('choiceCount').value);
+            let choices = [currentMidi];
+            while(choices.length < count) {
+                let r = 60 + Math.floor(Math.random() * 12);
+                if(!choices.includes(r)) choices.push(r);
+            }
+            choices.sort((a,b) => a - b).forEach(midi => {
+                const b = document.createElement('button');
+                b.className = 'choice-btn';
+                b.innerText = NOTE_NAMES[midi % 12];
+                b.onclick = () => checkAnswer(midi, b);
+                container.appendChild(b);
+            });
+        }
+
+        function checkAnswer(midi, btn) {
+            if(midi === currentMidi) {
+                btn.style.backgroundColor = "var(--green)";
+                btn.style.color = "#000";
+                document.getElementById('action-hint').innerText = "SIGNAL_MATCHED // +50 XP ACQUIRED";
+                addXP(50);
+                setTimeout(generateNewSignal, 700);
+            } else {
+                btn.style.backgroundColor = "var(--red)";
+                btn.style.borderColor = "var(--red)";
+                document.getElementById('action-hint').innerText = "SIGNAL_MISMATCH // RE-SYNC REQUIRED";
+                setTimeout(() => { btn.style.backgroundColor = ""; btn.style.borderColor = ""; }, 400);
+            }
+        }
+
+        /**
+         * FULL SYSTEM SYNC LOGIC
+         * Updates XP, Calculates Level, and Syncs for Teacher Roster
+         */
+        function addXP(amt) {
+            adjustCanonicalXP(amt);
+            refreshXP();
+        }
+
+        function refreshXP() {
+            const xp = getCanonicalXP();
+            document.getElementById('global-xp').innerText = `XP: ${xp.toString().padStart(5, '0')}`;
+        }
+
+        window.onload = initPiano;
+    </script>
+<script src="jarvis.js"></script>
+</body>
+</html>

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PROTOCOL_02: INTERVAL_MATRIX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #020406; --panel: rgba(15, 20, 30, 0.7); --blue: #4facfe; 
+            --gold: #ffcc00; --green: #00ff88; --border: rgba(79, 172, 254, 0.2); --red: #ff4b2b;
+        }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #020406 100%);
+            padding: 20px;
+        }
+
+        .hud-top {
+            width: 100%; max-width: 800px; padding: 20px 0;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); margin-bottom: 10px;
+        }
+        .xp-display { color: var(--gold); font-weight: 700; font-size: 0.8rem; }
+        .exit-link { color: var(--blue); text-decoration: none; font-weight: 900; font-size: 0.7rem; }
+
+        .mission-panel {
+            width: 100%; max-width: 600px; background: rgba(255, 204, 0, 0.05);
+            border: 1px solid rgba(255, 204, 0, 0.3); border-radius: 8px;
+            padding: 10px; margin-bottom: 10px; font-size: 0.55rem;
+        }
+        .mission-header { color: var(--gold); font-weight: 900; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .mission-item { display: flex; justify-content: space-between; padding: 2px 0; color: #aaa; }
+        .mission-item.complete { color: var(--green); text-decoration: line-through; opacity: 0.6; }
+
+        .shield-btn { 
+            background: #111; border: 1px solid var(--gold); color: var(--gold); 
+            font-size: 0.5rem; padding: 4px 8px; cursor: pointer; border-radius: 4px;
+        }
+        .shield-btn.active { background: var(--gold); color: #000; }
+
+        #completion-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 1000; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; backdrop-filter: blur(10px);
+        }
+        .overlay-card {
+            background: var(--panel); border: 2px solid var(--gold); padding: 40px;
+            border-radius: 20px; box-shadow: 0 0 50px rgba(255, 204, 0, 0.2);
+        }
+
+        .settings-bar {
+            width: 100%; max-width: 600px; background: var(--panel);
+            border: 1px solid var(--border); border-radius: 12px; padding: 12px;
+            margin-bottom: 10px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+            font-size: 0.65rem; letter-spacing: 1px; gap: 10px;
+        }
+
+        .slider-group { display: flex; align-items: center; gap: 10px; color: var(--blue); }
+        input[type="range"] { cursor: pointer; accent-color: var(--blue); width: 80px; }
+
+        select, .toggle-btn {
+            background: #000; border: 1px solid var(--blue); color: var(--blue);
+            font-family: 'Orbitron'; padding: 6px 10px; border-radius: 4px; cursor: pointer;
+        }
+        .toggle-btn.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 900; }
+
+        .main-stage { width: 100%; max-width: 600px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+
+        .interface-viewport {
+            width: 100%; height: 200px; display: flex; justify-content: center; align-items: center; position: relative;
+        }
+
+        .matrix-display {
+            width: 100%; height: 100%; background: rgba(255,255,255,0.02);
+            border-radius: 20px; border: 1px inset var(--border);
+            display: flex; justify-content: center; align-items: center; transition: opacity 0.3s ease;
+        }
+        .node-container { display: flex; gap: 30px; }
+        .node { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--blue); opacity: 0.2; transition: 0.3s; }
+        .node.active { opacity: 1; background: #fff; box-shadow: 0 0 30px var(--blue); transform: scale(1.1); }
+
+        .piano-outer {
+            width: 100%; height: 100%; background: #111; padding: 15px; border-radius: 12px;
+            border: 4px solid #222; position: absolute; top:0; left:0;
+            display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 5;
+        }
+        .piano-keys { position: relative; height: 100%; width: 100%; display: flex; }
+        .key { transition: 0.15s; position: relative; }
+        .key.white { flex: 1; background: linear-gradient(to bottom, #eee 0%, #fff 100%); border: 1px solid #ccc; border-radius: 0 0 5px 5px; z-index: 1; }
+        .key.black { position: absolute; width: 6.5%; height: 60%; background: #222; border-radius: 0 0 3px 3px; z-index: 2; border: 1px solid #000; }
+        .key.active-note { background: var(--green) !important; box-shadow: 0 0 20px var(--green); }
+        .semitone-hint { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; color: var(--gold); background: #000; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--gold); z-index: 10; }
+
+        .guidance-box {
+            width: 100%; max-width: 600px; background: rgba(79, 172, 254, 0.05);
+            border: 1px solid var(--border); border-radius: 8px; padding: 15px;
+            font-size: 0.6rem; line-height: 1.6; color: #8899aa;
+        }
+        .guidance-title { color: var(--blue); font-weight: 900; margin-bottom: 8px; text-transform: uppercase; }
+
+        .choices-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; }
+        .choice-btn { background: var(--panel); border: 1px solid var(--border); color: #fff; padding: 18px; font-family: 'Orbitron'; font-size: 0.7rem; font-weight: 700; cursor: pointer; border-radius: 12px; transition: 0.2s; letter-spacing: 1px; }
+        .action-btns { width: 100%; display: flex; gap: 10px; margin-top: 10px; width: 100%; }
+        .btn-main { flex: 2; background: var(--blue); color: #000; border: none; padding: 20px; font-family: 'Orbitron'; font-weight: 900; border-radius: 15px; cursor: pointer; letter-spacing: 2px; }
+        .btn-sub { flex: 1; background: none; color: var(--gold); border: 1px solid var(--gold); padding: 20px; font-family: 'Orbitron'; border-radius: 15px; cursor: pointer; font-size: 0.6rem; }
+        .btn-hint { flex: 1; background: rgba(255, 255, 255, 0.05); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 20px; font-family: 'Orbitron'; border-radius: 15px; cursor: pointer; font-size: 0.6rem; }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+
+    <div id="completion-overlay">
+        <div class="overlay-card">
+            <h1 style="color:var(--gold); margin:0;">MISSION_SUCCESS</h1>
+            <p style="letter-spacing:2px; font-size:0.7rem; color:var(--blue);">DAILY OBJECTIVES SECURED</p>
+            <div id="stats-summary" style="margin:20px 0; color:#fff; font-size:0.8rem;"></div>
+            <button class="btn-main" onclick="document.getElementById('completion-overlay').style.display='none'">RETURN TO MATRIX</button>
+        </div>
+    </div>
+
+    <div class="hud-top">
+        <div>PROTOCOL_02: <span style="color:var(--blue)">INTERVAL_MATRIX</span></div>
+        <div id="global-xp" class="xp-display">XP: 00000</div>
+        <a href="pitch_hub.html" class="exit-link">EXIT</a>
+    </div>
+
+    <div class="mission-panel" id="mission-ui">
+        <div class="mission-header">
+            <span>DAILY_MISSIONS [STREAK: <span id="streak-val" style="color:var(--green)">0</span>]</span> 
+            <button id="shield-buy" class="shield-btn" onclick="buyShield()">SHIELD: OFF (5k XP)</button>
+        </div>
+        <div id="mission-list"></div>
+    </div>
+
+    <div class="settings-bar">
+        <div class="slider-group">
+            TEMPO <input type="range" id="tempo-slider" min="0.1" max="2.0" step="0.1" value="0.7">
+        </div>
+        <button id="harmonic-toggle" class="toggle-btn" onclick="toggleHarmonic()">HARMONIC: OFF</button>
+        <button id="piano-toggle" class="toggle-btn" onclick="togglePiano()">SWITCH: PIANO</button>
+        <select id="option-count" onchange="resetAndGenerate()">
+            <option value="2">2 OPT</option>
+            <option value="4" selected>4 OPT</option>
+            <option value="8">8 OPT</option>
+        </select>
+    </div>
+
+    <div class="main-stage">
+        <div class="interface-viewport">
+            <div class="matrix-display" id="digital-layer">
+                <div class="node-container">
+                    <div class="node" id="node-1"></div>
+                    <div class="node" id="node-2"></div>
+                </div>
+            </div>
+            <div class="piano-outer" id="piano-layer">
+                <div id="hint-box" class="semitone-hint" style="display:none;">0 SEMITONES</div>
+                <div class="piano-keys" id="piano-keys-container"></div>
+            </div>
+        </div>
+
+        <div class="guidance-box" id="guide-panel">
+            <div class="guidance-title">Guidance System // Initialize Training</div>
+            • Complete missions to build your Streak.<br>
+            • Spend XP to buy a <b>Streak Shield</b> if you plan to take a break.<br>
+            • The Shield activates automatically to protect your progress.
+        </div>
+
+        <div class="choices-grid" id="choices-container"></div>
+        <div class="action-btns">
+            <button class="btn-main" onclick="generateNewInterval()">NEW RELATION</button>
+            <button class="btn-hint" onclick="triggerHint()">HINT</button>
+            <button class="btn-sub" onclick="playInterval()">REPEAT</button>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const INTERVALS = [
+            { name: "Minor 2nd", semitones: 1 }, { name: "Major 2nd", semitones: 2 },
+            { name: "Minor 3rd", semitones: 3 }, { name: "Major 3rd", semitones: 4 },
+            { name: "Perfect 4th", semitones: 5 }, { name: "Tritone", semitones: 6 },
+            { name: "Perfect 5th", semitones: 7 }, { name: "Minor 6th", semitones: 8 },
+            { name: "Major 6th", semitones: 9 }, { name: "Minor 7th", semitones: 10 },
+            { name: "Major 7th", semitones: 11 }, { name: "Perfect Octave", semitones: 12 }
+        ];
+
+        let rootMidi, targetMidi, currentInterval = null, pianoEnabled = false, harmonicEnabled = false;
+        let dailyMissions = [];
+        let sessionXP = 0;
+
+        function initMissions() {
+            const today = new Date();
+            const todayStr = today.toDateString();
+            const saved = JSON.parse(localStorage.getItem('ninja_missions'));
+            let streak = parseInt(localStorage.getItem('ninja_streak')) || 0;
+            let hasShield = localStorage.getItem('ninja_shield') === 'true';
+            
+            if (saved) {
+                const lastDate = new Date(saved.date);
+                const diffTime = Math.abs(today - lastDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (diffDays > 1) {
+                    if (hasShield) {
+                        localStorage.setItem('ninja_shield', 'false'); // Use shield
+                        alert("STREAK SHIELD ACTIVATED: Progress Preserved.");
+                    } else {
+                        streak = 0; // Reset streak
+                    }
+                }
+                
+                if (saved.date === todayStr) {
+                    dailyMissions = saved.data;
+                } else {
+                    dailyMissions = generateNewMissions();
+                    saveMissions(todayStr);
+                }
+            } else {
+                dailyMissions = generateNewMissions();
+                saveMissions(todayStr);
+            }
+            
+            localStorage.setItem('ninja_streak', streak);
+            document.getElementById('streak-val').innerText = streak;
+            refreshShieldUI();
+            renderMissions();
+        }
+
+        function buyShield() {
+            const ninjaName = localStorage.getItem('ninjaUser') || "GUEST_NINJA";
+            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            const currentXP = roster[ninjaName]?.xp || 0;
+
+            if (localStorage.getItem('ninja_shield') === 'true') return;
+
+            if (currentXP >= 5000) {
+                addXP(-5000);
+                localStorage.setItem('ninja_shield', 'true');
+                refreshShieldUI();
+                alert("SHIELD PURCHASED: Streak Protected.");
+            } else {
+                alert("INSUFFICIENT XP: 5,000 required.");
+            }
+        }
+
+        function refreshShieldUI() {
+            const btn = document.getElementById('shield-buy');
+            const active = localStorage.getItem('ninja_shield') === 'true';
+            btn.innerText = active ? "SHIELD: ACTIVE" : "SHIELD: OFF (5k XP)";
+            btn.className = active ? "shield-btn active" : "shield-btn";
+        }
+
+        function generateNewMissions() {
+            return [
+                { id: 0, desc: "Identify 5 Perfect 5ths", target: "Perfect 5th", goal: 5, current: 0, done: false },
+                { id: 1, desc: "Identify 3 Tritones", target: "Tritone", goal: 3, current: 0, done: false },
+                { id: 2, desc: "Correctly identify 10 intervals", target: "ANY", goal: 10, current: 0, done: false }
+            ];
+        }
+
+        function saveMissions(date = new Date().toDateString()) { localStorage.setItem('ninja_missions', JSON.stringify({ date, data: dailyMissions })); }
+        
+        function renderMissions() {
+            const list = document.getElementById('mission-list');
+            list.innerHTML = dailyMissions.map(m => `<div class="mission-item ${m.done ? 'complete' : ''}"><span>> ${m.desc}</span><span>${m.current}/${m.goal}</span></div>`).join('');
+            checkAllComplete();
+        }
+
+        function checkAllComplete() {
+            const allDone = dailyMissions.every(m => m.done);
+            const overlayShown = localStorage.getItem('ninja_daily_complete_shown') === new Date().toDateString();
+            
+            if (allDone && !overlayShown) {
+                let streak = parseInt(localStorage.getItem('ninja_streak')) || 0;
+                streak++;
+                localStorage.setItem('ninja_streak', streak);
+                document.getElementById('streak-val').innerText = streak;
+                
+                document.getElementById('stats-summary').innerHTML = `STREAK: ${streak} DAYS<br>SESSION_XP_GAIN: +${sessionXP}<br>TOTAL_BONUS: +1500 XP`;
+                document.getElementById('completion-overlay').style.display = 'flex';
+                localStorage.setItem('ninja_daily_complete_shown', new Date().toDateString());
+            }
+        }
+
+        function updateMissionProgress(name) {
+            dailyMissions.forEach(m => {
+                if (!m.done && (m.target === "ANY" || m.target === name)) {
+                    m.current++;
+                    if (m.current >= m.goal) { m.done = true; addXP(500); sessionXP += 500; }
+                }
+            });
+            saveMissions(); renderMissions();
+        }
+
+        function togglePiano() {
+            pianoEnabled = !pianoEnabled;
+            const btn = document.getElementById('piano-toggle');
+            const pianoLayer = document.getElementById('piano-layer');
+            const digitalLayer = document.getElementById('digital-layer');
+            const hint = document.getElementById('hint-box');
+            if (pianoEnabled) {
+                btn.innerText = `SWITCH: SCREEN`; btn.classList.add('active');
+                pianoLayer.style.display = 'block'; digitalLayer.style.opacity = '0';
+                if(currentInterval) hint.style.display = 'block';
+                buildPiano();
+            } else {
+                btn.innerText = `SWITCH: PIANO`; btn.classList.remove('active');
+                pianoLayer.style.display = 'none'; digitalLayer.style.opacity = '1'; hint.style.display = 'none';
+            }
+        }
+
+        function triggerHint() {
+            if (pianoEnabled || !currentInterval) return;
+            const pianoLayer = document.getElementById('piano-layer');
+            const digitalLayer = document.getElementById('digital-layer');
+            const hint = document.getElementById('hint-box');
+            buildPiano();
+            pianoLayer.style.display = 'block'; digitalLayer.style.opacity = '0'; hint.style.display = 'block';
+            document.getElementById(`key-${rootMidi}`)?.classList.add('active-note');
+            document.getElementById(`key-${targetMidi}`)?.classList.add('active-note');
+            setTimeout(() => {
+                if (!pianoEnabled) { pianoLayer.style.display = 'none'; digitalLayer.style.opacity = '1'; hint.style.display = 'none'; }
+            }, 1200);
+        }
+
+        function toggleHarmonic() {
+            harmonicEnabled = !harmonicEnabled;
+            const btn = document.getElementById('harmonic-toggle');
+            btn.innerText = `HARMONIC: ${harmonicEnabled ? 'ON' : 'OFF'}`;
+            btn.classList.toggle('active');
+        }
+
+        function buildPiano() {
+            const container = document.getElementById('piano-keys-container');
+            container.innerHTML = '';
+            const pattern = [0,1,0,1,0,0,1,0,1,0,1,0]; 
+            let whiteIdx = 0;
+            for(let i=0; i<13; i++) {
+                const midi = 60 + i;
+                const isBlack = pattern[i % 12] === 1;
+                const key = document.createElement('div');
+                key.className = `key ${isBlack ? 'black' : 'white'}`;
+                key.id = `key-${midi}`;
+                if(isBlack) key.style.left = ((whiteIdx * 14.28) - 3.25) + "%"; else whiteIdx++;
+                container.appendChild(key);
+            }
+        }
+
+        function resetAndGenerate() { if(currentInterval) generateNewInterval(); }
+
+        function generateNewInterval() {
+            document.getElementById('guide-panel').style.display = 'none';
+            rootMidi = 60 + Math.floor(Math.random() * 5); 
+            currentInterval = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
+            targetMidi = rootMidi + currentInterval.semitones;
+            document.querySelectorAll('.key').forEach(k => k.classList.remove('active-note'));
+            const hint = document.getElementById('hint-box');
+            hint.innerText = `${currentInterval.semitones} SEMITONES`;
+            if(pianoEnabled) hint.style.display = 'block';
+            playInterval();
+            setupButtons();
+        }
+
+        function playInterval() {
+            if (!currentInterval) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const tempo = parseFloat(document.getElementById('tempo-slider').value);
+            const targetDelay = harmonicEnabled ? 0 : tempo;
+            playNote(rootMidi, 0, "node-1");
+            playNote(targetMidi, targetDelay, "node-2");
+        }
+
+        function playNote(midi, delay, nodeId) {
+            const freq = 440 * Math.pow(2, (midi - 69) / 12);
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.connect(g); g.connect(audioCtx.destination);
+            g.gain.setValueAtTime(0, audioCtx.currentTime + delay);
+            g.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + delay + 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + 1.2);
+            osc.frequency.value = freq;
+            osc.start(audioCtx.currentTime + delay);
+            osc.stop(audioCtx.currentTime + delay + 1.2);
+            setTimeout(() => {
+                if (!pianoEnabled) document.getElementById(nodeId)?.classList.add('active');
+                if (pianoEnabled) document.getElementById(`key-${midi}`)?.classList.add('active-note');
+                setTimeout(() => { if (!pianoEnabled) document.getElementById(nodeId)?.classList.remove('active'); }, 800);
+            }, delay * 1000);
+        }
+
+        function setupButtons() {
+            const container = document.getElementById('choices-container');
+            const count = parseInt(document.getElementById('option-count').value);
+            container.innerHTML = '';
+            if(!currentInterval) return;
+            let choices = [currentInterval];
+            while(choices.length < count) {
+                let r = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
+                if(!choices.find(c => c.name === r.name)) choices.push(r);
+            }
+            choices.sort(() => Math.random() - 0.5).forEach(intv => {
+                const b = document.createElement('button');
+                b.className = 'choice-btn';
+                b.innerText = intv.name;
+                b.onclick = () => {
+                    if(intv.name === currentInterval.name) {
+                        b.style.background = "var(--green)"; b.style.color = "#000";
+                        updateMissionProgress(intv.name); addXP(75); sessionXP += 75;
+                        setTimeout(generateNewInterval, 1000);
+                    } else {
+                        b.style.background = "var(--red)"; setTimeout(() => b.style.background = "", 500);
+                    }
+                };
+                container.appendChild(b);
+            });
+        }
+
+        function addXP(amt) {
+            const ninjaName = localStorage.getItem('ninjaUser') || "GUEST_NINJA";
+            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            if(!roster[ninjaName]) roster[ninjaName] = { xp: 0 };
+            roster[ninjaName].xp += amt;
+            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+            refreshXP();
+        }
+
+        function refreshXP() {
+            const ninjaName = localStorage.getItem('ninjaUser') || "GUEST_NINJA";
+            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            const xp = roster[ninjaName]?.xp || 0;
+            document.getElementById('global-xp').innerText = `XP: ${xp.toString().padStart(5, '0')}`;
+        }
+
+        window.onload = () => { refreshXP(); initMissions(); };
+    </script>
+<script src="jarvis.js"></script>
+</body>
+</html>

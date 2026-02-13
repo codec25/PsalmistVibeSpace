@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PSALMIST_NINJA // Pitch Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #020406; 
+            --panel: rgba(15, 20, 30, 0.85); 
+            --blue: #4facfe; 
+            --gold: #ffcc00; 
+            --border: rgba(79, 172, 254, 0.2); 
+            --red: #ff4b2b;
+            --green: #00ff88;
+        }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #020406 100%);
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        header { 
+            width: 100%; 
+            max-width: 600px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 30px; 
+            padding-top: 10px;
+        }
+        
+        .btn-exit {
+            text-decoration: none; 
+            color: #aaa; 
+            border: 1px solid var(--border);
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            font-size: 0.75rem; 
+            transition: 0.3s;
+            background: rgba(255,255,255,0.03);
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .btn-exit:hover { 
+            color: var(--red); 
+            border-color: var(--red); 
+            background: rgba(255, 75, 43, 0.1); 
+            box-shadow: 0 0 15px rgba(255, 75, 43, 0.2);
+        }
+
+        .stat-group { text-align: right; }
+        #global-xp { color: var(--gold); font-weight: 900; font-size: 1.1rem; display: block; }
+        #rank-tag { font-size: 0.55rem; letter-spacing: 2px; color: var(--blue); font-weight: 700; }
+
+        /* Leaderboard Section */
+        .leaderboard-panel {
+            width: 100%;
+            max-width: 600px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .lb-title { font-size: 0.6rem; color: var(--gold); letter-spacing: 3px; margin-bottom: 12px; font-weight: 900; text-align: center; }
+        .lb-row { display: flex; justify-content: space-between; font-size: 0.7rem; padding: 5px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .lb-row.active-user { color: var(--green); background: rgba(0, 255, 136, 0.05); }
+        .lb-rank { color: var(--blue); font-weight: 900; width: 30px; }
+
+        .grid {
+            width: 100%; 
+            max-width: 600px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px;
+        }
+
+        .card {
+            background: var(--panel); 
+            border: 1px solid var(--border); 
+            border-radius: 15px;
+            padding: 22px; 
+            display: flex; 
+            align-items: center; 
+            text-decoration: none;
+            color: inherit; 
+            transition: transform 0.2s, background 0.2s; 
+            position: relative;
+        }
+        
+        .card:hover {
+            background: rgba(79, 172, 254, 0.05);
+            border-color: rgba(79, 172, 254, 0.4);
+        }
+
+        .card:active { transform: scale(0.97); }
+        
+        .card-icon { font-size: 1.8rem; margin-right: 20px; min-width: 45px; text-align: center; }
+        .card-content { flex-grow: 1; }
+        .card-tag { font-size: 0.55rem; color: var(--blue); letter-spacing: 2px; margin-bottom: 6px; font-weight: 900; }
+        .card-title { font-size: 1rem; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .card-desc { font-size: 0.7rem; color: #888; margin-top: 6px; line-height: 1.4; }
+        
+        .chevron { color: var(--border); font-size: 1.2rem; margin-left: 10px; }
+
+        .battle-tag {
+            position: absolute; top: 10px; right: 10px;
+            font-size: 0.5rem; background: var(--red); color: white;
+            padding: 2px 8px; border-radius: 4px; letter-spacing: 1px;
+        }
+
+        footer { 
+            margin-top: auto; 
+            padding: 50px 0 20px 0; 
+            font-size: 0.55rem; 
+            color: #333; 
+            letter-spacing: 4px; 
+            text-transform: uppercase;
+        }
+
+        @media (min-width: 600px) {
+            .grid { 
+                display: grid;
+                grid-template-columns: 1fr 1fr; 
+                gap: 20px;
+            }
+        }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+
+<header>
+    <a href="hub.html" class="btn-exit">⇽ EXIT</a>
+    <div class="stat-group">
+        <span id="global-xp">XP: 000000</span>
+        <span id="rank-tag">RANK: INITIATE</span>
+    </div>
+</header>
+
+<div style="text-align: center; margin-bottom: 25px;">
+    <h1 style="font-size: 1.4rem; letter-spacing: 6px; margin: 0; color: var(--blue); font-weight: 900;">PITCH_HUB</h1>
+    <div style="font-size: 0.65rem; color: #444; margin-top: 8px; letter-spacing: 2px;">NEURAL_EAR_TRAINING_v4.0</div>
+</div>
+
+<div class="leaderboard-panel">
+    <div class="lb-title">NEURAL_RANKINGS</div>
+    <div id="leaderboard-list">
+        </div>
+</div>
+
+<div class="grid">
+    <a href="pitch_recognition.html" class="card">
+        <div class="card-icon" style="color: var(--blue);">◈</div>
+        <div class="card-content">
+            <div class="card-tag">P_01</div>
+            <div class="card-title">RECOGNITION</div>
+            <div class="card-desc">Identify single frequency signatures through neural recall.</div>
+        </div>
+        <div class="chevron">❯</div>
+    </a>
+
+    <a href="interval_relations.html" class="card">
+        <div class="card-icon" style="color: var(--gold);">⧇</div>
+        <div class="card-content">
+            <div class="card-tag">P_02</div>
+            <div class="card-title">INTERVAL_MATRIX</div>
+            <div class="card-desc">Calculate the harmonic distance between binary signals.</div>
+        </div>
+        <div class="chevron">❯</div>
+    </a>
+
+    <a href="modal_logic.html" class="card">
+        <div class="card-icon" style="color: var(--red);">⌬</div>
+        <div class="card-content">
+            <div class="card-tag">P_03</div>
+            <div class="card-title">MODAL_LOGIC</div>
+            <div class="card-desc">Calibrate perception through complex scale degree sequences.</div>
+        </div>
+        <div class="chevron">❯</div>
+    </a>
+
+    <a href="pitch_vocal.html" class="card">
+        <div class="card-icon" style="color: var(--green);">〰</div>
+        <div class="card-content">
+            <div class="card-tag">P_04</div>
+            <div class="card-title">PITCH_VOCAL</div>
+            <div class="card-desc">Sync your biological vocal frequency with digital targets.</div>
+        </div>
+        <div class="chevron">❯</div>
+    </a>
+
+    <a href="battle_engine.html" class="card">
+        <span class="battle-tag">VERSUS</span>
+        <div class="card-icon" style="color: var(--red);">⚔</div>
+        <div class="card-content">
+            <div class="card-tag">B_01</div>
+            <div class="card-title">BATTLE_ENGINE</div>
+            <div class="card-desc">Strike signals and defeat the Rival AI in pitch combat.</div>
+        </div>
+        <div class="chevron">❯</div>
+    </a>
+</div>
+
+<footer>&copy; 2026 PSALMIST NINJA STUDIOS</footer>
+
+<script>
+    const ninjaName = localStorage.getItem('ninjaUser') || "GUEST_NINJA";
+
+    function getRosterSafe() {
+        try {
+            return JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        } catch {
+            return {};
+        }
+    }
+
+    function setRosterSafe(roster) {
+        localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+    }
+
+    function getCanonicalXP() {
+        const roster = getRosterSafe();
+        if (!roster[ninjaName] || typeof roster[ninjaName] !== 'object') {
+            roster[ninjaName] = {
+                pass: "",
+                xp: 0,
+                joined: new Date().toLocaleDateString(),
+                status: "LEVEL 01"
+            };
+        }
+        const numericXP = Number(roster[ninjaName].xp);
+        const safeXP = Number.isFinite(numericXP) && numericXP > 0 ? Math.floor(numericXP) : 0;
+        roster[ninjaName].xp = safeXP;
+        if (!roster[ninjaName].joined) roster[ninjaName].joined = new Date().toLocaleDateString();
+        if (!roster[ninjaName].status) roster[ninjaName].status = "LEVEL 01";
+        setRosterSafe(roster);
+        localStorage.setItem('totalXP', String(safeXP));
+        localStorage.setItem(`xp_${ninjaName}`, String(safeXP));
+        localStorage.setItem('currentLevel', String(Math.floor(safeXP / 2500) + 1));
+        return safeXP;
+    }
+
+    function checkSecurityHandshake() {
+        if (localStorage.getItem('global_system_lock') === 'true') {
+            document.body.innerHTML = `<div style="background:#000; color:#ff4b2b; height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>SYSTEM_LOCKED</h1></div>`;
+            window.stop();
+        }
+        if (localStorage.getItem(`freeze_${ninjaName}`) === 'true') {
+            document.body.innerHTML = `<div style="background:#000; color:var(--red); height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>TERMINAL_LOCKED</h1></div>`;
+            window.stop();
+        }
+        let rosters = JSON.parse(localStorage.getItem('psalmist_teachers')) || {};
+        rosters[ninjaName] = { lastActive: new Date().toLocaleTimeString(), status: "IN_PITCH_HUB" };
+        localStorage.setItem('psalmist_teachers', JSON.stringify(rosters));
+    }
+
+    function renderLeaderboard() {
+        const roster = getRosterSafe();
+        const lbList = document.getElementById('leaderboard-list');
+        
+        // Convert object to array and sort by XP
+        let ninjas = Object.keys(roster).map(key => ({
+            name: key,
+            xp: Number.isFinite(Number(roster[key] && roster[key].xp)) ? Math.max(0, Math.floor(Number(roster[key].xp))) : 0
+        })).sort((a, b) => b.xp - a.xp).slice(0, 5); // Top 5
+
+        lbList.innerHTML = ninjas.map((ninja, index) => `
+            <div class="lb-row ${ninja.name === ninjaName ? 'active-user' : ''}">
+                <div><span class="lb-rank">#${index + 1}</span> ${ninja.name}</div>
+                <div style="color:var(--gold)">${ninja.xp} XP</div>
+            </div>
+        `).join('') || '<div class="lb-row" style="justify-content:center; color:#444;">NO_DATA_FOUND</div>';
+    }
+
+    function updateHUD() {
+        checkSecurityHandshake();
+        const xp = getCanonicalXP();
+        
+        document.getElementById('global-xp').innerText = `XP: ${xp.toString().padStart(6, '0')}`;
+        
+        let rank = "INITIATE";
+        if (xp >= 50000) rank = "MASTER";
+        else if (xp >= 15000) rank = "KNIGHT";
+        else if (xp >= 5000) rank = "ACOLYTE";
+        
+        document.getElementById('rank-tag').innerText = `RANK: ${rank}`;
+        renderLeaderboard();
+    }
+
+    window.onload = updateHUD;
+    window.addEventListener('storage', updateHUD);
+    setInterval(checkSecurityHandshake, 3000);
+</script>
+
+<script src="jarvis.js"></script>
+</body>
+</html>

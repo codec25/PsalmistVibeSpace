@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MODAL_LOGIC // Neural Calibration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #05070a; --panel: rgba(10, 15, 25, 0.98); --blue: #4facfe; 
+            --gold: #ffcc00; --green: #00ff88; --border: #1e2544; --red: #ff4b2b;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; min-height: 100vh;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #05070a 100%);
+        }
+
+        /* --- Global XP HUD --- */
+        .header-shield {
+            width: 100%; background: var(--panel); border-bottom: 2px solid var(--border);
+            padding: 15px 20px; position: sticky; top: 0; z-index: 100;
+        }
+        .hud-content { display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto; width: 100%; }
+        
+        .main-stage { 
+            flex-grow: 1; width: 100%; max-width: 900px; margin: 0 auto;
+            padding: 20px; display: flex; flex-direction: column; gap: 20px;
+        }
+
+        /* --- Neural Guidance System (Manual UI) --- */
+        .manual-container {
+            background: #0d1117; border: 1px solid var(--border); border-radius: 12px;
+            padding: 25px; position: relative; border-left: 4px solid var(--blue);
+            margin-bottom: 5px;
+        }
+        .manual-tag { 
+            position: absolute; top: -12px; right: 20px; background: var(--gold); 
+            color: #000; font-size: 0.5rem; font-weight: 900; padding: 4px 12px; border-radius: 4px; letter-spacing: 1px;
+        }
+        .manual-content h2 { color: var(--blue); font-size: 1rem; margin: 0 0 10px 0; letter-spacing: 2px; }
+        .manual-body { color: #8b949e; font-size: 0.75rem; line-height: 1.6; }
+        .technical-spec { color: var(--gold); font-size: 0.6rem; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #30363d; font-weight: 700; }
+
+        /* --- Discreet Instruction Overlay --- */
+        .instruction-bar {
+            background: rgba(79, 172, 254, 0.05);
+            border: 1px dashed var(--border);
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 0.55rem;
+            color: #556688;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .instruction-bar b { color: var(--blue); }
+
+        /* --- Controls --- */
+        .config-grid { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); 
+            gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid var(--border);
+        }
+        .config-box label { display: block; font-size: 0.5rem; color: #555; margin-bottom: 5px; letter-spacing: 1px; }
+        
+        .toggle-btn { 
+            width: 100%; background: #0a0e17; border: 1px solid var(--border); color: #888; 
+            padding: 10px; font-family: 'Orbitron'; font-size: 0.6rem; cursor: pointer; border-radius: 4px;
+        }
+        .toggle-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(79, 172, 254, 0.1); }
+
+        /* --- Visualizer --- */
+        .viz-terminal {
+            background: #000; border: 1px solid var(--border); border-radius: 12px;
+            height: 140px; display: flex; align-items: center; justify-content: center; position: relative;
+            overflow: hidden; border-left: 4px solid var(--blue);
+        }
+        .pulse-light { width: 10px; height: 10px; border-radius: 50%; background: var(--blue); margin: 0 6px; opacity: 0.1; }
+        .pulse-light.active { opacity: 1; box-shadow: 0 0 15px var(--blue); background: #fff; transform: scale(1.4); }
+        .interval-tag { position: absolute; bottom: 10px; width: 100%; text-align: center; font-size: 0.55rem; color: var(--gold); letter-spacing: 2px; }
+
+        /* --- Piano --- */
+        .piano-view { display: flex; gap: 2px; background: #000; padding: 15px; border-radius: 8px; overflow-x: auto; justify-content: center; }
+        .key { width: 35px; height: 100px; background: #eee; border-radius: 0 0 4px 4px; flex-shrink: 0; border: 1px solid #999; }
+        .key.black { background: #222; width: 24px; height: 60px; margin-left: -12px; margin-right: -12px; z-index: 2; border: 1px solid #000; }
+        .key.active { background: var(--blue) !important; box-shadow: 0 0 20px var(--blue); transform: translateY(2px); }
+
+        /* --- Interface --- */
+        .choices-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .choice-btn { 
+            background: rgba(255,255,255,0.02); border: 1px solid var(--border); color: #fff; padding: 16px;
+            font-family: 'Orbitron'; font-size: 0.7rem; cursor: pointer; border-radius: 8px;
+        }
+        .choice-btn.success { border-color: var(--green); color: var(--green); background: rgba(0, 255, 136, 0.1); }
+        .choice-btn.fail { border-color: var(--red); color: var(--red); opacity: 0.3; }
+
+        .btn-action { 
+            background: var(--blue); color: #000; border: none; padding: 20px; 
+            font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 12px; width: 100%;
+            font-size: 0.8rem; box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn-secondary {
+            background: #111; color: var(--blue); border: 1px solid var(--blue); padding: 15px;
+            font-family: 'Orbitron'; font-weight: 700; cursor: pointer; border-radius: 12px;
+            font-size: 0.65rem; flex: 1;
+        }
+
+        .btn-stop {
+            background: #1a1a1a; color: #cc0000; border: 1px solid #441111; padding: 15px;
+            font-family: 'Orbitron'; font-weight: 700; cursor: pointer; border-radius: 12px;
+            font-size: 0.65rem; flex: 1;
+        }
+
+        .hidden { display: none !important; }
+        @media (max-width: 600px) { .choices-grid { grid-template-columns: 1fr; } }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+
+<div class="header-shield">
+    <div class="hud-content">
+        <div>
+            <span style="font-weight: 900; font-size: 0.7rem; color: var(--blue);">MODAL_LOGIC</span>
+            <div id="xp-display" style="font-size: 0.5rem; color: var(--gold); margin-top: 3px;">XP: 0000</div>
+        </div>
+        <a href="pitch_hub.html" style="text-decoration:none; color: #888; font-size: 0.55rem; border: 1px solid #333; padding: 6px 12px; border-radius: 6px; letter-spacing: 1px;">BACK_TO_HUB</a>
+    </div>
+</div>
+
+<div class="main-stage">
+    
+    <div class="manual-container">
+        <div class="manual-tag">NEURAL_GUIDANCE</div>
+        <div class="manual-content">
+            <h2>DIATONIC_SPECTRUM</h2>
+            <div class="manual-body">
+                Modes are the seven internal permutations of the major scale. Each mode shifts the root position, altering the sequence of intervals and creating a unique emotional color. Calibration requires identifying the specific pattern of whole and half-steps.
+            </div>
+            <div class="technical-spec">TECH: SEVEN-NOTE PERMUTATION / FREQUENCY_MAPPING</div>
+        </div>
+    </div>
+
+    <div class="instruction-bar" id="task-prompt">
+        INITIALIZE <b>RANDOM_SIGNAL</b> TO BEGIN CALIBRATION
+    </div>
+
+    <div class="config-grid">
+        <div class="config-box">
+            <label>VISUAL_MATRIX</label>
+            <div style="display:flex; gap:5px;">
+                <button class="toggle-btn active" id="view-screen" onclick="setView('screen')">WAVE</button>
+                <button class="toggle-btn" id="view-piano" onclick="setView('piano')">KEYS</button>
+            </div>
+        </div>
+        <div class="config-box">
+            <label>COACH_ASSIST</label>
+            <button class="toggle-btn" id="coach-toggle" onclick="toggleCoach()">DISABLED</button>
+        </div>
+        <div class="config-box">
+            <label>DIFFICULTY</label>
+            <select id="choiceCount" style="background:#000; color:#fff; border:1px solid var(--border); padding:8px; font-family:Orbitron; font-size:0.55rem; width:100%;">
+                <option value="2">NOVICE (2)</option>
+                <option value="4" selected>SCHOLAR (4)</option>
+                <option value="7">ELITE (7)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="viz-terminal" id="screen-display">
+        <div class="pulse-light"></div><div class="pulse-light"></div><div class="pulse-light"></div>
+        <div class="pulse-light"></div><div class="pulse-light"></div><div class="pulse-light"></div>
+        <div class="pulse-light"></div>
+        <div class="interval-tag" id="interval-label">WAITING_FOR_SIGNAL</div>
+    </div>
+
+    <div class="piano-view hidden" id="piano-display"></div>
+
+    <div id="choices-container" class="choices-grid"></div>
+
+    <div style="display:flex; flex-direction:column; gap:10px; width:100%;">
+        <button class="btn-action" id="startBtn" onclick="startTest()">NEW_RANDOM_SIGNAL</button>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-secondary" onclick="replaySignal()">REPLAY_SIGNAL</button>
+            <button class="btn-stop" onclick="stopTest()">STOP_SIGNAL</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // All original game logic scripts (audioCtx, MODES, checkAnswer, etc.) remain untouched
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let playInterval = null, isPlaying = false, coachMode = false, currentView = 'screen';
+    let currentModalName = "", currentSequence = [];
+    let firstTry = true;
+
+    const MODES = {
+        "IONIAN": [0, 2, 4, 5, 7, 9, 11], "DORIAN": [0, 2, 3, 5, 7, 9, 10],
+        "PHRYGIAN": [0, 1, 3, 5, 7, 8, 10], "LYDIAN": [0, 2, 4, 6, 7, 9, 11],
+        "MIXOLYDIAN": [0, 2, 4, 5, 7, 9, 10], "AEOLIAN": [0, 2, 3, 5, 7, 8, 10], "LOCRIAN": [0, 1, 3, 5, 6, 8, 10]
+    };
+
+    const INTERVAL_NAMES = { 0:"ROOT", 1:"b2", 2:"M2", 3:"b3", 4:"M3", 5:"P4", 6:"#4/b5", 7:"P5", 8:"b6", 9:"M6", 10:"b7", 11:"M7" };
+
+    function getCurrentNinjaName() {
+        return localStorage.getItem('ninjaUser') || 'GUEST_NINJA';
+    }
+
+    function getRosterSafe() {
+        try {
+            return JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        } catch {
+            return {};
+        }
+    }
+
+    function setRosterSafe(roster) {
+        localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+    }
+
+    function ensureNinjaXPEntry() {
+        const ninjaName = getCurrentNinjaName();
+        const roster = getRosterSafe();
+        if (!roster[ninjaName] || typeof roster[ninjaName] !== 'object') {
+            roster[ninjaName] = {
+                pass: "",
+                xp: 0,
+                joined: new Date().toLocaleDateString(),
+                status: "LEVEL 01"
+            };
+        }
+        const numericXP = Number(roster[ninjaName].xp);
+        roster[ninjaName].xp = Number.isFinite(numericXP) && numericXP > 0 ? Math.floor(numericXP) : 0;
+        if (!roster[ninjaName].joined) roster[ninjaName].joined = new Date().toLocaleDateString();
+        if (!roster[ninjaName].status) roster[ninjaName].status = "LEVEL 01";
+        setRosterSafe(roster);
+        return { ninjaName, roster };
+    }
+
+    function syncXPCompat(xpValue) {
+        const safeXP = Number.isFinite(xpValue) && xpValue > 0 ? Math.floor(xpValue) : 0;
+        const ninjaName = getCurrentNinjaName();
+        localStorage.setItem('totalXP', String(safeXP));
+        localStorage.setItem(`xp_${ninjaName}`, String(safeXP));
+        localStorage.setItem('currentLevel', String(Math.floor(safeXP / 2500) + 1));
+    }
+
+    function adjustCanonicalXP(delta) {
+        const { ninjaName, roster } = ensureNinjaXPEntry();
+        const currentXP = Number(roster[ninjaName].xp) || 0;
+        const nextXP = Math.max(0, Math.floor(currentXP + delta));
+        roster[ninjaName].xp = nextXP;
+        setRosterSafe(roster);
+        syncXPCompat(nextXP);
+        return nextXP;
+    }
+
+    function setInstruction(text) {
+        document.getElementById('task-prompt').innerHTML = text;
+    }
+
+    function updateXP(amount) {
+        const xp = adjustCanonicalXP(amount);
+        document.getElementById('xp-display').innerText = `XP: ${xp.toString().padStart(4, '0')}`;
+    }
+
+    function setView(view) {
+        currentView = view;
+        document.getElementById('view-screen').classList.toggle('active', view === 'screen');
+        document.getElementById('view-piano').classList.toggle('active', view === 'piano');
+        document.getElementById('screen-display').classList.toggle('hidden', view !== 'screen');
+        document.getElementById('piano-display').classList.toggle('hidden', view !== 'piano');
+        stopTest();
+    }
+
+    function toggleCoach() {
+        coachMode = !coachMode;
+        document.getElementById('coach-toggle').innerText = coachMode ? "ENABLED" : "DISABLED";
+        document.getElementById('coach-toggle').classList.toggle('active', coachMode);
+        clearVisuals();
+    }
+
+    function initPiano() {
+        const bed = document.getElementById('piano-display');
+        bed.innerHTML = '';
+        for(let i=0; i<13; i++) {
+            const k = document.createElement('div');
+            k.className = [1,3,6,8,10].includes(i%12) ? 'key black' : 'key';
+            k.id = `key-${i}`;
+            bed.appendChild(k);
+        }
+    }
+
+    function startTest() {
+        stopTest();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const keys = Object.keys(MODES);
+        currentModalName = keys[Math.floor(Math.random() * keys.length)];
+        currentSequence = MODES[currentModalName];
+        firstTry = true;
+        setupButtons();
+        isPlaying = true;
+        document.getElementById('startBtn').innerText = "SIGNAL_LOOPING...";
+        setInstruction("LISTEN TO THE INTERVALS AND <b>IDENTIFY THE MODE</b>");
+        runLoop(true);
+    }
+
+    function replaySignal() {
+        if (!currentSequence.length) return;
+        stopTest();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        setInstruction("REPLAYING CURRENT SIGNAL... <b>OBSERVE PATTERN</b>");
+        runLoop(false);
+    }
+
+    function runLoop(loop) {
+        let step = 0;
+        playInterval = setInterval(() => {
+            playNote(currentSequence[step]);
+            visualizeStep(step);
+            step++;
+            if (step >= 7) {
+                if (loop) { step = 0; } 
+                else { setTimeout(stopTest, 500); }
+            }
+        }, 550);
+    }
+
+    function playNote(semitones) {
+        const freq = 220 * Math.pow(2, semitones / 12);
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.connect(g); g.connect(audioCtx.destination);
+        g.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+        osc.frequency.value = freq;
+        osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+    }
+
+    function visualizeStep(step) {
+        clearVisuals();
+        if(coachMode) {
+            document.getElementById('interval-label').innerText = `INTERVAL: ${INTERVAL_NAMES[currentSequence[step]]}`;
+            document.getElementById('interval-label').style.color = "var(--gold)";
+            if(currentView === 'screen') {
+                document.querySelectorAll('.pulse-light')[step].classList.add('active');
+            } else {
+                const key = document.getElementById(`key-${currentSequence[step]}`);
+                if(key) key.classList.add('active');
+            }
+        } else {
+            document.getElementById('interval-label').innerText = `STEP ${step + 1} / 7`;
+            document.getElementById('interval-label').style.color = "var(--blue)";
+        }
+    }
+
+    function setupButtons() {
+        const container = document.getElementById('choices-container');
+        container.innerHTML = '';
+        const count = parseInt(document.getElementById('choiceCount').value);
+        let options = [currentModalName];
+        while(options.length < count) {
+            let r = Object.keys(MODES)[Math.floor(Math.random() * 7)];
+            if(!options.includes(r)) options.push(r);
+        }
+        options.sort().forEach(name => {
+            const b = document.createElement('button');
+            b.className = 'choice-btn';
+            b.innerText = name;
+            b.onclick = () => {
+                if(name === currentModalName) { 
+                    b.classList.add('success');
+                    if(firstTry) updateXP(100); 
+                    stopTest();
+                    document.getElementById('startBtn').innerText = "SUCCESS! NEW SIGNAL?";
+                    setInstruction("CALIBRATION SUCCESSFUL. <b>XP AWARDED</b>");
+                } else { 
+                    b.classList.add('fail');
+                    firstTry = false;
+                    setInstruction("SIGNAL MISMATCH. <b>TRY AGAIN</b>");
+                }
+            };
+            container.appendChild(b);
+        });
+    }
+
+    function stopTest() {
+        isPlaying = false;
+        if(playInterval) { clearInterval(playInterval); playInterval = null; }
+        clearVisuals();
+        document.getElementById('interval-label').innerText = "SIGNAL_TERMINATED";
+        document.getElementById('interval-label').style.color = "#444";
+        if (currentSequence.length > 0 && document.getElementById('startBtn').innerText !== "SUCCESS! NEW SIGNAL?") {
+            setInstruction("SIGNAL PAUSED. <b>REPLAY</b> OR <b>IDENTIFY</b>");
+        }
+    }
+
+    function clearVisuals() {
+        document.querySelectorAll('.pulse-light').forEach(l => l.classList.remove('active'));
+        document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+    }
+
+    window.onload = () => { initPiano(); updateXP(0); };
+</script>
+<script src="jarvis.js"></script>
+</body>
+</html>

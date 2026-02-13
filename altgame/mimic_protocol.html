@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PSALMIST_NINJA // Mimic Battle</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #020406; --panel: rgba(15, 20, 30, 0.95); 
+            --blue: #4facfe; --gold: #ffcc00; --red: #ff4b2b; --green: #00ff88;
+            --border: rgba(79, 172, 254, 0.2);
+        }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            overflow-x: hidden; overflow-y: auto; padding: 20px;
+            background-image: radial-gradient(circle at 50% 50%, #0a111a 0%, #020406 100%);
+        }
+
+        .hud-header { width: 100%; max-width: 900px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; z-index: 10; }
+        .nav-links { display: flex; gap: 10px; align-items: center; }
+        .btn-back { 
+            text-decoration: none; color: #666; font-size: 0.65rem; border: 1px solid var(--border); 
+            padding: 8px 15px; border-radius: 8px; letter-spacing: 2px; background: rgba(0,0,0,0.3);
+            transition: 0.3s; font-weight: 900;
+        }
+        .btn-back:hover { color: var(--blue); border-color: var(--blue); background: rgba(79, 172, 254, 0.1); }
+        
+        .system-controls { display: flex; gap: 8px; }
+        .btn-ctrl { 
+            background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: #fff; 
+            font-family: 'Orbitron'; font-size: 0.6rem; padding: 8px 12px; border-radius: 6px; 
+            cursor: pointer; letter-spacing: 1px; transition: 0.2s;
+        }
+        .btn-ctrl:hover { border-color: var(--blue); color: var(--blue); }
+        .btn-reset:hover { border-color: var(--red); color: var(--red); }
+        .btn-save:hover { border-color: var(--gold); color: var(--gold); }
+
+        .streak-container { display: flex; gap: 10px; }
+        .streak-pill { background: rgba(0, 255, 136, 0.1); border: 1px solid var(--green); color: var(--green); padding: 4px 12px; border-radius: 20px; font-size: 0.6rem; opacity: 1; transition: 0.3s; }
+
+        #briefing {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 440px; background: #050810; border: 2px solid var(--blue);
+            padding: 30px; border-radius: 20px; text-align: center; z-index: 1000;
+            box-shadow: 0 0 100px rgba(0,0,0,1);
+        }
+
+        #xp-popup {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95); border: 2px solid var(--gold);
+            padding: 40px; border-radius: 20px; text-align: center; z-index: 2000;
+            display: none; animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes pop-in { from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+
+        .center-hub { 
+            margin: 10px 0 20px 0; text-align: center; width: 100%; max-width: 900px; 
+            background: var(--panel); padding: 25px; border-radius: 20px; border: 1px solid var(--border);
+            position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        
+        #target-display { font-size: 6rem; font-weight: 900; color: var(--gold); line-height: 1; text-shadow: 0 0 30px rgba(255,204,0,0.4); }
+        #instruction { font-size: 0.7rem; color: var(--blue); letter-spacing: 3px; margin-top: 15px; font-weight: bold; text-transform: uppercase;}
+
+        .tuner-track {
+            width: 100%; height: 50px; background: #000; border-radius: 12px;
+            margin-top: 25px; position: relative; border: 1px solid #1e2544; overflow: hidden;
+        }
+        .tuner-center { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--gold); z-index: 2; box-shadow: 0 0 15px var(--gold); }
+        #tuner-needle {
+            position: absolute; left: 50%; top: 8px; bottom: 8px; width: 6px; border-radius: 3px;
+            background: var(--blue); transition: 0.1s ease-out; transform: translateX(-50%); z-index: 3;
+            box-shadow: 0 0 10px var(--blue);
+        }
+
+        .battle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 900px; }
+
+        .player-zone {
+            background: var(--panel); border: 2px solid rgba(255,255,255,0.05);
+            border-radius: 20px; padding: 25px 20px; display: flex; flex-direction: column; align-items: center;
+            position: relative; transition: 0.4s;
+        }
+        .player-zone.active { border-color: var(--blue); box-shadow: 0 0 50px rgba(79, 172, 254, 0.2); }
+        .player-zone.winner { border-color: var(--green); animation: win-glow 1.5s infinite; }
+
+        @keyframes win-glow {
+            0% { box-shadow: 0 0 10px var(--green); }
+            50% { box-shadow: 0 0 40px var(--green); }
+            100% { box-shadow: 0 0 10px var(--green); }
+        }
+
+        .current-pitch { font-size: 0.8rem; color: #555; margin-bottom: 5px; font-weight: 900; }
+        .score-box { font-size: 4.5rem; font-weight: 900; margin: 10px 0; color: #fff; }
+        
+        .timer-bar { width: 100%; height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; margin-top: 10px; }
+        .t-fill { height: 100%; width: 0%; transition: width 0.1s linear; }
+
+        .round-options { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
+        .opt-btn { background: none; border: 1px solid var(--blue); color: var(--blue); padding: 10px 20px; border-radius: 5px; cursor: pointer; font-family: 'Orbitron'; font-size: 0.7rem; }
+        .opt-btn.active { background: var(--blue); color: #000; }
+
+        .btn-start {
+            background: var(--red); color: white; border: none; padding: 22px 70px;
+            border-radius: 50px; font-family: 'Orbitron'; font-weight: 900; cursor: pointer;
+            transition: 0.3s; margin-top: 35px; letter-spacing: 3px;
+        }
+        .btn-start:hover { transform: scale(1.05); box-shadow: 0 0 40px var(--red); }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+
+<div id="briefing">
+    <h3 style="color:var(--gold)">BATTLE_PROTOCOL</h3>
+    <p style="font-size:0.75rem; color:#aaa;">Select match length. Grading is now ELITE—perfect resonance required for high scores.</p>
+    <div class="round-options">
+        <button class="opt-btn" onclick="setRounds(1, this)">1 ROUND</button>
+        <button class="opt-btn active" onclick="setRounds(3, this)">3 ROUNDS</button>
+        <button class="opt-btn" onclick="setRounds(5, this)">5 ROUNDS</button>
+    </div>
+    <button class="btn-back" style="color:var(--blue); border-color:var(--blue); width:80%;" onclick="closeBriefing()">INITIALIZE_MATCH</button>
+</div>
+
+<div id="xp-popup">
+    <div style="color:var(--gold); font-size: 0.8rem; letter-spacing: 4px; margin-bottom: 10px;">NEURAL_SYNC_COMPLETE</div>
+    <div id="xp-amount" style="font-size: 4rem; font-weight: 900; color: #fff; margin-bottom: 10px;">+0</div>
+    <div style="color:var(--blue); font-size: 0.6rem; letter-spacing: 2px;">RECOGNITION SKILL UPDATED</div>
+</div>
+
+<div class="hud-header">
+    <div class="nav-links">
+        <a href="hub.html" class="btn-back">← HUB</a>
+        <div class="streak-pill" id="round-counter">ROUND: 1 / 3</div>
+    </div>
+    <div class="system-controls">
+        <button id="pause-btn" class="btn-ctrl" onclick="togglePause()">PAUSE</button>
+        <button class="btn-ctrl btn-save" onclick="saveAndExit()">SAVE_EXIT</button>
+        <button class="btn-ctrl btn-reset" onclick="resetGame()">RESET</button>
+    </div>
+    <div class="streak-container">
+        <div id="p1-wins" class="streak-pill" style="border-color:var(--blue); color:var(--blue)">P1 WINS: 0</div>
+        <div id="p2-wins" class="streak-pill" style="border-color:var(--blue); color:var(--blue)">P2 WINS: 0</div>
+    </div>
+</div>
+
+<div class="center-hub">
+    <div id="target-display">?</div>
+    <div id="instruction">WAITING_FOR_ENGAGEMENT</div>
+    <div class="tuner-track">
+        <div class="tuner-center"></div>
+        <div id="tuner-needle"></div>
+    </div>
+</div>
+
+<div class="battle-grid">
+    <div id="p1-zone" class="player-zone">
+        <div style="font-size:0.6rem; color:var(--blue); letter-spacing:3px;">PILOT_01</div>
+        <div id="p1-pitch" class="current-pitch">---</div>
+        <div id="p1-score" class="score-box">00</div>
+        <div class="timer-bar"><div id="p1-t-fill" class="t-fill" style="background: var(--blue);"></div></div>
+    </div>
+    <div id="p2-zone" class="player-zone">
+        <div style="font-size:0.6rem; color:var(--blue); letter-spacing:3px;">PILOT_02</div>
+        <div id="p2-pitch" class="current-pitch">---</div>
+        <div id="p2-score" class="score-box">00</div>
+        <div class="timer-bar"><div id="p2-t-fill" class="t-fill" style="background: var(--blue);"></div></div>
+    </div>
+</div>
+
+<button id="start-btn" class="btn-start" onclick="initBattle()">ENGAGE BATTLE</button>
+
+<script>
+    let audioCtx;
+    let analyser, micStream, animationId;
+    let targetFreq = 0, currentTurn = 0;
+    let p1Best = 0, p2Best = 0;
+    let p1Wins = 0, p2Wins = 0;
+    let currentRound = 1, totalRounds = 3;
+    let isPaused = false;
+    let turnInterval;
+
+    const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+    function togglePause() {
+        if (!audioCtx) return;
+        isPaused = !isPaused;
+        const btn = document.getElementById('pause-btn');
+        if (isPaused) {
+            btn.innerText = "RESUME";
+            btn.style.color = "var(--green)";
+            audioCtx.suspend();
+        } else {
+            btn.innerText = "PAUSE";
+            btn.style.color = "#fff";
+            audioCtx.resume();
+        }
+    }
+
+    function saveAndExit() {
+        const ninjaName = localStorage.getItem('ninjaUser') || "GUEST";
+        const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        if(!roster[ninjaName]) roster[ninjaName] = { xp: 0, level: 1, skills: { recognition: 0 } };
+        
+        const sessionBest = Math.max(p1Best, p2Best);
+        roster[ninjaName].skills.recognition = Math.max(roster[ninjaName].skills.recognition, sessionBest);
+        localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+
+        document.getElementById('xp-amount').innerText = `+${sessionBest}`;
+        document.getElementById('xp-popup').style.display = 'block';
+        
+        setTimeout(() => { window.location.href = "hub.html"; }, 1800);
+    }
+
+    function resetGame() { location.reload(); }
+
+    function setRounds(r, btn) {
+        totalRounds = r;
+        document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('round-counter').innerText = `ROUND: 1 / ${totalRounds}`;
+    }
+
+    function closeBriefing() { document.getElementById('briefing').style.display = 'none'; }
+
+    async function initBattle() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+        
+        document.getElementById('start-btn').style.visibility = 'hidden';
+        resetUI();
+        if (!micStream) {
+            try {
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+                const source = audioCtx.createMediaStreamSource(micStream);
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 4096;
+                source.connect(analyser);
+            } catch (e) { alert("Mic required."); return; }
+        }
+        startNewRound();
+    }
+
+    function resetUI() {
+        document.querySelectorAll('.player-zone').forEach(z => z.classList.remove('winner', 'active'));
+        document.getElementById('p1-score').innerText = "00";
+        document.getElementById('p2-score').innerText = "00";
+    }
+
+    function startNewRound() {
+        p1Best = 0; p2Best = 0;
+        document.getElementById('round-counter').innerText = `ROUND: ${currentRound} / ${totalRounds}`;
+        const midi = Math.floor(Math.random() * 24) + 48;
+        targetFreq = 440 * Math.pow(2, (midi - 69) / 12);
+        document.getElementById('target-display').innerText = notes[midi % 12];
+        
+        document.getElementById('instruction').innerText = "GET READY...";
+        playTarget();
+        setTimeout(() => { if(!isPaused) startTurn(1); }, 2200);
+    }
+
+    async function playTarget() {
+        if (isPaused) return;
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+        
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(targetFreq, audioCtx.currentTime);
+        g.gain.setValueAtTime(0, audioCtx.currentTime);
+        g.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.1);
+        g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.8);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 2.0);
+    }
+
+    function startTurn(player) {
+        if (isPaused) { setTimeout(() => startTurn(player), 500); return; }
+        currentTurn = player;
+        document.querySelectorAll('.player-zone').forEach(z => z.classList.remove('active'));
+        document.getElementById(`p${player}-zone`).classList.add('active');
+        document.getElementById('instruction').innerText = `PLAYER ${player} // SING`;
+        
+        let time = 100;
+        turnInterval = setInterval(() => {
+            if (!isPaused) {
+                time -= 1.8;
+                document.getElementById(`p${player}-t-fill`).style.width = time + "%";
+                if (time <= 0) {
+                    clearInterval(turnInterval);
+                    currentTurn = 0;
+                    document.getElementById(`p${player}-zone`).classList.remove('active');
+                    
+                    if (player === 1) {
+                        handleTransition();
+                    } else { 
+                        judgeRound(); 
+                    }
+                }
+            }
+        }, 100);
+        if (!animationId) processPitch();
+    }
+
+    function handleTransition() {
+        let countdown = 3;
+        document.getElementById('instruction').innerText = `PREPARE PLAYER 2: ${countdown}`;
+        
+        const transitionTimer = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+                document.getElementById('instruction').innerText = `PREPARE PLAYER 2: ${countdown}`;
+            } else {
+                clearInterval(transitionTimer);
+                playTarget();
+                setTimeout(() => startTurn(2), 2000);
+            }
+        }, 1000);
+    }
+
+    function processPitch() {
+        if (currentTurn > 0 && !isPaused) {
+            const buffer = new Float32Array(analyser.fftSize);
+            analyser.getFloatTimeDomainData(buffer);
+            const pitch = autoCorrelate(buffer, audioCtx.sampleRate);
+            if (pitch !== -1) {
+                const diffCents = 1200 * Math.log2(pitch / targetFreq);
+                const needlePos = 50 + (diffCents / 2);
+                document.getElementById('tuner-needle').style.left = Math.max(5, Math.min(95, needlePos)) + "%";
+                
+                // RECALIBRATED GRADING: Tightened decay constant from 30 to 12
+                let acc = Math.floor(100 * Math.pow(Math.E, -Math.abs(diffCents) / 12));
+                
+                if (currentTurn === 1 && acc > p1Best) {
+                    p1Best = acc;
+                    document.getElementById('p1-score').innerText = p1Best.toString().padStart(2, '0');
+                }
+                if (currentTurn === 2 && acc > p2Best) {
+                    p2Best = acc;
+                    document.getElementById('p2-score').innerText = p2Best.toString().padStart(2, '0');
+                }
+            }
+        }
+        animationId = requestAnimationFrame(processPitch);
+    }
+
+    function judgeRound() {
+        if (p1Best > p2Best) { p1Wins++; document.getElementById('p1-zone').classList.add('winner'); }
+        else if (p2Best > p1Best) { p2Wins++; document.getElementById('p2-zone').classList.add('winner'); }
+        
+        document.getElementById('p1-wins').innerText = `P1 WINS: ${p1Wins}`;
+        document.getElementById('p2-wins').innerText = `P2 WINS: ${p2Wins}`;
+        
+        if (currentRound < totalRounds) {
+            currentRound++;
+            document.getElementById('instruction').innerText = "ROUND COMPLETE";
+            setTimeout(() => { if(!isPaused) startNewRound(); }, 2000);
+        } else { 
+            declareWinner(); 
+        }
+    }
+
+    function declareWinner() {
+        let finalMsg = p1Wins > p2Wins ? "PILOT 01 ASCENDS" : (p2Wins > p1Wins ? "PILOT 02 ASCENDS" : "NEURAL TIE");
+        document.getElementById('instruction').innerText = finalMsg;
+        document.getElementById('start-btn').style.visibility = 'visible';
+        document.getElementById('start-btn').innerText = "NEW MATCH";
+        currentRound = 1; p1Wins = 0; p2Wins = 0;
+    }
+
+    function autoCorrelate(buffer, sampleRate) {
+        let rms = 0; for (let i=0; i<buffer.length; i++) rms += buffer[i]*buffer[i];
+        if (Math.sqrt(rms/buffer.length) < 0.01) return -1;
+        let r1=0, r2=buffer.length-1, thres=0.2;
+        for (let i=0; i<buffer.length/2; i++) if (Math.abs(buffer[i]) < thres) { r1=i; break; }
+        for (let i=1; i<buffer.length/2; i++) if (Math.abs(buffer[buffer.length-i]) < thres) { r2=buffer.length-i; break; }
+        let buf = buffer.slice(r1,r2);
+        let c = new Array(buf.length).fill(0);
+        for (let i=0; i<buf.length; i++)
+            for (let j=0; j<buf.length-i; j++) c[i] = c[i] + buf[j]*buf[j+i];
+        let d=0; while (c[d]>c[d+1]) d++;
+        let maxval=-1, maxpos=-1;
+        for (let i=d; i<buf.length; i++) { if (c[i] > maxval) { maxval = c[i]; maxpos = i; } }
+        return sampleRate/maxpos;
+    }
+</script>
+<script src="jarvis.js"></script>
+</body>
+</html>

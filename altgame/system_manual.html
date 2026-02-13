@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ACADEMY_SYSTEM_MANUAL</title>
+    <style>
+        body { background: #05070a; color: #00ff88; font-family: monospace; padding: 40px; line-height: 1.6; }
+        .section { border-left: 2px solid #00ff88; padding-left: 20px; margin-bottom: 40px; }
+        h1 { color: #ffcc00; font-size: 1.2rem; letter-spacing: 5px; }
+        h2 { color: #4facfe; font-size: 0.9rem; }
+        table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+        th, td { border: 1px solid #1e2544; padding: 10px; text-align: left; font-size: 0.75rem; }
+        th { background: #0b101a; color: #4facfe; }
+        .key { color: #ffcc00; font-weight: bold; }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+    <h1>SYSTEM_ARCHITECTURE_MAP</h1>
+    <p>This manual documents the interconnectivity of the Psalmist Ninja Ecosystem.</p>
+
+    <div class="section">
+        <h2>1. DATA STORAGE (LocalStorage Keys)</h2>
+        <table>
+            <tr><th>KEY</th><th>FUNCTION</th></tr>
+            <tr><td class="key">ninja_roster_full</td><td>The primary database. Stores XP, Rank Status, and IDs.</td></tr>
+            <tr><td class="key">vault_users</td><td>Stores Sensei passwords, the Blacklist, and the Audit Log.</td></tr>
+            <tr><td class="key">academy_streak_stats</td><td>Tracks consecutive login days and the last update date.</td></tr>
+            <tr><td class="key">streak_freeze_active</td><td>Boolean. If TRUE, hub.html bypasses the streak reset logic.</td></tr>
+            <tr><td class="key">xp_decay_active</td><td>Boolean. If TRUE, triggers 50 XP deduction after 14 days of inactivity.</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>2. SECURITY CLEARANCE HIERARCHY</h2>
+        <table>
+            <tr><th>RANK_LEVEL</th><th>PERMISSION_ACCESS</th></tr>
+            <tr><td>LEVEL 01 ACADEMY</td><td>Hub Access, Basic Labs, Leaderboard.</td></tr>
+            <tr><td>ELITE_STRIKER</td><td>Theory Vault Entry, Leaderboard Badge.</td></tr>
+            <tr><td>SHADOW_MASTER</td><td>Theory Vault Entry, Leaderboard Badge.</td></tr>
+            <tr><td>SENSEI / IT_ADMIN</td><td>Full Database Write, Shadow Login, Broadcast Control.</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>3. CORE PROTOCOLS</h2>
+        <ul>
+            <li><strong>The Pulse:</strong> Hub.html refreshes every 5s to sync IT Manager grants.</li>
+            <li><strong>The Gatekeeper:</strong> Theory_vault.html runs an IIFE rank-check before page render.</li>
+            <li><strong>The Shadow:</strong> <code>it_active</code> key allows Admin to bypass student security checks.</li>
+            <li><strong>The Decay:</strong> Triggers only on first login after 14+ day absence.</li>
+        </ul>
+    </div>
+<script src="jarvis.js"></script>
+</body>
+</html>

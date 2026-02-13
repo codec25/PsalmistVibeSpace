@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Strum Sovereign | Scale Modes Trainer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Quicksand:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --hero-red: #ff3e3e; --hero-gold: #ffcc00; --hero-blue: #00d2ff;
+            --wood: #2d1e14; --fret: #d4d4d4;
+        }
+
+        body {
+            margin: 0; font-family: 'Quicksand', sans-serif;
+            background: #020617; color: white; min-height: 100vh;
+            display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto;
+        }
+
+        .header { background: #0f172a; padding: 10px; border-bottom: 3px solid var(--hero-gold); }
+        
+        .scroll-row {
+            display: flex; overflow-x: auto; gap: 10px; padding: 5px;
+            scrollbar-width: none; -webkit-overflow-scrolling: touch;
+        }
+        .scroll-row::-webkit-scrollbar { display: none; }
+
+        .btn-tile {
+            min-width: 50px; height: 45px; border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px; font-family: 'Bangers'; color: white; background: #1e293b;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .r-active { background: var(--hero-red) !important; border-color: white; }
+        .t-active { background: var(--hero-blue) !important; border-color: white; }
+
+        .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+
+        .mission-text { text-align: center; margin-bottom: 15px; }
+        h1 { font-family: 'Bangers'; color: var(--hero-gold); margin: 0; font-size: 2.2rem; line-height: 1; }
+        p { color: #94a3b8; font-size: 0.8rem; margin: 5px 0; letter-spacing: 1px; }
+
+        .fretboard-card {
+            background: #1a110a; padding: 30px 10px; border-radius: 15px;
+            border: 6px solid #000; width: 100%; max-width: 420px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        }
+
+        .fretboard {
+            display: flex; height: 280px; background: var(--wood);
+            position: relative; border-left: 10px solid #ddd;
+        }
+
+        .fret { flex: 1; border-right: 3px solid var(--fret); position: relative; }
+        .fret-num { position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-size: 0.8rem; color: #666; }
+
+        .string { width: 100%; position: absolute; background: #cbd5e1; height: 2px; }
+        .s6 { top: 5%; height: 4px; } .s5 { top: 23%; height: 3px; } .s4 { top: 41%; height: 2.5px; }
+        .s3 { top: 59%; height: 2px; } .s2 { top: 77%; height: 1.5px; } .s1 { top: 95%; height: 1px; }
+
+        .dot {
+            width: 36px; height: 36px; border-radius: 50%; position: absolute;
+            z-index: 10; transform: translate(-50%, -50%); border: 2px solid white;
+            display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
+            animation: pop 0.2s ease-out;
+        }
+        @keyframes pop { from { transform: translate(-50%, -50%) scale(0); } to { transform: translate(-50%, -50%) scale(1); } }
+        
+        .root { background: var(--hero-red); box-shadow: 0 0 15px var(--hero-red); }
+        .chord { background: var(--hero-blue); }
+
+        .controls { width: 100%; display: flex; flex-direction: column; gap: 15px; padding: 25px; align-items: center; }
+        .btn-invert {
+            width: 85%; padding: 16px; border-radius: 50px; border: none;
+            background: var(--hero-gold); color: black; font-family: 'Bangers';
+            font-size: 1.3rem; cursor: pointer; box-shadow: 0 5px 0 #b8860b;
+        }
+        .btn-invert:active { transform: translateY(3px); box-shadow: none; }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="scroll-row" id="roots-box"></div>
+    <div class="scroll-row" id="types-box" style="margin-top: 8px;"></div>
+</div>
+
+<div class="stage">
+    <div class="mission-text">
+        <h1 id="title">C IONIAN</h1>
+        <p id="pos-info">MAJOR MODE</p>
+    </div>
+
+    <div class="fretboard-card">
+        <div class="fretboard" id="fboard">
+            <div class="string s6"></div><div class="string s5"></div>
+            <div class="string s4"></div><div class="string s3"></div>
+            <div class="string s2"></div><div class="string s1"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-invert" onclick="playScale()">▶ PLAY SCALE</button>
+    </div>
+</div>
+
+<script>
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const OPEN_NOTES = ["E", "A", "D", "G", "B", "E"]; // strings 6..1
+    const OPEN_STRING_FREQ = { 1:329.63, 2:246.94, 3:196.00, 4:146.83, 5:110.00, 6:82.41 };
+    const MAX_FRET = 12;
+
+    const MODES = [
+        { id: "ionian", label: "IONIAN", sub: "MAJOR MODE", intervals: [0,2,4,5,7,9,11] },
+        { id: "dorian", label: "DORIAN", sub: "MINOR MODE II", intervals: [0,2,3,5,7,9,10] },
+        { id: "phrygian", label: "PHRYGIAN", sub: "MINOR MODE III", intervals: [0,1,3,5,7,8,10] },
+        { id: "lydian", label: "LYDIAN", sub: "MAJOR MODE IV", intervals: [0,2,4,6,7,9,11] },
+        { id: "mixolydian", label: "MIXOLYDIAN", sub: "DOM MODE V", intervals: [0,2,4,5,7,9,10] },
+        { id: "aeolian", label: "AEOLIAN", sub: "NATURAL MINOR", intervals: [0,2,3,5,7,8,10] },
+        { id: "locrian", label: "LOCRIAN", sub: "MINOR MODE VII", intervals: [0,1,3,5,6,8,10] },
+        { id: "majorPent", label: "MAJ PENT", sub: "MAJOR PENTATONIC", intervals: [0,2,4,7,9] },
+        { id: "minorPent", label: "MIN PENT", sub: "MINOR PENTATONIC", intervals: [0,3,5,7,10] },
+        { id: "blues", label: "BLUES", sub: "MINOR BLUES", intervals: [0,3,5,6,7,10] }
+    ];
+
+    let state = { root: "C", mode: "ionian" };
+
+    const idx = (n) => NOTES.indexOf(n);
+    const modeById = (id) => MODES.find(m => m.id === id) || MODES[0];
+
+    function noteAt(stringIndex, fret){
+        const open = OPEN_NOTES[stringIndex];
+        return NOTES[(idx(open) + fret) % 12];
+    }
+
+    function buildScaleSet(root, modeId){
+        const rootIndex = idx(root);
+        const mode = modeById(modeId);
+        const set = new Set();
+        mode.intervals.forEach(semi => set.add(NOTES[(rootIndex + semi) % 12]));
+        return set;
+    }
+
+    function init() {
+        const rBox = document.getElementById('roots-box');
+        NOTES.forEach(n => {
+            const b = document.createElement('div');
+            b.className = 'btn-tile';
+            b.innerText = n;
+            b.id = 'r-' + n;
+            b.onclick = () => { state.root = n; update(); };
+            rBox.appendChild(b);
+        });
+
+        const tBox = document.getElementById('types-box');
+        MODES.forEach(m => {
+            const b = document.createElement('div');
+            b.className = 'btn-tile';
+            b.style.minWidth = '95px';
+            b.innerText = m.label;
+            b.id = 't-' + m.id;
+            b.onclick = () => { state.mode = m.id; update(); };
+            tBox.appendChild(b);
+        });
+
+        renderFrets();
+        update();
+    }
+
+    function renderFrets() {
+        const fb = document.getElementById('fboard');
+        fb.querySelectorAll('.fret').forEach(f => f.remove());
+        for (let i = 1; i <= MAX_FRET; i++) {
+            const f = document.createElement('div');
+            f.className = 'fret';
+            f.innerHTML = `<span class="fret-num">${i}</span>`;
+            fb.appendChild(f);
+        }
+    }
+
+    function update() {
+        document.querySelectorAll('.dot').forEach(d => d.remove());
+        document.querySelectorAll('.btn-tile').forEach(b => b.classList.remove('r-active', 't-active'));
+
+        document.getElementById('r-' + state.root)?.classList.add('r-active');
+        document.getElementById('t-' + state.mode)?.classList.add('t-active');
+
+        const mode = modeById(state.mode);
+        const scaleSet = buildScaleSet(state.root, state.mode);
+        document.getElementById('title').innerText = `${state.root} ${mode.label}`;
+        document.getElementById('pos-info').innerText = mode.sub;
+
+        for (let s = 0; s < 6; s++) {
+            for (let fret = 0; fret <= MAX_FRET; fret++) {
+                const name = noteAt(s, fret);
+                if (!scaleSet.has(name)) continue;
+
+                const stringNum = 6 - s; // convert index to displayed string number
+                const dot = document.createElement('div');
+                dot.className = `dot ${name === state.root ? 'root' : 'chord'}`;
+                dot.innerText = name.replace("#", "♯");
+
+                if (fret === 0) dot.style.left = "-8px";
+                else dot.style.left = (((fret - 0.5) * (100 / MAX_FRET)) + 2) + "%";
+
+                dot.style.top = (100 - (stringNum * 16) + 3) + "%";
+                dot.onclick = () => {
+                    const base = OPEN_STRING_FREQ[stringNum] || 82.41;
+                    playNote(base * Math.pow(2, fret / 12));
+                };
+
+                document.getElementById('fboard').appendChild(dot);
+            }
+        }
+    }
+
+    function playScale() {
+        if (ctx.state === 'suspended') ctx.resume();
+        const mode = modeById(state.mode);
+        const r = idx(state.root);
+        const baseC4 = 261.63;
+        const cIdx = idx("C");
+        let t = ctx.currentTime + 0.03;
+
+        mode.intervals.forEach((semi, i) => {
+            const noteName = NOTES[(r + semi) % 12];
+            const semFromC = (idx(noteName) - cIdx + 12) % 12;
+            const freq = baseC4 * Math.pow(2, semFromC / 12);
+            playNote(freq, t + (i * 0.28));
+        });
+        const rootSem = (r - cIdx + 12) % 12;
+        playNote(baseC4 * Math.pow(2, rootSem / 12), t + (mode.intervals.length * 0.28));
+    }
+
+    function playNote(freq, when = ctx.currentTime) {
+        if (ctx.state === 'suspended') ctx.resume();
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, when);
+        g.gain.setValueAtTime(0.14, when);
+        g.gain.exponentialRampToValueAtTime(0.0001, when + 0.45);
+        osc.connect(g).connect(ctx.destination);
+        osc.start(when);
+        osc.stop(when + 0.5);
+    }
+
+    init();
+</script>
+<script src="jarvis.js"></script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BEAT_ACADEMY // Rhythm Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #020406; 
+            --panel: rgba(15, 20, 30, 0.7); 
+            --blue: #4facfe; 
+            --green: #00ff88;
+            --gold: #ffcc00; 
+            --border: rgba(0, 255, 136, 0.2); 
+            --red: #ff4b2b;
+            --purple: #a18cd1;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(0, 255, 136, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(79, 172, 254, 0.08) 0%, transparent 40%);
+            overflow-x: hidden;
+            padding: env(safe-area-inset-top) 20px 40px 20px;
+        }
+
+        /* --- Header HUD --- */
+        header {
+            width: 100%; max-width: 1100px; padding: 25px 0;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 30px;
+        }
+
+        .header-title h1 { margin: 0; font-size: 1.1rem; letter-spacing: 3px; color: var(--green); }
+        .header-title span { font-size: 0.6rem; color: #555; letter-spacing: 1px; }
+
+        .stat-pill {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            padding: 10px 20px; border-radius: 30px;
+            font-size: 0.7rem; color: var(--green);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        }
+
+        .btn-back {
+            text-decoration: none; color: #fff; font-size: 0.6rem; border: 1px solid #333;
+            padding: 8px 15px; border-radius: 8px; transition: 0.3s;
+            background: rgba(255,255,255,0.02);
+        }
+        .btn-back:hover { border-color: var(--green); background: rgba(0, 255, 136, 0.1); }
+
+        /* --- Content Grid --- */
+        .content-stack {
+            width: 100%; max-width: 1100px;
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+        }
+
+        .card {
+            background: var(--panel);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--border); border-radius: 20px;
+            padding: 25px; text-decoration: none; color: inherit;
+            display: flex; align-items: center; gap: 20px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .card:hover { 
+            transform: translateY(-5px); border-color: var(--green);
+            background: rgba(0, 255, 136, 0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .card:active { transform: scale(0.95); opacity: 0.8; }
+
+        .card-icon {
+            width: 65px; height: 65px; border-radius: 18px;
+            background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; color: var(--green); flex-shrink: 0;
+        }
+
+        .card-content { flex: 1; }
+        .card-tag { font-size: 0.55rem; color: var(--green); letter-spacing: 2px; margin-bottom: 4px; font-weight: 700; }
+        .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 5px; color: #fff; letter-spacing: 1px; }
+        .card-desc { font-size: 0.8rem; color: #888; line-height: 1.4; }
+
+        .chevron { color: rgba(255,255,255,0.1); font-size: 1.2rem; }
+
+        /* --- Responsive Tweaks --- */
+        @media (max-width: 850px) {
+            .content-stack { grid-template-columns: 1fr; }
+            header { flex-direction: column; gap: 15px; text-align: center; }
+            .stat-pill { width: 100%; text-align: center; }
+        }
+
+        footer { margin-top: auto; padding: 40px; text-align: center; width: 100%; }
+        .version-tag { font-size: 0.5rem; color: #333; letter-spacing: 3px; }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <h1>BEAT_ACADEMY</h1>
+            <span>RHYTHM_CORE // ACTIVE</span>
+        </div>
+        <div class="stat-pill">NEURAL_SYNC: <span id="total-xp">00000</span> XP</div>
+        <a href="hub.html" class="btn-back">RETURN_TO_HUB</a>
+    </header>
+
+    <div class="content-stack">
+        <a href="beat_machine.html" class="card">
+            <div class="card-icon">🥁</div>
+            <div class="card-content">
+                <div class="card-tag">CREATIVE_SEQUENCER</div>
+                <div class="card-title">BEAT_MACHINE</div>
+                <div class="card-desc">Advanced drum production dojo. Build custom loops and trigger neural pulses.</div>
+            </div>
+            <div class="chevron">❯</div>
+        </a>
+
+        <a href="rhythm_ident.html" class="card">
+            <div class="card-icon">🔍</div>
+            <div class="card-content">
+                <div class="card-tag">SIGNAL_ANALYSIS</div>
+                <div class="card-title">BEAT DETECTIVE</div>
+                <div class="card-desc">Listen carefully! Can you solve the rhythm mystery and identify the grooves?</div>
+            </div>
+            <div class="chevron">❯</div>
+        </a>
+
+        <a href="rhythm_practice.html" class="card">
+            <div class="card-icon">🥋</div>
+            <div class="card-content">
+                <div class="card-tag">PHYSICAL_DRILLS</div>
+                <div class="card-title">NINJA DRILLS</div>
+                <div class="card-desc">Fast fingers! Practice your drumming timing and speed calibration.</div>
+            </div>
+            <div class="chevron">❯</div>
+        </a>
+
+        <a href="rhythm_strike.html" class="card">
+            <div class="card-icon">⚡</div>
+            <div class="card-content">
+                <div class="card-tag">ACCURACY_TEST</div>
+                <div class="card-title">TEMPO STRIKE</div>
+                <div class="card-desc">Click on the beat! How many can you hit before the clock strikes zero?</div>
+            </div>
+            <div class="chevron">❯</div>
+        </a>
+    </div>
+
+    <footer>
+        <div class="version-tag">SYSTEM_VER: 3.5.0 // PSALMIST NINJA STUDIOS</div>
+    </footer>
+
+    <script>
+        const ninjaName = localStorage.getItem('ninjaUser') || "GUEST_NINJA";
+
+        function checkSecurityHandshake() {
+            // Global System Lock check
+            if (localStorage.getItem('global_system_lock') === 'true') {
+                document.body.innerHTML = `<div style="background:#000; color:#ff4b2b; height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>SYSTEM_LOCKED</h1><p>RESTRICTED BY IT_ADMIN</p></div>`;
+                window.stop();
+            }
+
+            // Remote Freeze Check
+            if (localStorage.getItem(`freeze_${ninjaName}`) === 'true') {
+                document.body.innerHTML = `<div style="background:#000; color:var(--red); height:100vh; width:100vw; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Orbitron; text-align:center;"><h1>TERMINAL_LOCKED</h1><p>ACCESS REVOKED</p></div>`;
+                window.stop();
+            }
+        }
+
+        function syncRhythmStats() {
+            checkSecurityHandshake();
+            
+            // CORE UPDATE: Sync with Master Roster XP
+            const masterRoster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            const myData = masterRoster[ninjaName] || { xp: 0 };
+            
+            document.getElementById('total-xp').innerText = myData.xp.toString().padStart(5, '0');
+
+            // Presence Pulse for IT Manager
+            let presence = JSON.parse(localStorage.getItem('psalmist_teachers')) || {};
+            presence[ninjaName] = { 
+                lastActive: new Date().toLocaleTimeString(), 
+                status: "RHYTHM_SECTOR",
+                xp: myData.xp 
+            };
+            localStorage.setItem('psalmist_teachers', JSON.stringify(presence));
+        }
+
+        // Initialize and keep pulsing
+        window.onload = syncRhythmStats;
+        window.onfocus = syncRhythmStats;
+        setInterval(syncRhythmStats, 3000);
+    </script>
+<script src="jarvis.js"></script>
+</body>
+</html>

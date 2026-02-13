@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>THEORY_VAULT // Neural Matrix</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #05070a; --gold: #ffcc00; --blue: #4facfe; 
+            --border: #1e2544; --green: #00ff88; --red: #ff4b2b; --panel: rgba(10, 15, 25, 0.98);
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #05070a 100%);
+        }
+        
+        .header-shield {
+            width: 100%; background: var(--panel); border-bottom: 2px solid var(--border);
+            padding: 15px; position: sticky; top: 0; z-index: 100;
+        }
+        .progress-hud { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+        .bar-bg { flex-grow: 1; height: 6px; background: #111; margin: 0 15px; border-radius: 10px; overflow: hidden; }
+        #progress-fill { height: 100%; width: 0%; background: var(--blue); box-shadow: 0 0 15px var(--blue); transition: 0.8s ease-in-out; }
+
+        .main-layout { width: 100%; max-width: 900px; padding: 20px; }
+
+        .grade-nav { display: flex; overflow-x: auto; gap: 12px; margin-bottom: 25px; padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+        .grade-chip { 
+            flex: 0 0 auto; padding: 12px 20px; background: #0a0e17; border: 1px solid var(--border); 
+            border-radius: 20px; font-size: 0.6rem; color: #888; cursor: pointer; transition: 0.3s;
+        }
+        .grade-chip.active { border-color: var(--blue); color: var(--blue); background: rgba(79, 172, 254, 0.1); }
+        .grade-chip.distinction { border-color: var(--gold); color: var(--gold); }
+
+        .manual-container {
+            background: #0d1117; border: 1px solid var(--border); border-radius: 12px;
+            padding: 30px; margin-bottom: 25px; position: relative; border-left: 4px solid var(--blue);
+        }
+        .manual-tag { 
+            position: absolute; top: -12px; right: 25px; background: var(--gold); 
+            color: #000; font-size: 0.5rem; font-weight: 900; padding: 4px 12px; border-radius: 4px;
+        }
+        .manual-content h2 { color: var(--blue); font-size: 1.1rem; margin: 0 0 15px 0; letter-spacing: 2px; }
+        .manual-body { color: #8b949e; font-size: 0.85rem; line-height: 1.8; text-align: justify; }
+        .technical-spec { color: var(--gold); font-size: 0.65rem; margin-top: 20px; padding-top: 15px; border-top: 1px dashed #30363d; font-weight: 700; }
+        
+        .visual-aid {
+            width: 100%; background: #000; border: 1px solid var(--border);
+            border-radius: 8px; margin: 15px 0; display: flex; align-items: center; 
+            justify-content: center; min-height: 120px; color: #fff; font-size: 0.7rem; padding: 20px;
+        }
+
+        .exam-terminal {
+            background: rgba(10, 15, 25, 0.6); border: 1px solid var(--border); border-radius: 12px;
+            padding: 30px; transition: 0.4s; margin-bottom: 40px;
+        }
+        .exam-terminal.passed { border-color: var(--green); box-shadow: 0 0 20px rgba(0, 255, 136, 0.1); }
+        
+        .option-btn {
+            width: 100%; padding: 20px; margin: 12px 0; background: rgba(255,255,255,0.02);
+            border: 1px solid #1e2544; color: #fff; text-align: left; cursor: pointer; 
+            font-family: 'Orbitron'; font-size: 0.8rem; border-radius: 10px; transition: 0.2s;
+        }
+        .option-btn.correct { border-color: var(--green); color: var(--green); background: rgba(0, 255, 136, 0.1); }
+        .option-btn.wrong { border-color: var(--red); color: var(--red); background: rgba(255, 75, 43, 0.1); animation: shake 0.3s; }
+
+        .btn-upgrade {
+            width: 100%; padding: 22px; background: var(--green); border: none; 
+            color: #000; font-family: 'Orbitron'; font-weight: 900; border-radius: 12px; 
+            margin-top: 20px; cursor: pointer; display: none; font-size: 0.9rem;
+            animation: pulse-green 2s infinite;
+        }
+
+        /* ===== FLASHCARDS (ADDED ONLY) ===== */
+        .flashcard-panel {
+            background: #0d1117; border: 1px solid var(--border); border-radius: 12px;
+            padding: 25px; margin-bottom: 40px; display: none;
+        }
+        .flashcard {
+            background:#000; border:1px solid var(--blue); border-radius:12px;
+            padding:40px; text-align:center; font-size:1rem; cursor:pointer;
+        }
+        .flash-controls {
+            display:flex; gap:10px; margin-top:20px;
+        }
+        .flash-controls button {
+            flex:1; padding:12px; background:var(--blue); border:none;
+            color:#000; font-family:'Orbitron'; border-radius:8px; cursor:pointer;
+        }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(0, 255, 136, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); } }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+
+<div class="header-shield">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-weight: 900; font-size: 0.75rem; color: var(--blue); letter-spacing: 2px;">THEORY_VAULT // AUDITORY_MATRIX</span>
+        <button onclick="logoutGuest()" style="background:none; border:1px solid var(--red); color:var(--red); font-size:0.5rem; padding:4px 8px; cursor:pointer;">LOGOUT (RESET)</button>
+    </div>
+    <div class="progress-hud">
+        <span id="rank-display" style="font-size: 0.55rem; color: var(--gold); font-weight: 700;">RANK: ---</span>
+        <div class="bar-bg"><div id="progress-fill"></div></div>
+        <span id="percent-display" style="font-size: 0.55rem; color: var(--blue);">0%</span>
+    </div>
+</div>
+
+<div class="main-layout">
+    <div class="grade-nav" id="grade-nav"></div>
+
+    <div class="manual-container">
+        <div class="manual-tag">CORE_PEDAGOGY</div>
+        <div class="manual-content">
+            <h2 id="m-title">INITIALIZING_VAULT...</h2>
+            <div id="visual-aid-container" class="visual-aid"></div>
+            <div id="m-body" class="manual-body" style="margin-top:20px;"></div>
+            <div id="m-spec" class="technical-spec"></div>
+        </div>
+    </div>
+
+    <div class="exam-terminal" id="exam-terminal">
+        <div id="q-text" style="font-size: 0.9rem; margin-bottom: 25px; line-height: 1.5; font-weight: 700;"></div>
+        <div id="options-grid"></div>
+        <button id="upgrade-btn" class="btn-upgrade" onclick="advanceLevel()">UPGRADE_CLEARANCE_NOW</button>
+    </div>
+
+    <!-- ===== FLASHCARDS PANEL (ADDED ONLY) ===== -->
+    <div class="flashcard-panel" id="flashcard-panel">
+        <div class="flashcard" id="flashcard" onclick="flipCard()">FRONT</div>
+        <div class="flash-controls">
+            <button onclick="prevCard()">PREV</button>
+            <button onclick="nextCard()">NEXT</button>
+            <button onclick="exitFlashcards()">EXIT</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ============================ ORIGINAL SYLLABUS (UNCHANGED) ============================ */
+const SYLLABUS = [
+/* ============================ GRADE 1 ============================ */
+{
+g:1,
+title:"THE_TACTUS",
+manual:`
+The tactus is the steady, underlying pulse that listeners naturally feel when music plays. 
+It is not necessarily written on the page, but it governs how music moves through time.
+
+In Western music, the tactus often corresponds to the quarter note in simple meters like 4/4, 
+or the dotted quarter note in compound meters like 6/8. This pulse is what musicians count, tap, 
+or nod their heads to.
+
+Professional musicians train to internalize the tactus so that rhythm becomes stable, even 
+when the written notation becomes complex. Without tactus awareness, ensemble playing collapses 
+because players lose their shared sense of time.
+
+Real-world applications:
+- Conductors gesture the tactus to guide ensembles.
+- Drummers maintain tactus through groove.
+- Dancers rely on tactus to synchronize movement.
+
+Core idea: The tactus is the heartbeat of music — everything else subdivides or groups around it.
+`,
+spec:"Sources: AB Guide to Music Theory (Taylor), Elementary Training for Musicians (Hindemith)",
+img:"VISUAL: STEADY PULSE → BEAT → SUBDIVISION",
+quizzes:[
+{q:"What is the tactus in music?",a:["The melody line","The steady underlying pulse"],c:1},
+{q:"Which note value often represents the tactus in 4/4 time?",a:["Whole note","Quarter note"],c:1},
+{q:"In 6/8 time, the tactus is usually the:",a:["Eighth note","Dotted quarter note"],c:1},
+{q:"Why is tactus important in ensemble playing?",a:["It helps tune instruments","It keeps everyone synchronized"],c:1},
+{q:"What body motion commonly reflects tactus?",a:["Head nodding","Finger snapping randomly"],c:0},
+{q:"Does tactus always equal the smallest written note value?",a:["Yes","No"],c:1},
+{q:"What happens if musicians lose tactus?",a:["Music speeds up randomly","Rhythmic cohesion collapses"],c:1},
+{q:"Which musician role most clearly communicates tactus visually?",a:["Composer","Conductor"],c:1},
+{q:"Tactus is best described as:",a:["Surface rhythm","Underlying pulse framework"],c:1},
+{q:"Which activity relies most directly on tactus?",a:["Harmonic analysis","Dancing"],c:1}
+]
+},
+
+/* ============================ GRADE 2 ============================ */
+{
+g:2,
+title:"BINARY_SUBDIVISION",
+manual:`
+Binary subdivision divides one beat into two equal parts. In standard notation, this creates 
+eighth notes from quarter notes, sixteenth notes from eighth notes, and so on.
+
+This system underlies most Western rhythmic practice, especially in rock, pop, classical, 
+marches, and most groove-based styles. Binary subdivision produces a straight, even rhythmic feel.
+
+For example:
+- One beat → two eighth notes
+- One beat → four sixteenth notes
+
+Musicians must internalize binary subdivision so they can play precisely within the beat 
+instead of rushing or dragging.
+
+Real-world applications:
+- Drum grooves rely on eighth-note and sixteenth-note grids.
+- Sight-reading depends on accurate subdivision.
+- Metronome practice reinforces binary precision.
+
+Core idea: Binary subdivision creates rhythmic stability by dividing beats into equal halves.
+`,
+spec:"Sources: Elementary Training for Musicians (Hindemith), Practical Theory (Feldstein)",
+img:"VISUAL: BEAT → 2 → 4 → 8 SUBDIVISIONS",
+quizzes:[
+{q:"Binary subdivision divides a beat into:",a:["2 equal parts","3 equal parts"],c:0},
+{q:"Two eighth notes equal:",a:["One quarter note","One half note"],c:0},
+{q:"Four sixteenth notes equal:",a:["One quarter note","One eighth note"],c:0},
+{q:"Which style relies heavily on binary subdivision?",a:["Gregorian chant","Rock music"],c:1},
+{q:"Binary subdivision produces what rhythmic feel?",a:["Swing","Straight"],c:1},
+{q:"What subdivision comes after eighth notes?",a:["Sixteenth notes","Triplets"],c:0},
+{q:"Why is subdivision important?",a:["To decorate melodies","To maintain rhythmic precision"],c:1},
+{q:"Binary rhythm grids are common in:",a:["Western classical and pop","Free jazz only"],c:0},
+{q:"If a beat is divided into four parts, they are called:",a:["Triplets","Sixteenths"],c:1},
+{q:"Binary subdivision is based on powers of:",a:["2","3"],c:0}
+]
+},
+
+/* ============================ GRADE 3 ============================ */
+{
+g:3,
+title:"TERNARY_LOGIC",
+manual:`
+Ternary subdivision divides one beat into three equal parts, producing triplets. This creates 
+a rolling or lilting feel distinct from straight binary rhythm.
+
+Triplet subdivision is foundational in compound meters (6/8, 9/8, 12/8) and swing-based styles 
+such as jazz, blues, and shuffle grooves.
+
+For example:
+- One beat → three eighth-note triplets
+- Two beats → six triplets
+
+Musicians must learn to feel ternary subdivision naturally rather than mathematically counting 
+“1-trip-let, 2-trip-let” at all times.
+
+Real-world applications:
+- Swing ride cymbal patterns
+- Shuffle grooves in blues
+- Compound meter conducting
+
+Core idea: Ternary subdivision creates rhythmic flow by dividing beats into thirds.
+`,
+spec:"Sources: Music Theory for Dummies (Pilhofer), The Jazz Theory Book (Levine)",
+img:"VISUAL: BEAT → 3 → 6 → 9 SUBDIVISIONS",
+quizzes:[
+{q:"A triplet divides a beat into:",a:["2 parts","3 parts"],c:1},
+{q:"Which meter uses ternary subdivision naturally?",a:["4/4","6/8"],c:1},
+{q:"Swing feel is based on:",a:["Binary subdivision","Ternary subdivision"],c:1},
+{q:"Which genre strongly uses triplet feel?",a:["March music","Jazz"],c:1},
+{q:"Three eighth-note triplets equal:",a:["One quarter note","One half note"],c:0},
+{q:"Compound meters subdivide beats into:",a:["Two","Three"],c:1},
+{q:"Which phrase reflects ternary counting?",a:["1-and-2-and","1-trip-let"],c:1},
+{q:"Shuffle rhythm is closest to:",a:["Straight eighths","Triplet subdivision"],c:1},
+{q:"Ternary subdivision creates what rhythmic feel?",a:["Rigid","Flowing"],c:1},
+{q:"Which subdivision is NOT ternary?",a:["Triplets","Sixteenths"],c:1}
+]
+},
+
+/* ============================ GRADE 4 ============================ */
+{
+g:4,
+title:"METER_AND_TIME",
+manual:`
+Meter organizes beats into repeating groups called measures. Time signatures define how many 
+beats are in each measure and what note value receives one beat.
+
+Examples:
+- 4/4 → four quarter-note beats per measure
+- 3/4 → three quarter-note beats per measure
+- 6/8 → two dotted-quarter beats per measure
+
+Strong and weak beats emerge from meter, shaping musical phrasing and groove. Without meter, 
+music becomes rhythmically ambiguous and difficult to coordinate.
+
+Real-world applications:
+- Conductors gesture meter patterns
+- Composers structure phrases by measure length
+- Performers anticipate accents based on meter
+
+Core idea: Meter organizes time into predictable, repeating patterns.
+`,
+spec:"Sources: Tonal Harmony (Kostka), Theory of Music (Lovelock)",
+img:"VISUAL: MEASURES → BEATS → SUBDIVISIONS",
+quizzes:[
+{q:"What does a time signature indicate?",a:["Pitch and key","Beats per measure and beat unit"],c:1},
+{q:"In 4/4 time, how many beats are in each measure?",a:["3","4"],c:1},
+{q:"Which note gets one beat in 3/4 time?",a:["Quarter note","Half note"],c:0},
+{q:"6/8 time is best described as:",a:["Simple meter","Compound meter"],c:1},
+{q:"What separates measures?",a:["Barlines","Clefs"],c:0},
+{q:"Strong and weak beats arise from:",a:["Harmony","Meter"],c:1},
+{q:"Which meter has three beats per bar?",a:["3/4","4/4"],c:0},
+{q:"What is the top number of a time signature?",a:["Beat unit","Beats per measure"],c:1},
+{q:"What is the bottom number of a time signature?",a:["Beats per measure","Beat unit"],c:1},
+{q:"Meter helps musicians:",a:["Tune pitches","Anticipate rhythmic structure"],c:1}
+]
+},
+
+/* ============================ GRADE 5 ============================ */
+{
+g:5,
+title:"SYNCOPATION",
+manual:`
+Syncopation occurs when emphasis is placed on weak beats, off-beats, or unexpected parts of 
+the measure. This creates rhythmic tension, energy, and groove.
+
+In 4/4 time, strong beats are usually 1 and 3. Accenting beats 2 and 4, or placing notes between 
+beats, creates syncopation.
+
+Syncopation is foundational in:
+- Funk
+- Jazz
+- Rock backbeats
+- Afro-Caribbean rhythms
+
+Rather than destabilizing rhythm, syncopation works against the meter in a controlled way, 
+creating forward motion and expressive feel.
+
+Core idea: Syncopation energizes rhythm by shifting accents away from expected positions.
+`,
+spec:"Sources: The Jazz Theory Book (Levine), Rhythm and Meter (Cooper & Meyer)",
+img:"VISUAL: OFF-BEAT ACCENTS",
+quizzes:[
+{q:"Syncopation emphasizes:",a:["Strong beats","Weak or off-beats"],c:1},
+{q:"In 4/4, which beats are traditionally strongest?",a:["1 and 3","2 and 4"],c:0},
+{q:"Which style relies heavily on syncopation?",a:["Baroque fugue","Funk"],c:1},
+{q:"What effect does syncopation create?",a:["Stability","Tension and groove"],c:1},
+{q:"Placing notes between beats creates:",a:["Straight rhythm","Syncopation"],c:1},
+{q:"Backbeat emphasis in rock is on:",a:["1 and 3","2 and 4"],c:1},
+{q:"Syncopation works by:",a:["Ignoring meter","Playing against meter"],c:1},
+{q:"Which rhythm is least syncopated?",a:["March rhythm","Funk groove"],c:0},
+{q:"Syncopation makes music feel:",a:["Rigid","Forward-moving"],c:1},
+{q:"Which term describes unexpected rhythmic accents?",a:["Subdivision","Syncopation"],c:1}
+]
+},
+
+/* ============================ GRADE 6 ============================ */
+{
+g:6,
+title:"HEMIOLA",
+manual:`
+A hemiola is a rhythmic effect where two groupings of three beats are temporarily perceived 
+as three groupings of two beats (3:2 relationship), or vice versa.
+
+Common examples:
+- In 3/4 time, accents feel like 2/4 for a moment
+- In 6/8 time, accents shift to 3/4 feel
+
+Hemiola was widely used in Renaissance and Baroque music, and today appears in film scores, 
+Latin rhythms, and progressive styles.
+
+Rather than changing tempo, hemiola changes how beats are grouped and perceived.
+
+Core idea: Hemiola reshapes rhythmic perception without changing tempo.
+`,
+spec:"Sources: Baroque Music (Palisca), Rhythm and Meter (Cooper & Meyer)",
+img:"VISUAL: 3 AGAINST 2 GROUPING SHIFT",
+quizzes:[
+{q:"A hemiola represents which ratio?",a:["2:1","3:2"],c:1},
+{q:"Hemiola changes:",a:["Tempo","Beat grouping"],c:1},
+{q:"In 3/4, hemiola may feel like:",a:["2/4","5/4"],c:0},
+{q:"Which era used hemiola heavily?",a:["Romantic","Baroque"],c:1},
+{q:"Does hemiola change tempo?",a:["Yes","No"],c:1},
+{q:"Hemiola affects:",a:["Pitch","Metric perception"],c:1},
+{q:"Which meter can contain hemiola?",a:["6/8","Both 3/4 and 6/8"],c:1},
+{q:"Hemiola is best described as:",a:["Subdivision change","Grouping illusion"],c:1},
+{q:"Where is hemiola common today?",a:["Film music","Gregorian chant"],c:0},
+{q:"Hemiola creates:",a:["Stability","Rhythmic tension"],c:1}
+]
+},
+
+/* ============================ GRADE 7 ============================ */
+{
+g:7,
+title:"DOT_LOGIC",
+manual:`
+A dot placed after a note increases its duration by half of its original value.
+
+Examples:
+- Dotted quarter note = quarter + eighth = 1.5 beats (in simple meter)
+- Dotted half note = half + quarter = 3 beats
+
+Dots allow composers to extend rhythms smoothly across beats and measures, making phrasing 
+more expressive and less mechanically divided.
+
+Dotted rhythms are especially common in compound meters, marches, and syncopated patterns.
+
+Core idea: Dots extend rhythmic duration by 50% of the note’s value.
+`,
+spec:"Sources: Practical Theory (Feldstein), AB Guide to Music Theory (Taylor)",
+img:"VISUAL: NOTE + HALF VALUE EXTENSION",
+quizzes:[
+{q:"A dot adds how much value to a note?",a:["Double","Half"],c:1},
+{q:"A dotted quarter note equals:",a:["1 beat","1.5 beats"],c:1},
+{q:"A dotted half note equals:",a:["2 beats","3 beats"],c:1},
+{q:"Dots allow rhythms to:",a:["Shorten notes","Extend notes smoothly"],c:1},
+{q:"Which rhythm uses dots often?",a:["Marches","Free jazz"],c:0},
+{q:"Does a dot add the same value to every note?",a:["Yes","No"],c:0},
+{q:"A dotted eighth equals:",a:["Three sixteenths","Two sixteenths"],c:0},
+{q:"Dots are common in:",a:["Compound meters","Atonal music only"],c:0},
+{q:"A dot changes:",a:["Pitch","Duration"],c:1},
+{q:"Dotted rhythms increase:",a:["Rhythmic flexibility","Pitch accuracy"],c:0}
+]
+},
+
+/* ============================ GRADE 8 ============================ */
+{
+g:8,
+title:"COMPOUND_TIME",
+manual:`
+Compound meter divides the beat into three equal parts instead of two. The beat unit is a 
+dotted note rather than a simple note.
+
+Examples:
+- 6/8 → two dotted-quarter beats per bar
+- 9/8 → three dotted-quarter beats per bar
+- 12/8 → four dotted-quarter beats per bar
+
+Compound meters produce flowing, circular rhythmic feels and dominate many dance styles, 
+folk traditions, and swing-based grooves.
+
+Core idea: Compound meter organizes rhythm around triple subdivisions.
+`,
+spec:"Sources: Theory of Music (Lovelock), Rhythm and Meter (Cooper & Meyer)",
+img:"VISUAL: DOTTED BEATS WITH TRIPLE SUBDIVISION",
+quizzes:[
+{q:"Compound meter subdivides beats into:",a:["Two","Three"],c:1},
+{q:"In 6/8 time, how many beats are in a measure?",a:["2","6"],c:0},
+{q:"The beat unit in compound meter is usually:",a:["Quarter note","Dotted note"],c:1},
+{q:"Which meter is compound?",a:["3/4","9/8"],c:1},
+{q:"Compound meters feel:",a:["Rigid","Flowing"],c:1},
+{q:"12/8 contains how many beats per bar?",a:["4","12"],c:0},
+{q:"Swing feel is closest to:",a:["Simple meter","Compound meter subdivision"],c:1},
+{q:"Which style uses compound time heavily?",a:["Ballads and blues","Gregorian chant"],c:0},
+{q:"Compound meters use which grouping?",a:["2s","3s"],c:1},
+{q:"Which is NOT compound?",a:["6/8","4/4"],c:1}
+]
+},
+
+/* ============================ GRADE 9 ============================ */
+{
+g:9,
+title:"POLYRHYTHM",
+manual:`
+Polyrhythm occurs when two or more independent rhythmic patterns are played simultaneously, 
+usually based on conflicting subdivisions such as 3 against 2 or 4 against 3.
+
+Rather than being chaotic, polyrhythms are structured and mathematically precise. They appear 
+in African music, Latin styles, jazz, progressive rock, and modern classical music.
+
+Example:
+- One hand plays triplets while the other plays duplets
+- 4 notes evenly spaced against 3 notes
+
+Core idea: Polyrhythm layers multiple rhythmic grids at the same time.
+`,
+spec:"Sources: African Polyphony (Simha Arom), The Rhythm Book (W. Moore)",
+img:"VISUAL: 3 AGAINST 2 RHYTHMIC GRID",
+quizzes:[
+{q:"Polyrhythm involves:",a:["One rhythm","Two or more conflicting rhythms"],c:1},
+{q:"Which is a common polyrhythm?",a:["2 against 2","3 against 2"],c:1},
+{q:"Polyrhythms are common in:",a:["African music","Baroque chorales"],c:0},
+{q:"Do polyrhythms change tempo?",a:["Yes","No"],c:1},
+{q:"Polyrhythms involve:",a:["Layered subdivisions","Random rhythms"],c:0},
+{q:"Which instrument family uses polyrhythm heavily?",a:["Percussion","Strings only"],c:0},
+{q:"4 against 3 means:",a:["Four notes over three beats","Three notes over four beats"],c:0},
+{q:"Polyrhythms create:",a:["Static feel","Rhythmic complexity"],c:1},
+{q:"Which style uses polyrhythm frequently?",a:["Funk and jazz","Gregorian chant"],c:0},
+{q:"Polyrhythm requires:",a:["Metric awareness","Pitch accuracy"],c:0}
+]
+},
+
+/* ============================ GRADE 10 ============================ */
+{
+g:10,
+title:"IRREGULAR_METERS",
+manual:`
+Irregular (odd) meters combine beats in unequal groupings, most often mixtures of twos and 
+threes.
+
+Examples:
+- 5/4 → 2+3 or 3+2
+- 7/8 → 2+2+3 or 3+2+2
+- 11/8 → complex groupings
+
+Rather than feeling unstable, irregular meters feel grounded when performers internalize the 
+grouping patterns.
+
+These meters are common in Balkan music, progressive rock, modern jazz, and film scores.
+
+Core idea: Irregular meters organize beats through unequal grouping patterns.
+`,
+spec:"Sources: Modern Rhythmic Notation (Gardner Read), The Rhythm Book (W. Moore)",
+img:"VISUAL: 2+3 | 3+2+2 GROUPINGS",
+quizzes:[
+{q:"Irregular meters combine:",a:["Equal beats only","Groups of 2s and 3s"],c:1},
+{q:"Which is an irregular meter?",a:["4/4","7/8"],c:1},
+{q:"5/4 can be grouped as:",a:["2+3 or 3+2","4+1 only"],c:0},
+{q:"Irregular meters are common in:",a:["Progressive rock","Baroque dances"],c:0},
+{q:"7/8 often groups into:",a:["2+2+3","3+3+1"],c:0},
+{q:"Irregular meters feel stable when:",a:["Counted randomly","Grouped properly"],c:1},
+{q:"Odd meters change:",a:["Pitch structure","Beat grouping"],c:1},
+{q:"Which style uses odd meters heavily?",a:["Balkan folk","Gregorian chant"],c:0},
+{q:"Irregular meters use:",a:["Unequal beats","Equal beats"],c:0},
+{q:"Which is NOT irregular?",a:["11/8","4/4"],c:1}
+]
+},
+
+/* ============================ GRADE 11 ============================ */
+{
+g:11,
+title:"TUPLET_MASTERY",
+manual:`
+Tuplets divide a beat into unusual numbers of equal parts beyond binary and ternary systems.
+
+Common tuplets:
+- Quintuplets (5 notes per beat)
+- Septuplets (7 notes per beat)
+- Nonuplets (9 notes per beat)
+
+Tuplets require precise timing and advanced subdivision awareness. They are used in modern 
+classical music, jazz improvisation, and technical instrumental passages.
+
+Core idea: Tuplets allow beats to be divided into non-standard rhythmic groupings.
+`,
+spec:"Sources: The Contemporary Musician (Byrne), Modern Rhythmic Notation (Gardner Read)",
+img:"VISUAL: 5 | 7 | 9 SUBDIVISIONS PER BEAT",
+quizzes:[
+{q:"A quintuplet divides a beat into:",a:["5 parts","6 parts"],c:0},
+{q:"A septuplet divides a beat into:",a:["7 parts","8 parts"],c:0},
+{q:"Tuplets go beyond:",a:["Binary and ternary systems","All rhythm systems"],c:0},
+{q:"Tuplets are common in:",a:["Modern classical music","Marches only"],c:0},
+{q:"Tuplets require:",a:["Loose timing","Precise subdivision"],c:1},
+{q:"Which is a tuplet?",a:["Triplet","Quintuplet"],c:1},
+{q:"Nonuplets divide a beat into:",a:["9","8"],c:0},
+{q:"Tuplets affect:",a:["Pitch","Rhythmic subdivision"],c:1},
+{q:"Which instrument often uses tuplets?",a:["Drums","Tuning fork"],c:0},
+{q:"Tuplets allow rhythms to:",a:["Simplify","Become more complex"],c:1}
+]
+},
+
+/* ============================ GRADE 12 ============================ */
+{
+g:12,
+title:"METRIC_MODULATION",
+manual:`
+Metric modulation is a technique where the tempo changes smoothly by reinterpreting one note 
+value as another. Instead of abrupt tempo shifts, the listener experiences a continuous 
+transformation of pulse.
+
+For example:
+- Triplet eighths in one tempo become straight eighths in the next
+- Sixteenths become triplets
+
+Metric modulation is used extensively in modern classical music, film scoring, and advanced 
+jazz composition.
+
+Core idea: Metric modulation changes tempo through proportional rhythmic reinterpretation.
+`,
+spec:"Sources: The Music of Elliott Carter (Schiff), Rhythm and Meter (Cooper & Meyer)",
+img:"VISUAL: OLD SUBDIVISION → NEW BEAT UNIT",
+quizzes:[
+{q:"Metric modulation changes:",a:["Key","Tempo"],c:1},
+{q:"Metric modulation works by:",a:["Abrupt tempo shift","Reinterpreting rhythmic values"],c:1},
+{q:"Which composer is famous for metric modulation?",a:["Bach","Elliott Carter"],c:1},
+{q:"Metric modulation keeps:",a:["Pulse relationship intact","Harmony unchanged"],c:0},
+{q:"Which style uses metric modulation often?",a:["Modern classical","Medieval chant"],c:0},
+{q:"Metric modulation involves:",a:["Pitch shift","Rhythmic proportion shift"],c:1},
+{q:"Metric modulation creates:",a:["Sudden jumps","Smooth tempo transitions"],c:1},
+{q:"Which note value can become a new beat unit?",a:["Any rhythmic value","Only quarter notes"],c:0},
+{q:"Metric modulation is most common in:",a:["Film scoring","Renaissance madrigals"],c:0},
+{q:"Metric modulation affects:",a:["Tempo perception","Tuning system"],c:0}
+]
+}
+];
+
+/* ============================ DRUM THEORY BOOK (BOOK ONLY — NO GRADING) ============================ */
+const DRUM_BOOK = [
+{
+level:1,
+title:"DRUM FOUNDATIONS",
+manual:`
+Drumming begins with **time control**, not speed, power, or tricks. Before fills, chops, or flashy patterns,
+a drummer must master three pillars:
+
+1) **Pulse Awareness**
+Your job is to lock the music to a steady heartbeat. Every band, choir, and ensemble depends on the drummer
+to anchor time. If your pulse wavers, everything collapses.
+
+2) **Posture & Motion**
+Good drummers sit balanced, relaxed, and centered. Your wrists lead motion, not your arms. Power comes from
+efficiency, not force. The goal is control, not tension.
+
+3) **Single Strokes**
+Alternating hands (R L R L) is the foundation of all sticking systems. Every groove, fill, and roll grows
+from this motion. Clean singles build precision, endurance, and consistency.
+
+Practice framework:
+- Count quarter notes aloud while tapping one hand.
+- Add the second hand while keeping time steady.
+- Stay relaxed — tension destroys speed and control.
+
+Core identity:
+A drummer is not a soloist first — a drummer is a **timekeeper**. Groove before flash. Control before speed.
+`,
+spec:"Professional Beginner Drum Pedagogy",
+img:"DRUM: TIMEKEEPING • POSTURE • SINGLE STROKES"
+},
+{
+level:2,
+title:"DRUM SUBDIVISION",
+manual:`
+Subdivision is how you divide each beat internally. If the beat is the highway, subdivision
+is the lane markings that keep you centered.
+
+Without subdivision:
+- You rush fills.
+- You drag grooves.
+- Your timing drifts under pressure.
+
+With subdivision:
+- Your groove locks in.
+- Your fills land cleanly.
+- Your tempo stabilizes automatically.
+
+Binary subdivision:
+- Beat → two parts (eighth notes)
+- Beat → four parts (sixteenths)
+
+Ternary subdivision:
+- Beat → three parts (triplets, shuffle feel)
+
+Professional drummers always hear subdivisions internally, even when not playing them.
+This allows freedom without losing time.
+
+Training method:
+- Count out loud: “1 e & 2 e” or “1 trip let”.
+- Tap subdivisions with one hand while keeping pulse with the other.
+- Switch between straight and swing feels without losing tempo.
+
+Core identity:
+Subdivision is the **internal grid** that makes groove reliable.
+`,
+spec:"Intermediate Drum Timing Systems",
+img:"DRUM: SUBDIVISION GRID • INTERNAL CLOCK"
+},
+{
+level:3,
+title:"GROOVE & COORDINATION",
+manual:`
+Groove is not a pattern — groove is **feel + consistency + control**.
+
+Coordination means your limbs operate independently while remaining synchronized to the same pulse.
+Each limb has its own rhythmic role:
+- Right hand: time grid (hi-hat or ride)
+- Left hand: backbeat and texture
+- Right foot: foundation and drive
+- Left foot: balance and subdivision control
+
+The goal is **independence without chaos** — everything moves differently but locks to the same clock.
+
+Development stages:
+1) One limb at a time
+2) Two-limb coordination
+3) Three-limb layering
+4) Full four-limb independence
+
+Groove collapses when:
+- Subdivision weakens
+- Pulse shifts
+- Accents lose consistency
+
+Groove strengthens when:
+- Time feels effortless
+- Motions stay relaxed
+- The band leans into your pocket
+
+Core identity:
+Groove is not complexity — groove is **control over time**.
+`,
+spec:"Advanced Coordination & Groove Systems",
+img:"DRUM: LIMB INDEPENDENCE • TIME CONTROL"
+},
+{
+level:4,
+title:"FILLS & TRANSITIONS",
+manual:`
+Fills exist to **connect musical sections**, not to showcase chops.
+
+A professional fill:
+- Starts clean
+- Maintains subdivision
+- Resolves perfectly into time
+
+A bad fill:
+- Rushes or drags
+- Disrupts the groove
+- Loses the downbeat
+
+Every fill must answer one question:
+"Does this return the band to the groove stronger than before?"
+
+Structural principles:
+- Most fills occupy the final beat or bar of a phrase
+- Most resolve on beat 1
+- Most use simple subdivision before complex shapes
+
+Fills should:
+- Enhance energy
+- Signal transitions
+- Support phrasing
+
+They should never:
+- Break tempo
+- Steal focus from vocals
+- Distract from the groove
+
+Core identity:
+A fill is not decoration — it is **structural glue**.
+`,
+spec:"Professional Drum Flow & Transition Systems",
+img:"DRUM: FILL STRUCTURES • PHRASE CONNECTION"
+},
+{
+level:5,
+title:"POLYRHYTHMIC DRUMMING",
+manual:`
+Polyrhythmic drumming is the ability to maintain **multiple rhythmic grids simultaneously**.
+
+This is not chaos — it is layered precision.
+
+Examples:
+- Hands in triplets while feet play duplets
+- Ride cymbal in 3 while kick and snare in 4
+- Hi-hat subdivisions opposing groove accents
+
+Polyrhythm strengthens:
+- Internal clock
+- Subdivision awareness
+- Independence control
+- Temporal flexibility
+
+Training progression:
+1) Count both rhythms aloud
+2) Tap one rhythm while counting the other
+3) Layer limbs slowly
+4) Increase tempo only after stability
+
+Elite drummers use polyrhythm to:
+- Add tension
+- Create motion
+- Expand groove depth
+- Enhance musical storytelling
+
+Core identity:
+Polyrhythm is **time mastery**, not complexity for its own sake.
+`,
+spec:"Elite Rhythm & Polyrhythmic Studies",
+img:"DRUM: 3 AGAINST 2 • MULTI-GRID CONTROL"
+}
+];
+
+/* ============================ FLASHCARDS (ADDED ONLY) ============================ */
+const FLASHCARDS = [
+{q:"What is a beat?",a:"The steady pulse of music."},
+{q:"What is rhythm?",a:"Patterns of sound and silence in time."},
+{q:"What is tempo?",a:"The speed of the beat."},
+{q:"What is a rest?",a:"A silence in music."},
+{q:"What is a measure?",a:"A group of beats."},
+{q:"What is subdivision?",a:"Dividing beats into smaller parts."},
+{q:"What does forte mean?",a:"Play loud."},
+{q:"What does piano mean?",a:"Play soft."},
+{q:"What is a drummer’s job?",a:"Keep time and groove."},
+{q:"What is groove?",a:"The feel and flow of rhythm."}
+];
+
+/* ============================ ORIGINAL LOGIC (UNCHANGED) ============================ */
+let userLevel = parseInt(localStorage.getItem('vault_level')) || 1;
+let viewingGrade = userLevel;
+
+if (!sessionStorage.getItem('isLoggedIn')) {
+    userLevel = 1;
+    localStorage.setItem('vault_level', 1);
+    sessionStorage.setItem('isLoggedIn', 'true');
+}
+
+function logoutGuest() {
+    localStorage.removeItem('vault_level');
+    sessionStorage.removeItem('isLoggedIn');
+    window.location.reload();
+}
+
+function init() {
+    renderNav();
+    loadModule(viewingGrade);
+    updateHUD();
+}
+
+function updateHUD() {
+    const progress = ((userLevel - 1) / SYLLABUS.length) * 100;
+    document.getElementById('progress-fill').style.width = progress + '%';
+    document.getElementById('percent-display').innerText = Math.round(progress) + '%';
+    const ranks = ["NOVICE", "APPRENTICE", "SCHOLAR", "MASTERY", "EXPERT", "ELITE", "VETERAN", "SENTINEL", "PRODIGY", "MASTER", "ARCHITECT", "DISTINGUISHED"];
+    document.getElementById('rank-display').innerText = "RANK: " + (ranks[userLevel-1] || "MAX");
+}
+
+function renderNav() {
+    const nav = document.getElementById('grade-nav');
+    nav.innerHTML = SYLLABUS.map(s => {
+        let cls = s.g === viewingGrade ? 'active' : '';
+        return `<div class="grade-chip ${cls}" onclick="loadModule(${s.g})">G${s.g}</div>`;
+    }).join('') +
+    `<div class="grade-chip distinction" onclick="loadDrumBook(1)">DRUM_BOOK</div>` +
+    `<div class="grade-chip distinction" onclick="startFlashcards()">FLASHCARDS</div>`;
+}
+
+let currentQuestionIndex = 0;
+
+function loadModule(g) {
+    viewingGrade = g;
+    renderNav();
+    const data = SYLLABUS.find(s => s.g === g);
+    document.getElementById('m-title').innerText = data.title;
+    document.getElementById('m-body').innerText = data.manual;
+    document.getElementById('m-spec').innerText = data.spec;
+    document.getElementById('visual-aid-container').innerText = data.img; 
+    
+    document.getElementById('upgrade-btn').style.display = 'none';
+    document.getElementById('exam-terminal').classList.remove('passed');
+    document.getElementById('flashcard-panel').style.display = 'none';
+    
+    currentQuestionIndex = 0;
+    renderQuestion();
+}
+
+function renderQuestion() {
+    const data = SYLLABUS.find(s => s.g === viewingGrade);
+    const quiz = data.quizzes[currentQuestionIndex];
+    document.getElementById('q-text').innerText = "VALIDATION_EXAM: " + quiz.q;
+    const grid = document.getElementById('options-grid');
+    grid.innerHTML = '';
+
+    quiz.a.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = opt;
+        btn.onclick = () => {
+            if (idx === quiz.c) {
+                btn.classList.add('correct');
+                setTimeout(() => {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex >= data.quizzes.length) {
+                        document.getElementById('exam-terminal').classList.add('passed');
+                        if (viewingGrade === userLevel && userLevel < 12) {
+                            document.getElementById('upgrade-btn').style.display = 'block';
+                        }
+                    } else {
+                        renderQuestion();
+                    }
+                }, 400);
+            } else {
+                btn.classList.add('wrong');
+                setTimeout(() => btn.classList.remove('wrong'), 400);
+            }
+        };
+        grid.appendChild(btn);
+    });
+}
+
+/* ============================ DRUM BOOK ENGINE (BOOK ONLY — NO EXAMS, NO GRADES) ============================ */
+function loadDrumBook(lvl){
+    const data = DRUM_BOOK.find(d=>d.level===lvl);
+    document.getElementById('m-title').innerText = "DRUM_BOOK // " + data.title;
+    document.getElementById('m-body').innerText = data.manual;
+    document.getElementById('m-spec').innerText = data.spec;
+    document.getElementById('visual-aid-container').innerText = data.img;
+    document.getElementById('exam-terminal').style.display = 'none';
+    document.getElementById('flashcard-panel').style.display = 'none';
+}
+
+/* ============================ FLASHCARDS ENGINE (UNCHANGED) ============================ */
+let flashIndex = 0;
+let showingAnswer = false;
+
+function startFlashcards(){
+    document.getElementById('flashcard-panel').style.display = 'block';
+    document.getElementById('exam-terminal').style.display = 'none';
+    document.querySelector('.manual-container').style.display = 'none';
+    renderFlashcard();
+}
+
+function exitFlashcards(){
+    document.getElementById('flashcard-panel').style.display = 'none';
+    document.getElementById('exam-terminal').style.display = '';
+    document.querySelector('.manual-container').style.display = '';
+}
+
+function renderFlashcard(){
+    showingAnswer = false;
+    document.getElementById('flashcard').innerText = FLASHCARDS[flashIndex].q;
+}
+
+function flipCard(){
+    showingAnswer = !showingAnswer;
+    document.getElementById('flashcard').innerText = showingAnswer ? FLASHCARDS[flashIndex].a : FLASHCARDS[flashIndex].q;
+}
+
+function nextCard(){
+    flashIndex = (flashIndex + 1) % FLASHCARDS.length;
+    renderFlashcard();
+}
+
+function prevCard(){
+    flashIndex = (flashIndex - 1 + FLASHCARDS.length) % FLASHCARDS.length;
+    renderFlashcard();
+}
+
+/* ============================ ORIGINAL ADVANCE LOGIC (UNCHANGED) ============================ */
+function advanceLevel() {
+    if (userLevel < 12) {
+        userLevel++;
+        localStorage.setItem('vault_level', userLevel);
+        viewingGrade = userLevel;
+        init(); 
+    }
+}
+
+window.onload = init;
+</script>
+<script src="jarvis.js"></script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GLOBAL_RANKINGS // Psalmist Ninja Network</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05070a; --panel: #0b101a; --blue: #4facfe;
+            --gold: #ffcc00; --border: #1e2544; --green: #00ff88; --red: #ff4444;
+        }
+        body {
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif;
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            background-image: radial-gradient(circle at center, #0b1426 0%, #05070a 100%);
+        }
+
+        /* --- Header --- */
+        .header-nav {
+            width: 100%; padding: 20px 40px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.8); box-sizing: border-box;
+        }
+
+        /* --- Leaderboard Table --- */
+        .leaderboard-container {
+            width: 1000px; margin-top: 50px; background: var(--panel);
+            border: 1px solid var(--border); border-radius: 4px; overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { 
+            background: rgba(79, 172, 254, 0.1); padding: 20px; 
+            font-size: 0.6rem; letter-spacing: 3px; color: var(--blue); text-transform: uppercase;
+        }
+        td { padding: 20px; border-bottom: 1px solid #111; font-size: 0.8rem; }
+        
+        tr.me { background: rgba(255, 204, 0, 0.05); border-left: 4px solid var(--gold); }
+        
+        .rank-tag { font-weight: 900; color: #444; width: 50px; }
+        .name-cell { display: flex; align-items: center; gap: 15px; }
+        .grade-badge { 
+            font-size: 0.55rem; padding: 4px 10px; border-radius: 3px; 
+            background: rgba(255,255,255,0.05); border: 1px solid #333; color: #aaa;
+        }
+        
+        .xp-text { color: var(--gold); font-weight: 700; text-align: right; }
+
+        /* --- Global Stats Bar --- */
+        .global-stats {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+            width: 1000px; margin-top: 30px;
+        }
+        .stat-box {
+            background: rgba(10, 14, 23, 0.5); border: 1px solid var(--border);
+            padding: 20px; text-align: center;
+        }
+        .stat-val { font-size: 1.2rem; font-weight: 900; color: #fff; display: block; }
+        .stat-lbl { font-size: 0.5rem; color: var(--blue); letter-spacing: 2px; }
+
+        .btn-back {
+            background: none; border: 1px solid var(--blue); color: var(--blue);
+            padding: 8px 20px; font-family: 'Orbitron'; cursor: pointer; font-size: 0.7rem;
+        }
+        .btn-back:hover { background: var(--blue); color: #000; }
+    </style>
+  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
+</head>
+<body>
+
+<div class="header-nav">
+    <div style="letter-spacing: 5px; font-weight: 900;">NETWORK_RANKINGS</div>
+    <button class="btn-back" onclick="window.location.href='hub.html'">RETURN_TO_HUB</button>
+</div>
+
+<div class="global-stats">
+    <div class="stat-box">
+        <span class="stat-lbl">TOTAL_OPERATORS</span>
+        <span class="stat-val">1,248</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-lbl">CONSERVATORY_AVG_GRADE</span>
+        <span class="stat-val">04.2</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-lbl">TOTAL_NETWORK_XP</span>
+        <span class="stat-val">4.2M</span>
+    </div>
+</div>
+
+<div class="leaderboard-container">
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 80px;">Rank</th>
+                <th>Operator</th>
+                <th>Accreditation</th>
+                <th style="text-align: right;">Total XP</th>
+            </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+            </tbody>
+    </table>
+</div>
+
+<script>
+    // Mock data for other "Ninjas" in the conservatory
+    const MOCK_PLAYERS = [
+        { name: "C_V_Beethoven", level: 12, xp: 145000 },
+        { name: "S_Rachmaninoff", level: 11, xp: 122400 },
+        { name: "Operator_X", level: 9, xp: 88200 },
+        { name: "The_Tactus", level: 7, xp: 45000 },
+        { name: "Ghost_Notes", level: 5, xp: 22100 }
+    ];
+
+    function getRosterSafe() {
+        try {
+            return JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+        } catch {
+            return {};
+        }
+    }
+
+    function getCanonicalXPForUser(username) {
+        const roster = getRosterSafe();
+        if (!roster[username] || typeof roster[username] !== 'object') return 0;
+        const xp = Number(roster[username].xp);
+        return Number.isFinite(xp) && xp > 0 ? Math.floor(xp) : 0;
+    }
+
+    function initLeaderboard() {
+        const body = document.getElementById('leaderboard-body');
+        const myName = localStorage.getItem('ninjaUser') || "GUEST_USER";
+        const myXP = getCanonicalXPForUser(myName);
+        const myLevel = Math.floor(myXP / 2500) + 1;
+
+        // Add "Me" to the list
+        const allPlayers = [...MOCK_PLAYERS, { name: myName, level: myLevel, xp: myXP }];
+        
+        // Sort by XP descending
+        allPlayers.sort((a, b) => b.xp - a.xp);
+
+        body.innerHTML = allPlayers.map((p, index) => {
+            const isMe = p.name === myName;
+            return `
+                <tr class="${isMe ? 'me' : ''}">
+                    <td class="rank-tag">#${(index + 1).toString().padStart(2, '0')}</td>
+                    <td>
+                        <div class="name-cell">
+                            <span style="font-weight:700;">${p.name.toUpperCase()}</span>
+                            ${isMe ? '<span style="font-size:0.5rem; color:var(--gold)">[YOU]</span>' : ''}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="grade-badge">GRADE_${p.level.toString().padStart(2, '0')}</span>
+                    </td>
+                    <td class="xp-text">${p.xp.toLocaleString()} XP</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    window.onload = initLeaderboard;
+</script>
+<script src="jarvis.js"></script>
+</body>
+</html>
