@@ -405,6 +405,17 @@
             localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
         }
 
+        function commitSenseiSession(id, teacher) {
+            const rawRole = String((teacher && teacher.role) || 'SENSEI').toUpperCase();
+            const role = rawRole === 'IT_SENSEI' ? 'IT_SENSEI' : 'SENSEI';
+            localStorage.setItem('ninjaUser', id);
+            localStorage.setItem('userType', 'SENSEI');
+            localStorage.setItem('userRole', role);
+            localStorage.removeItem('it_active');
+            if (window.LMSCore) LMSCore.upsertUser(id, role, 'SENSEI');
+            window.location.href = 'sensei_dash.html';
+        }
+
         async function executeAuth() {
             normalizeDatabases();
             if (window.LMSCore) LMSCore.init();
@@ -423,14 +434,7 @@
                 if (result.teacher) {
                     const teacher = result.teacher;
                     if (String(teacher.pass) === String(pass)) {
-                        const rawRole = (teacher.role || 'SENSEI').toUpperCase();
-                        const role = rawRole === 'IT_SENSEI' ? 'IT_SENSEI' : 'SENSEI';
-                        localStorage.setItem('ninjaUser', id);
-                        localStorage.setItem('userType', 'SENSEI');
-                        localStorage.setItem('userRole', role);
-                        localStorage.removeItem('it_active');
-                        if (window.LMSCore) LMSCore.upsertUser(id, role, 'SENSEI');
-                        window.location.href = 'sensei_dash.html';
+                        commitSenseiSession(id, teacher);
                         return;
                     }
                 }
@@ -447,6 +451,12 @@
                     if (window.LMSCore) LMSCore.upsertUser(id, 'STUDENT', 'MEMBER');
                     window.location.href = 'hub.html';
                 } else {
+                    const vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+                    const teacher = vault.teachers && vault.teachers[id] ? vault.teachers[id] : null;
+                    if (teacher && String(teacher.pass) === String(pass)) {
+                        commitSenseiSession(id, teacher);
+                        return;
+                    }
                     showError("INVALID_NINJA_ID_OR_PASS");
                 }
             }
