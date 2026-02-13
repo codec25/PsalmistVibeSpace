@@ -1,5 +1,5 @@
 Access Level,Entry Method,ID / Username,Password / Key
-IT Manager,Ctrl+Shift+I,ADMIN_1,MASTER_ROOT_2026
+IT Manager,Ctrl+Shift+L,ADMIN_1,777444 (input masked)
 Sensei Dash,Sensei Mode Toggle,Created in IT Manager,Created in IT Manager
 Ninja Hub,Main Portal Login,Created in Dash/IT,Created in Dash/IT
 Guest,Guest Entry Link,Auto-generated,None

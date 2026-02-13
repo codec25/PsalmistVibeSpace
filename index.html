@@ -152,6 +152,7 @@
         <div class="sub-links">
             <a class="link" onclick="guestEntry()">GUEST_ENTRY (TEMP)</a>
             <a class="link sensei-toggle" id="mode-btn" onclick="toggleSenseiMode()">ARE YOU A SENSEI?</a>
+            <a class="link" onclick="manualImportSync()">IMPORT_SYNC_PACKET</a>
         </div>
 
         <div id="err-log">ACCESS_DENIED</div>
@@ -244,11 +245,15 @@
 
         async function tryLoadSharedSyncFile() {
             try {
-                const res = await fetch(`shared_sync_packet.txt?t=${Date.now()}`, { cache: "no-store" });
-                if (!res.ok) return false;
-                const packet = extractPacketFromText(await res.text());
-                if (!packet) return false;
-                return importSyncPacket(packet);
+                const paths = [`shared_sync_packet.txt?t=${Date.now()}`, `/shared_sync_packet.txt?t=${Date.now()}`];
+                for (const path of paths) {
+                    const res = await fetch(path, { cache: "no-store" });
+                    if (!res.ok) continue;
+                    const packet = extractPacketFromText(await res.text());
+                    if (!packet) continue;
+                    if (importSyncPacket(packet)) return true;
+                }
+                return false;
             } catch (_err) {
                 return false;
             }
@@ -270,6 +275,27 @@
             } else {
                 showError("SYNC_PACKET_INVALID");
             }
+        }
+
+        async function ensureSenseiRecord(id) {
+            let vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+            let teacher = vault.teachers && vault.teachers[id] ? vault.teachers[id] : null;
+            if (teacher) return { vault, teacher };
+
+            const synced = await tryLoadSharedSyncFile();
+            if (synced) {
+                vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+                teacher = vault.teachers && vault.teachers[id] ? vault.teachers[id] : null;
+                if (teacher) return { vault, teacher };
+            }
+
+            const wantsManualImport = confirm("SENSEI_SYNC_NOT_FOUND. IMPORT_SYNC_PACKET_NOW?");
+            if (wantsManualImport) {
+                manualImportSync();
+                vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+                teacher = vault.teachers && vault.teachers[id] ? vault.teachers[id] : null;
+            }
+            return { vault, teacher };
         }
 
         function runAdminAuth(rawId, pass) {
@@ -393,14 +419,9 @@
 
             // 2. SENSEI MODE
             if (isSenseiMode) {
-                let vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
-                if (!vault.teachers || !vault.teachers[id]) {
-                    const synced = await tryLoadSharedSyncFile();
-                    if (synced) vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
-                }
-                // Ensure teachers exists and look up by ID
-                if (vault.teachers && vault.teachers[id]) {
-                    const teacher = vault.teachers[id];
+                const result = await ensureSenseiRecord(id);
+                if (result.teacher) {
+                    const teacher = result.teacher;
                     if (String(teacher.pass) === String(pass)) {
                         const rawRole = (teacher.role || 'SENSEI').toUpperCase();
                         const role = rawRole === 'IT_SENSEI' ? 'IT_SENSEI' : 'SENSEI';

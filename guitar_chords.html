@@ -497,5 +497,6 @@
     // Safety: if user taps anywhere, try to unlock audio (helps mobile)
     document.addEventListener("pointerdown", () => { if (!ctx) return; if (ctx.state === "suspended") ctx.resume(); }, {passive:true});
 </script>
+<script src="jarvis.js"></script>
 </body>
 </html>

@@ -261,11 +261,37 @@
 
         function acknowledgeBroadcast() { document.getElementById('broadcast-overlay').style.display = 'none'; }
 
+        function purgeGuestData(userId) {
+            const guestId = String(userId || '').trim();
+            if (!guestId) return;
+
+            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            if (roster[guestId]) {
+                delete roster[guestId];
+                localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+            }
+
+            const presence = JSON.parse(localStorage.getItem('psalmist_teachers')) || {};
+            if (presence[guestId]) {
+                delete presence[guestId];
+                localStorage.setItem('psalmist_teachers', JSON.stringify(presence));
+            }
+
+            const freezeKey = `freeze_${guestId}`;
+            const xpKey = `xp_${guestId}`;
+            localStorage.removeItem(freezeKey);
+            localStorage.removeItem(xpKey);
+            localStorage.removeItem('totalXP');
+            localStorage.removeItem('currentLevel');
+
+            if (window.LMSCore && typeof LMSCore.deleteUser === 'function') {
+                LMSCore.deleteUser(guestId);
+            }
+        }
+
         function logout() {
             if (localStorage.getItem('userType') === 'GUEST') {
-                let roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-                delete roster[ninjaUser]; 
-                localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+                purgeGuestData(ninjaUser);
             }
             localStorage.removeItem('ninjaUser');
             localStorage.removeItem('userType');
@@ -285,5 +311,6 @@
         setInterval(checkITStatus, 1000);
         window.onload = () => { syncHub(); listenForBroadcast(); };
     </script>
+<script src="jarvis.js"></script>
 </body>
 </html>
