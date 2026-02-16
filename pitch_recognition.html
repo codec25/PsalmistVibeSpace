@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#020406">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pitch Recognition">
     <title>PROTOCOL_01: PITCH_RECOGNITION</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/pitch-icon.svg" type="image/svg+xml">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -98,6 +104,7 @@
             flex: 1; background: none; color: var(--gold); border: 1px solid var(--gold); 
             padding: 20px; font-family: 'Orbitron'; border-radius: 15px; cursor: pointer; font-size: 0.6rem;
         }
+
     </style>
   <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
@@ -106,7 +113,7 @@
     <div class="hud-top">
         <div>PROTOCOL_01: <span style="color:var(--blue)">PITCH_REC</span></div>
         <div id="global-xp" class="xp-display">XP: 00000</div>
-        <a href="pitch_hub.html" class="exit-link">EXIT</a>
+        <a href="pitch_hub.html" class="exit-link">RETURN</a>
     </div>
 
     <div class="main-stage">
@@ -332,6 +339,7 @@
         }
 
         window.onload = initPiano;
+
     </script>
 <script src="jarvis.js"></script>
 </body>

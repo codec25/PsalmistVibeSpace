@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Pitch Recognition icon">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#0b1426"/>
+      <stop offset="1" stop-color="#020406"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="146" fill="#4facfe" opacity="0.18"/>
+  <circle cx="256" cy="256" r="96" fill="#4facfe"/>
+  <path d="M170 338V178h26v64h120v-64h26v160h-26v-72H196v72z" fill="#020406"/>
+</svg>

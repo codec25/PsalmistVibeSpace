@@ -1,0 +1,18 @@
+{
+  "name": "Ninja Music Academy",
+  "short_name": "Ninja Music",
+  "description": "Full music training app by Moise T. Sahouo.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#020406",
+  "theme_color": "#020406",
+  "icons": [
+    {
+      "src": "icons/pitch-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

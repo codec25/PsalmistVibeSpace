@@ -225,16 +225,51 @@
             return { vault, roster, db };
         }
 
+        function mergeLmsDb(localDbRaw, incomingDbRaw) {
+            const localDb = localDbRaw && typeof localDbRaw === "object" ? localDbRaw : {};
+            const incomingDb = incomingDbRaw && typeof incomingDbRaw === "object" ? incomingDbRaw : {};
+            if (!Object.keys(localDb).length && !Object.keys(incomingDb).length) return null;
+            return {
+                version: Number(incomingDb.version || localDb.version || 1),
+                users: { ...(localDb.users || {}), ...(incomingDb.users || {}) },
+                courses: { ...(localDb.courses || {}), ...(incomingDb.courses || {}) },
+                enrollments: { ...(localDb.enrollments || {}), ...(incomingDb.enrollments || {}) },
+                assignments: { ...(localDb.assignments || {}), ...(incomingDb.assignments || {}) },
+                submissions: { ...(localDb.submissions || {}), ...(incomingDb.submissions || {}) }
+            };
+        }
+
+        function mergeSyncWithLocal(rawVault, rawRoster, rawDb) {
+            const incoming = normalizeForStorage(rawVault, rawRoster, rawDb);
+            const localVault = parseJSON(localStorage.getItem('vault_users'), {}) || {};
+            const localRoster = parseJSON(localStorage.getItem('ninja_roster_full'), {}) || {};
+            const localDb = parseJSON(localStorage.getItem('lms_db_v1'), null);
+
+            const mergedVault = {
+                ...localVault,
+                ...incoming.vault,
+                teachers: { ...(localVault.teachers || {}), ...(incoming.vault.teachers || {}) },
+                AUDIT_LOG: [
+                    ...(Array.isArray(localVault.AUDIT_LOG) ? localVault.AUDIT_LOG : []),
+                    ...(Array.isArray(incoming.vault.AUDIT_LOG) ? incoming.vault.AUDIT_LOG : [])
+                ].slice(-2000)
+            };
+
+            const mergedRoster = { ...localRoster, ...incoming.roster };
+            const mergedDb = mergeLmsDb(localDb, incoming.db);
+            return { vault: mergedVault, roster: mergedRoster, db: mergedDb };
+        }
+
         function importSyncPacket(encodedPacket) {
             if (!encodedPacket) return false;
             try {
                 const json = decodePacket(encodedPacket);
                 const payload = parseJSON(json, null);
                 if (!payload || typeof payload !== "object") throw new Error("INVALID_PACKET");
-                const normalized = normalizeForStorage(payload.vault_users, payload.ninja_roster_full, payload.lms_db_v1);
-                localStorage.setItem('vault_users', JSON.stringify(normalized.vault));
-                localStorage.setItem('ninja_roster_full', JSON.stringify(normalized.roster));
-                if (normalized.db) localStorage.setItem('lms_db_v1', JSON.stringify(normalized.db));
+                const merged = mergeSyncWithLocal(payload.vault_users, payload.ninja_roster_full, payload.lms_db_v1);
+                localStorage.setItem('vault_users', JSON.stringify(merged.vault));
+                localStorage.setItem('ninja_roster_full', JSON.stringify(merged.roster));
+                if (merged.db) localStorage.setItem('lms_db_v1', JSON.stringify(merged.db));
                 normalizeDatabases();
                 if (window.LMSCore) LMSCore.init();
                 return true;
@@ -442,23 +477,42 @@
             } 
             // 3. NINJA MODE
             else {
-                const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-                if (roster[id] && String(roster[id].pass) === String(pass)) {
+                const commitMemberSession = () => {
                     localStorage.setItem('ninjaUser', id);
                     localStorage.setItem('userType', 'MEMBER');
                     localStorage.removeItem('userRole');
                     localStorage.removeItem('it_active');
                     if (window.LMSCore) LMSCore.upsertUser(id, 'STUDENT', 'MEMBER');
                     window.location.href = 'hub.html';
-                } else {
+                };
+
+                const canAuthMemberOrTeacher = () => {
+                    const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+                    if (roster[id] && String(roster[id].pass) === String(pass)) {
+                        commitMemberSession();
+                        return true;
+                    }
                     const vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
                     const teacher = vault.teachers && vault.teachers[id] ? vault.teachers[id] : null;
                     if (teacher && String(teacher.pass) === String(pass)) {
                         commitSenseiSession(id, teacher);
-                        return;
+                        return true;
                     }
-                    showError("INVALID_NINJA_ID_OR_PASS");
+                    return false;
+                };
+
+                if (canAuthMemberOrTeacher()) return;
+
+                const synced = await tryLoadSharedSyncFile();
+                if (synced && canAuthMemberOrTeacher()) return;
+
+                const wantsManualImport = confirm("ACCOUNT_NOT_FOUND_LOCALLY. IMPORT_SYNC_PACKET_NOW?");
+                if (wantsManualImport) {
+                    manualImportSync();
+                    if (canAuthMemberOrTeacher()) return;
                 }
+
+                showError("INVALID_NINJA_ID_OR_PASS");
             }
         }
 
