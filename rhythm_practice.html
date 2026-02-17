@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PRACTICE_DRILLS // Neural_Ninja_v11</title>
+    <title>PRACTICE_DRILLS // Neural_Ninja_v15</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -45,6 +45,20 @@
         }
         .metronome-light.pulse { opacity: 1; transform: scale(1.2); }
 
+        /* NEW THEORY PANEL */
+        .theory-panel {
+            background: rgba(79, 172, 254, 0.1);
+            border: 1px solid var(--blue);
+            padding: 8px 15px;
+            margin: 5px 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .theory-label { color: var(--gold); font-size: 0.6rem; font-weight: 900; }
+        .theory-text { color: #fff; font-size: 0.7rem; font-style: italic; }
+
         .main-stage { flex-grow: 1; display: flex; flex-direction: column; align-items: center; position: relative; padding: 5px; }
 
         .controls-row { 
@@ -54,7 +68,7 @@
         .controls-row::-webkit-scrollbar { display: none; }
         
         .config-box { 
-            flex: 0 0 120px; background: rgba(255,255,255,0.05); padding: 5px; 
+            flex: 0 0 125px; background: rgba(255,255,255,0.05); padding: 5px; 
             border: 1px solid var(--border); border-radius: 4px; text-align: center;
         }
         .config-box label { font-size: 0.4rem; color: var(--blue); font-weight: 900; display: block; margin-bottom: 2px; }
@@ -67,6 +81,9 @@
         
         button.ui-btn.active { color: var(--green); border-color: var(--green); box-shadow: 0 0 5px var(--green); }
         button.ui-btn.challenge-active { color: var(--red); border-color: var(--red); box-shadow: 0 0 5px var(--red); }
+        button.ui-btn.learning { background: var(--red); animation: blink 0.5s infinite; }
+
+        @keyframes blink { 50% { opacity: 0.5; } }
 
         .lane-container { 
             display: flex; gap: 10px; flex-grow: 1; width: 100%; max-width: 600px;
@@ -134,11 +151,26 @@
         <div id="progress-container"><div id="progress-fill"></div></div>
     </div>
 
+    <div class="theory-panel">
+        <div class="theory-label" id="theory-title">THEORY: READY</div>
+        <div class="theory-text" id="theory-desc">Select a Subdivision or Rudiment to start training.</div>
+    </div>
+
     <div class="main-stage">
         <div id="speed-alert">SPEED UP!</div>
         <div class="controls-row">
-            <div class="config-box"><label>40 RUDIMENTS</label>
-                <select id="patternType" onchange="resetPattern()">
+            <div class="config-box"><label>1. SUBDIVISIONS</label>
+                <select id="theoryType" onchange="setPracticeMode('theory')">
+                    <option value="none">-- SELECT --</option>
+                    <option value="quarter">Quarters (1n)</option>
+                    <option value="eighth">Eighths (2n)</option>
+                    <option value="triplet">Triplets (3n)</option>
+                    <option value="sixteenth">Sixteenths (4n)</option>
+                </select>
+            </div>
+
+            <div class="config-box"><label>2. 40 RUDIMENTS</label>
+                <select id="patternType" onchange="setPracticeMode('rudiment')">
                     <option value="random">RANDOM</option>
                     <optgroup label="Essential Rolls">
                         <option value="single_stroke_roll">Single Stroke Roll</option>
@@ -201,6 +233,7 @@
                 <input type="range" id="snareVol" min="0" max="100" value="70">
                 <button onclick="toggleGhost()" id="ghost-btn" class="ui-btn">GHOST: OFF</button>
                 <button onclick="toggleChallenge()" id="challenge-btn" class="ui-btn">SURVIVAL: OFF</button>
+                <button onclick="startMidiLearn()" id="midi-btn" class="ui-btn">MIDI LEARN: OFF</button>
             </div>
         </div>
 
@@ -213,6 +246,18 @@
         let isPlaying = false, metroAudio = false, challengeMode = false, ghostMode = false, audioCtx, gameLoop;
         let notes = [], masterInterval, patternStep = 0, lastTime = 0;
         let hits = 0, totalHits = 0, streak = 0, missCount = 0;
+        let activePracticeMode = 'rudiment';
+
+        // MIDI STATE
+        let midiLearnState = 0; 
+        let midiPadL = null, midiPadR = null;
+
+        const THEORY_DATA = {
+            quarter: { title: "QUARTER NOTES", desc: "Count: 1, 2, 3, 4. One hit per beat.", pat: ['R','L','R','L'], factor: 1 },
+            eighth: { title: "EIGHTH NOTES", desc: "Count: 1 & 2 & 3 & 4 &. Two hits per beat.", pat: ['R','L','R','L','R','L','R','L'], factor: 2 },
+            triplet: { title: "TRIPLETS", desc: "Count: 1-trip-let. Three hits per beat.", pat: ['R','L','R','L','R','L'], factor: 3 },
+            sixteenth: { title: "SIXTEENTHS", desc: "Count: 1-e-&-a. Four hits per beat.", pat: ['R','L','R','L','R','L','R','L'], factor: 4 }
+        };
 
         const RUDIMENTS = {
             single_stroke_roll: ['R','L'],
@@ -250,6 +295,23 @@
             triple_ratamacue: ['L','L','R','L','L','R','L','L','R','L','R','L']
         };
 
+        function setPracticeMode(mode) {
+            activePracticeMode = mode;
+            patternStep = 0;
+            if (mode === 'theory') {
+                const data = THEORY_DATA[document.getElementById('theoryType').value];
+                if (!data) return;
+                document.getElementById('theory-title').innerText = "THEORY: " + data.title;
+                document.getElementById('theory-desc').innerText = data.desc;
+                document.getElementById('patternType').value = 'random'; 
+            } else {
+                document.getElementById('theoryType').value = 'none';
+                document.getElementById('theory-title').innerText = "RUDIMENT TRAINING";
+                document.getElementById('theory-desc').innerText = "Focus on sticking accuracy and grip pressure.";
+            }
+            if(isPlaying) { toggleGame(); toggleGame(); }
+        }
+
         function loadRecord() {
             const best = localStorage.getItem('ninja_drill_record');
             document.getElementById('record-display').innerText = best ? `BEST: ${best} BPM` : "BEST: --";
@@ -266,7 +328,7 @@
         function initLanes() {
             const wrapper = document.getElementById('lane-wrapper');
             wrapper.innerHTML = '';
-            ['D', 'J'].forEach((key, i) => {
+            ['LEFT PAD "D"', 'RIGHT PAD "J"'].forEach((key, i) => {
                 const lane = document.createElement('div'); lane.className = 'lane';
                 const zone = document.createElement('div'); zone.className = 'hit-zone';
                 zone.id = `zone-${i}`; zone.innerText = key;
@@ -276,6 +338,33 @@
             });
         }
         initLanes();
+
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
+        }
+
+        function onMIDISuccess(midiAccess) {
+            const inputs = midiAccess.inputs.values();
+            for (let input of inputs) { input.onmidimessage = getMIDIMessage; }
+        }
+
+        function onMIDIFailure() { document.getElementById('midi-btn').innerText = "MIDI: UNSUPPORTED"; }
+
+        function startMidiLearn() {
+            midiLearnState = 1;
+            const btn = document.getElementById('midi-btn');
+            btn.classList.add('learning');
+            btn.innerText = "HIT LEFT PAD...";
+        }
+
+        function getMIDIMessage(message) {
+            const [command, note, velocity] = message.data;
+            if (command === 144 && velocity > 0) {
+                if (midiLearnState === 1) { midiPadL = note; midiLearnState = 2; document.getElementById('midi-btn').innerText = "HIT RIGHT PAD..."; }
+                else if (midiLearnState === 2) { midiPadR = note; midiLearnState = 0; const btn = document.getElementById('midi-btn'); btn.classList.remove('learning'); btn.classList.add('active'); btn.innerText = "MIDI: ACTIVE"; }
+                else { if (note === midiPadL) triggerHit(0); if (note === midiPadR) triggerHit(1); }
+            }
+        }
 
         function toggleMetronomeAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -288,7 +377,6 @@
             challengeMode = !challengeMode;
             document.getElementById('challenge-btn').classList.toggle('challenge-active', challengeMode);
             document.getElementById('challenge-btn').innerText = challengeMode ? "SURVIVAL: ON" : "SURVIVAL: OFF";
-            updateProgressBar();
         }
 
         function toggleGhost() {
@@ -302,19 +390,19 @@
             if (isPlaying) { clearInterval(masterInterval); startMasterClock(); }
         }
 
-        function playTick() {
+        function playTick(isMain) {
             if (!metroAudio || !audioCtx) return;
             const vol = document.getElementById('metroVol').value / 100;
             const type = document.getElementById('metroType').value;
             const osc = audioCtx.createOscillator();
-            const g = audioGain = audioCtx.createGain();
-            let freq = 880, decay = 0.05;
-            if (type === 'wood') { freq = 440; decay = 0.1; }
-            if (type === 'bell') { freq = 1200; decay = 0.2; }
+            const g = audioCtx.createGain();
+            let freq = isMain ? 880 : 440, decay = 0.05;
+            if (type === 'wood') { freq = isMain ? 500 : 350; decay = 0.08; }
+            if (type === 'bell') { freq = isMain ? 1200 : 800; decay = 0.15; }
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            audioGain.gain.setValueAtTime(vol * 0.2, audioCtx.currentTime);
-            audioGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + decay);
-            osc.connect(audioGain); audioGain.connect(audioCtx.destination);
+            g.gain.setValueAtTime(vol * 0.15, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + decay);
+            osc.connect(g); g.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + decay);
         }
 
@@ -327,38 +415,47 @@
             for (let i = 0; i < noiseBuffer.length; i++) output[i] = Math.random() * 2 - 1;
             const noise = audioCtx.createBufferSource();
             noise.buffer = noiseBuffer;
-            const noiseFilter = audioCtx.createBiquadFilter();
-            noiseFilter.type = 'lowpass'; 
-            noiseFilter.frequency.value = isPerfect ? (isGhost ? 1200 : 1800) : 1000;
-            const noiseEnvelope = audioCtx.createGain();
-            noiseEnvelope.gain.setValueAtTime(vol * 0.5, audioCtx.currentTime);
-            noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            noise.connect(noiseFilter); noiseFilter.connect(noiseEnvelope); noiseEnvelope.connect(audioCtx.destination);
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass'; filter.frequency.value = isPerfect ? 2000 : 1200;
+            const env = audioCtx.createGain();
+            env.gain.setValueAtTime(vol * 0.4, audioCtx.currentTime);
+            env.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            noise.connect(filter); filter.connect(env); env.connect(audioCtx.destination);
             noise.start(); noise.stop(audioCtx.currentTime + 0.1);
         }
 
         function startMasterClock() {
-            const msPerBeat = 60000 / document.getElementById('bpmSlider').value;
+            const bpm = document.getElementById('bpmSlider').value;
+            let intervalTime = 60000 / bpm;
+            
+            if (activePracticeMode === 'theory') {
+                const data = THEORY_DATA[document.getElementById('theoryType').value];
+                if (data) intervalTime = intervalTime / data.factor;
+            }
+
             masterInterval = setInterval(() => {
                 spawnNoteSync();
+                const isDownbeat = (patternStep % (activePracticeMode === 'theory' ? THEORY_DATA[document.getElementById('theoryType').value].factor : 4) === 1);
                 const light = document.getElementById('metronome-ui');
                 light.classList.add('pulse');
-                playTick();
+                playTick(isDownbeat);
                 setTimeout(() => light.classList.remove('pulse'), 100);
-            }, msPerBeat);
+            }, intervalTime);
         }
 
         function spawnNoteSync() {
-            const type = document.getElementById('patternType').value;
-            let laneIdx = Math.floor(Math.random() * 2);
-            let hand = 'R';
-            if (type !== 'random') {
-                const pat = RUDIMENTS[type];
-                hand = pat[patternStep % pat.length];
-                if (hand === '_') { patternStep++; return; } 
-                laneIdx = hand === 'L' ? 0 : 1;
-                patternStep++;
-            } else { hand = laneIdx === 0 ? 'L' : 'R'; }
+            let pat;
+            if (activePracticeMode === 'theory') {
+                pat = THEORY_DATA[document.getElementById('theoryType').value].pat;
+            } else {
+                const type = document.getElementById('patternType').value;
+                pat = type === 'random' ? ['R','L'] : RUDIMENTS[type];
+            }
+
+            const hand = pat[patternStep % pat.length];
+            if (hand === '_') { patternStep++; return; } 
+            const laneIdx = hand === 'L' ? 0 : 1;
+            patternStep++;
 
             const isGhost = ghostMode && Math.random() > 0.7;
             const noteEl = document.createElement('div'); 
@@ -371,85 +468,50 @@
         function triggerHit(key) {
             if (!isPlaying) return;
             const zone = document.getElementById(`zone-${key}`);
-            const laneHeight = document.getElementById('lane-wrapper').offsetHeight;
-            const targetCenter = laneHeight - 70; 
             zone.classList.add('active');
             setTimeout(() => zone.classList.remove('active'), 80);
-            const hitIdx = notes.findIndex(n => n.key === key && Math.abs((n.top + 10) - targetCenter) < 70);
+            
+            const laneHeight = document.getElementById('lane-wrapper').offsetHeight;
+            const targetCenter = laneHeight - 70; 
+            const hitIdx = notes.findIndex(n => n.key === key && Math.abs((n.top + 10) - targetCenter) < 80);
+            
             totalHits++;
             if (hitIdx !== -1) {
                 hits++; streak++; missCount = 0;
-                const dist = Math.abs((notes[hitIdx].top + 10) - targetCenter);
-                const isPerfect = dist < 20;
+                const isPerfect = Math.abs((notes[hitIdx].top + 10) - targetCenter) < 25;
                 playSnare(isPerfect, notes[hitIdx].isGhost);
                 showFeedback(key, isPerfect ? "PERFECT" : "GOOD", isPerfect ? "var(--green)" : "var(--gold)");
                 notes[hitIdx].el.remove();
                 notes.splice(hitIdx, 1);
-                
-                // SPEED UP LOGIC: Increase BPM every 10 streaks
-                if (streak > 0 && streak % 10 === 0) {
-                    autoSpeedUp();
-                }
-
-                if (challengeMode) {
-                    updateProgressBar();
-                    if (hits % 50 === 0) {
-                        let currentBPM = parseInt(document.getElementById('bpmSlider').value);
-                        if (currentBPM < 240) {
-                            document.getElementById('bpmSlider').value = currentBPM + 5;
-                            updateBPM();
-                            checkNewRecord(currentBPM + 5);
-                        }
-                    }
-                }
-            } else { playSnare(false, false); handleMiss(key); }
+                if (streak > 0 && streak % 15 === 0) autoSpeedUp();
+            } else { handleMiss(key); }
             updateHUD();
         }
 
         function autoSpeedUp() {
             const slider = document.getElementById('bpmSlider');
-            const currentBpm = parseInt(slider.value);
-            if (currentBpm < 240) {
-                const newBpm = currentBpm + 5;
-                slider.value = newBpm;
-                updateBPM();
-                checkNewRecord(newBpm);
-                
-                const alertBox = document.getElementById('speed-alert');
-                alertBox.style.display = 'block';
-                setTimeout(() => alertBox.style.display = 'none', 800);
-            }
+            const newBpm = Math.min(240, parseInt(slider.value) + 5);
+            slider.value = newBpm;
+            updateBPM();
+            checkNewRecord(newBpm);
+            const alertBox = document.getElementById('speed-alert');
+            alertBox.style.display = 'block'; setTimeout(() => alertBox.style.display = 'none', 800);
         }
 
         function updateProgressBar() {
             const fill = document.getElementById('progress-fill');
-            if (!challengeMode) { fill.style.width = (streak % 10) * 10 + '%'; return; }
-            const percent = ((hits % 50) / 50) * 100;
-            fill.style.width = percent + '%';
+            fill.style.width = (streak % 15) * 6.6 + '%';
         }
 
         function checkNewRecord(bpm) {
-            const currentRecord = parseInt(localStorage.getItem('ninja_drill_record')) || 0;
-            if (bpm > currentRecord) {
-                localStorage.setItem('ninja_drill_record', bpm);
-                loadRecord();
-                
-                // Log to Teacher Portal (examLog)
-                let examLog = JSON.parse(localStorage.getItem('examLog') || "[]");
-                examLog.push({
-                    timestamp: new Date().toLocaleString(),
-                    gradeAttempted: "RHYTHM_DRILL",
-                    accuracy: bpm + " BPM",
-                    status: "NEW_RECORD"
-                });
-                localStorage.setItem('examLog', JSON.stringify(examLog));
-            }
+            const current = parseInt(localStorage.getItem('ninja_drill_record')) || 0;
+            if (bpm > current) { localStorage.setItem('ninja_drill_record', bpm); loadRecord(); }
         }
 
         function handleMiss(key) {
             streak = 0; missCount++;
             showFeedback(key, "MISS", "var(--red)");
-            if (challengeMode && missCount >= 3) { alert("CHALLENGE FAILED: Too many consecutive misses!"); toggleGame(); }
+            if (challengeMode && missCount >= 3) { alert("CHALLENGE FAILED!"); toggleGame(); }
         }
 
         function updateHUD() {
@@ -457,7 +519,6 @@
             document.getElementById('acc-display').innerText = `ACC: ${acc}%`;
             document.getElementById('streak-display').innerText = `STREAK: ${streak}`;
             updateProgressBar();
-            if (challengeMode && acc < 80 && totalHits > 10) { alert("CHALLENGE FAILED: Accuracy dropped below 80%!"); toggleGame(); }
         }
 
         function showFeedback(key, text, color) {
@@ -470,25 +531,18 @@
         function updateNotes(dt) {
             const wrapper = document.getElementById('lane-wrapper');
             const laneHeight = wrapper.offsetHeight;
-            const targetCenter = laneHeight - 70;
             const bpm = document.getElementById('bpmSlider').value;
-            const speed = (targetCenter / (60000 / bpm)) * dt;
+            const speed = (laneHeight / (120000 / bpm)) * dt;
             for (let i = notes.length - 1; i >= 0; i--) {
-                const n = notes[i];
-                n.top += speed;
-                n.el.style.top = n.top + 'px';
-                if (n.top > laneHeight) {
-                    totalHits++; handleMiss(n.key);
-                    n.el.remove(); notes.splice(i, 1);
-                    updateHUD();
-                }
+                notes[i].top += speed;
+                notes[i].el.style.top = notes[i].top + 'px';
+                if (notes[i].top > laneHeight) { totalHits++; handleMiss(notes[i].key); notes[i].el.remove(); notes.splice(i, 1); updateHUD(); }
             }
         }
 
         function gameTick(t) {
             if(!isPlaying) return;
-            const dt = t - (lastTime || t);
-            lastTime = t;
+            const dt = t - (lastTime || t); lastTime = t;
             updateNotes(dt);
             gameLoop = requestAnimationFrame(gameTick);
         }
@@ -501,9 +555,8 @@
             if (isPlaying) {
                 if (audioCtx) audioCtx.resume();
                 notes.forEach(n => n.el.remove()); notes = [];
-                hits = 0; totalHits = 0; streak = 0; missCount = 0; patternStep = 0;
-                updateHUD(); updateProgressBar();
-                startMasterClock(); gameTick(performance.now());
+                hits = 0; totalHits = 0; streak = 0; patternStep = 0;
+                updateHUD(); startMasterClock(); gameTick(performance.now());
             } else { clearInterval(masterInterval); cancelAnimationFrame(gameLoop); }
         }
 
