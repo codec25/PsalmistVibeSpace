@@ -64,6 +64,65 @@
             margin-bottom: 20px; font-size: 0.65rem; text-align: center; letter-spacing: 1px;
         }
 
+        .search-wrap {
+            width: 100%;
+            max-width: 1100px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(79, 172, 254, 0.08);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 10px 12px;
+        }
+        .search-wrap label {
+            font-size: 0.55rem;
+            color: var(--blue);
+            letter-spacing: 1px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+        #hub-search {
+            flex: 1;
+            height: 34px;
+            border-radius: 10px;
+            border: 1px solid rgba(79, 172, 254, 0.35);
+            background: rgba(2, 4, 6, 0.85);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.62rem;
+            padding: 0 10px;
+            outline: none;
+        }
+        #hub-search:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 2px rgba(79, 172, 254, 0.2);
+        }
+        .search-clear {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--gold);
+            border-radius: 10px;
+            height: 34px;
+            padding: 0 12px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.58rem;
+            cursor: pointer;
+        }
+        #hub-no-results {
+            display: none;
+            width: 100%;
+            max-width: 1100px;
+            text-align: center;
+            font-size: 0.65rem;
+            color: #9db7d6;
+            border: 1px dashed var(--border);
+            border-radius: 14px;
+            padding: 12px;
+            margin-top: 8px;
+        }
+
         .content-stack { width: 100%; max-width: 1100px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
         .card {
             background: var(--panel); backdrop-filter: blur(15px); border: 1px solid var(--border);
@@ -116,6 +175,12 @@
         <strong>SENSEI_NOTICE:</strong> <span id="announcement-text"></span>
     </div>
 
+    <div class="search-wrap">
+        <label for="hub-search">SEARCH_MODULE</label>
+        <input id="hub-search" type="search" placeholder="Type: rhythm, piano, ear, kids, theory..." autocomplete="off">
+        <button class="search-clear" type="button" onclick="clearHubSearch()">CLEAR</button>
+    </div>
+
     <div id="mission-tracker">
         <div class="mission-glow"></div>
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -129,7 +194,7 @@
         <div class="progress-container"><div id="progress-bar"></div></div>
     </div>
 
-    <div class="content-stack">
+    <div class="content-stack" id="module-grid">
         <a href="kids_ninja.html" class="card kids-card">
             <div class="card-icon">🥋</div>
             <div class="card-content">
@@ -170,6 +235,7 @@
             </div>
         </a>
     </div>
+    <div id="hub-no-results">NO_MODULES_MATCH_YOUR_SEARCH</div>
 
     <script src="lms_core.js"></script>
     <script>
@@ -261,6 +327,33 @@
 
         function acknowledgeBroadcast() { document.getElementById('broadcast-overlay').style.display = 'none'; }
 
+        function applyHubSearchFilter(query) {
+            const normalized = String(query || '').trim().toLowerCase();
+            const cards = Array.from(document.querySelectorAll('#module-grid .card'));
+            let visibleCount = 0;
+            cards.forEach(card => {
+                const text = card.innerText.toLowerCase();
+                const show = !normalized || text.includes(normalized);
+                card.style.display = show ? '' : 'none';
+                if (show) visibleCount++;
+            });
+            document.getElementById('hub-no-results').style.display = visibleCount ? 'none' : 'block';
+        }
+
+        function clearHubSearch() {
+            const input = document.getElementById('hub-search');
+            input.value = '';
+            applyHubSearchFilter('');
+            input.focus();
+        }
+
+        function initHubSearch() {
+            const input = document.getElementById('hub-search');
+            if (!input) return;
+            input.addEventListener('input', (e) => applyHubSearchFilter(e.target.value));
+            applyHubSearchFilter(input.value);
+        }
+
         function purgeGuestData(userId) {
             const guestId = String(userId || '').trim();
             if (!guestId) return;
@@ -309,7 +402,7 @@
         });
 
         setInterval(checkITStatus, 1000);
-        window.onload = () => { syncHub(); listenForBroadcast(); };
+        window.onload = () => { syncHub(); listenForBroadcast(); initHubSearch(); };
     </script>
 <script src="jarvis.js"></script>
 </body>

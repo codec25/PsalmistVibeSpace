@@ -215,12 +215,83 @@
             return "";
         }
 
+        function normalizeIdKey(raw) {
+            return String(raw || "").trim().toUpperCase();
+        }
+
+        function normalizeTeacherEntry(raw) {
+            if (typeof raw === "string") return { pass: String(raw), role: "SENSEI" };
+            if (!raw || typeof raw !== "object") return { pass: "", role: "SENSEI" };
+            const role = String(raw.role || "SENSEI").toUpperCase() === "IT_SENSEI" ? "IT_SENSEI" : "SENSEI";
+            return { ...raw, pass: String(raw.pass ?? ""), role };
+        }
+
+        function normalizeTeacherMap(rawTeachers) {
+            const teachers = rawTeachers && typeof rawTeachers === "object" ? rawTeachers : {};
+            const normalized = {};
+            Object.entries(teachers).forEach(([rawId, rawEntry]) => {
+                const id = normalizeIdKey(rawId);
+                if (!id) return;
+                const incoming = normalizeTeacherEntry(rawEntry);
+                const existing = normalized[id];
+                if (!existing) {
+                    normalized[id] = incoming;
+                    return;
+                }
+                const mergedPass = String(incoming.pass || existing.pass || "");
+                const mergedRole = incoming.role === "IT_SENSEI" || existing.role === "IT_SENSEI" ? "IT_SENSEI" : "SENSEI";
+                normalized[id] = { ...existing, ...incoming, pass: mergedPass, role: mergedRole };
+            });
+            return normalized;
+        }
+
+        function normalizeRosterEntry(raw) {
+            if (typeof raw === "string") {
+                return {
+                    pass: String(raw),
+                    xp: 0,
+                    joined: new Date().toLocaleDateString(),
+                    status: "LEVEL 01"
+                };
+            }
+            if (!raw || typeof raw !== "object") {
+                return {
+                    pass: "",
+                    xp: 0,
+                    joined: new Date().toLocaleDateString(),
+                    status: "LEVEL 01"
+                };
+            }
+            return {
+                ...raw,
+                pass: String(raw.pass ?? raw.password ?? ""),
+                xp: Number.isFinite(Number(raw.xp)) ? Number(raw.xp) : 0,
+                joined: raw.joined || new Date().toLocaleDateString(),
+                status: raw.status || "LEVEL 01"
+            };
+        }
+
+        function normalizeRosterMap(rawRoster) {
+            const roster = rawRoster && typeof rawRoster === "object" ? rawRoster : {};
+            const normalized = {};
+            Object.entries(roster).forEach(([rawId, rawEntry]) => {
+                const id = normalizeIdKey(rawId);
+                if (!id) return;
+                const incoming = normalizeRosterEntry(rawEntry);
+                const existing = normalized[id];
+                normalized[id] = existing
+                    ? { ...existing, ...incoming, pass: String(incoming.pass || existing.pass || "") }
+                    : incoming;
+            });
+            return normalized;
+        }
+
         function normalizeForStorage(rawVault, rawRoster, rawDb) {
             const vault = rawVault && typeof rawVault === "object" ? rawVault : {};
-            if (!vault.teachers || typeof vault.teachers !== "object") vault.teachers = {};
+            vault.teachers = normalizeTeacherMap(vault.teachers);
             if (!Array.isArray(vault.AUDIT_LOG)) vault.AUDIT_LOG = [];
 
-            const roster = rawRoster && typeof rawRoster === "object" ? rawRoster : {};
+            const roster = normalizeRosterMap(rawRoster);
             const db = rawDb && typeof rawDb === "object" ? rawDb : null;
             return { vault, roster, db };
         }
@@ -241,21 +312,22 @@
 
         function mergeSyncWithLocal(rawVault, rawRoster, rawDb) {
             const incoming = normalizeForStorage(rawVault, rawRoster, rawDb);
-            const localVault = parseJSON(localStorage.getItem('vault_users'), {}) || {};
-            const localRoster = parseJSON(localStorage.getItem('ninja_roster_full'), {}) || {};
+            const localRawVault = parseJSON(localStorage.getItem('vault_users'), {}) || {};
+            const localRawRoster = parseJSON(localStorage.getItem('ninja_roster_full'), {}) || {};
             const localDb = parseJSON(localStorage.getItem('lms_db_v1'), null);
+            const local = normalizeForStorage(localRawVault, localRawRoster, localDb);
 
             const mergedVault = {
-                ...localVault,
+                ...localRawVault,
                 ...incoming.vault,
-                teachers: { ...(localVault.teachers || {}), ...(incoming.vault.teachers || {}) },
+                teachers: { ...(local.vault.teachers || {}), ...(incoming.vault.teachers || {}) },
                 AUDIT_LOG: [
-                    ...(Array.isArray(localVault.AUDIT_LOG) ? localVault.AUDIT_LOG : []),
+                    ...(Array.isArray(localRawVault.AUDIT_LOG) ? localRawVault.AUDIT_LOG : []),
                     ...(Array.isArray(incoming.vault.AUDIT_LOG) ? incoming.vault.AUDIT_LOG : [])
                 ].slice(-2000)
             };
 
-            const mergedRoster = { ...localRoster, ...incoming.roster };
+            const mergedRoster = { ...local.roster, ...incoming.roster };
             const mergedDb = mergeLmsDb(localDb, incoming.db);
             return { vault: mergedVault, roster: mergedRoster, db: mergedDb };
         }
@@ -407,36 +479,11 @@
 
         function normalizeDatabases() {
             const vault = JSON.parse(localStorage.getItem('vault_users')) || {};
-            if (!vault.teachers || typeof vault.teachers !== "object") vault.teachers = {};
-            Object.keys(vault.teachers).forEach(id => {
-                const t = vault.teachers[id];
-                if (typeof t === "string") {
-                    vault.teachers[id] = { pass: String(t), role: "SENSEI" };
-                    return;
-                }
-                if (!t || typeof t !== "object") {
-                    vault.teachers[id] = { pass: "", role: "SENSEI" };
-                    return;
-                }
-                t.pass = String(t.pass ?? "");
-                t.role = String(t.role || "SENSEI").toUpperCase();
-                if (t.role !== "IT_SENSEI") t.role = "SENSEI";
-            });
+            vault.teachers = normalizeTeacherMap(vault.teachers);
             if (!Array.isArray(vault.AUDIT_LOG)) vault.AUDIT_LOG = [];
             localStorage.setItem('vault_users', JSON.stringify(vault));
 
-            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
-            Object.keys(roster).forEach(id => {
-                const entry = roster[id];
-                if (!entry || typeof entry !== "object") {
-                    roster[id] = { pass: "", xp: 0, joined: new Date().toLocaleDateString(), status: "LEVEL 01" };
-                    return;
-                }
-                entry.pass = String(entry.pass ?? "");
-                entry.xp = Number.isFinite(Number(entry.xp)) ? Number(entry.xp) : 0;
-                if (!entry.joined) entry.joined = new Date().toLocaleDateString();
-                if (!entry.status) entry.status = "LEVEL 01";
-            });
+            const roster = normalizeRosterMap(JSON.parse(localStorage.getItem('ninja_roster_full')) || {});
             localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
         }
 
@@ -449,6 +496,22 @@
             localStorage.removeItem('it_active');
             if (window.LMSCore) LMSCore.upsertUser(id, role, 'SENSEI');
             window.location.href = 'sensei_dash.html';
+        }
+
+        function provisionPortableMember(id, pass) {
+            if (!id || !pass) return false;
+            const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+            if (roster[id] && typeof roster[id] === "object") return false;
+            roster[id] = {
+                pass: String(pass),
+                xp: 0,
+                joined: new Date().toLocaleDateString(),
+                status: "LEVEL 01",
+                ownerSensei: "UNASSIGNED"
+            };
+            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+            if (window.LMSCore) LMSCore.upsertUser(id, 'STUDENT', 'MEMBER');
+            return true;
         }
 
         async function executeAuth() {
@@ -512,6 +575,15 @@
                     if (canAuthMemberOrTeacher()) return;
                 }
 
+                const vault = JSON.parse(localStorage.getItem('vault_users')) || { teachers: {} };
+                const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+                const teacherExists = !!(vault.teachers && vault.teachers[id]);
+                const memberExists = !!roster[id];
+                if (!teacherExists && !memberExists) {
+                    const bootstrap = confirm("NO_SYNC_ACCOUNT_FOUND. CREATE_PORTABLE_ACCOUNT_WITH_THIS_ID_NOW?");
+                    if (bootstrap && provisionPortableMember(id, pass) && canAuthMemberOrTeacher()) return;
+                }
+
                 showError("INVALID_NINJA_ID_OR_PASS");
             }
         }
@@ -569,6 +641,8 @@
         });
 
         tryAutoImportFromUrl();
+        // Background attempt: helps phone/computer pick up shared packet without manual action.
+        tryLoadSharedSyncFile();
 
         // FX
         setInterval(() => {
