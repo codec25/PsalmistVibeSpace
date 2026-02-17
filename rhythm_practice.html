@@ -12,9 +12,9 @@
         }
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: 'Orbitron', sans-serif; 
-            display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; overflow-y: auto;
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
             background-image: radial-gradient(circle at center, #0b1426 0%, #030508 100%);
-            touch-action: pan-y; -webkit-user-select: none; user-select: none;
+            touch-action: none; -webkit-user-select: none; user-select: none;
         }
 
         .hud-top {
@@ -113,11 +113,15 @@
             width: 100%; height: 70px; background: var(--blue); border: none; 
             font-family: 'Orbitron'; font-weight: 900; font-size: 1.2rem; color: #000;
             clip-path: polygon(0 20%, 5% 0, 95% 0, 100% 20%, 100% 80%, 95% 100%, 5% 100%, 0 80%);
-            margin-bottom: 20px;
+            margin-bottom: 20px; cursor: pointer;
         }
         .btn-start.running { background: var(--red); color: #fff; }
+
+        #speed-alert {
+            position: absolute; top: 25%; color: var(--gold); font-weight: 900; font-size: 2rem;
+            text-shadow: 0 0 20px var(--gold); display: none; z-index: 200; pointer-events: none;
+        }
     </style>
-  <style id="codex-brightness-tweak">html{filter:brightness(1.08) saturate(1.04);}</style>
 </head>
 <body>
 
@@ -131,6 +135,7 @@
     </div>
 
     <div class="main-stage">
+        <div id="speed-alert">SPEED UP!</div>
         <div class="controls-row">
             <div class="config-box"><label>40 RUDIMENTS</label>
                 <select id="patternType" onchange="resetPattern()">
@@ -181,7 +186,7 @@
                 </select>
             </div>
             <div class="config-box"><label>BPM: <span id="bpmVal">100</span></label>
-                <input type="range" id="bpmSlider" min="40" max="220" value="100" oninput="updateBPM()">
+                <input type="range" id="bpmSlider" min="40" max="240" value="100" oninput="updateBPM()">
             </div>
             <div class="config-box"><label>METRONOME</label>
                 <input type="range" id="metroVol" min="0" max="100" value="50">
@@ -302,14 +307,14 @@
             const vol = document.getElementById('metroVol').value / 100;
             const type = document.getElementById('metroType').value;
             const osc = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
+            const g = audioGain = audioCtx.createGain();
             let freq = 880, decay = 0.05;
             if (type === 'wood') { freq = 440; decay = 0.1; }
             if (type === 'bell') { freq = 1200; decay = 0.2; }
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            g.gain.setValueAtTime(vol * 0.2, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + decay);
-            osc.connect(g); g.connect(audioCtx.destination);
+            audioGain.gain.setValueAtTime(vol * 0.2, audioCtx.currentTime);
+            audioGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + decay);
+            osc.connect(audioGain); audioGain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + decay);
         }
 
@@ -380,11 +385,17 @@
                 showFeedback(key, isPerfect ? "PERFECT" : "GOOD", isPerfect ? "var(--green)" : "var(--gold)");
                 notes[hitIdx].el.remove();
                 notes.splice(hitIdx, 1);
+                
+                // SPEED UP LOGIC: Increase BPM every 10 streaks
+                if (streak > 0 && streak % 10 === 0) {
+                    autoSpeedUp();
+                }
+
                 if (challengeMode) {
                     updateProgressBar();
                     if (hits % 50 === 0) {
                         let currentBPM = parseInt(document.getElementById('bpmSlider').value);
-                        if (currentBPM < 220) {
+                        if (currentBPM < 240) {
                             document.getElementById('bpmSlider').value = currentBPM + 5;
                             updateBPM();
                             checkNewRecord(currentBPM + 5);
@@ -395,21 +406,43 @@
             updateHUD();
         }
 
+        function autoSpeedUp() {
+            const slider = document.getElementById('bpmSlider');
+            const currentBpm = parseInt(slider.value);
+            if (currentBpm < 240) {
+                const newBpm = currentBpm + 5;
+                slider.value = newBpm;
+                updateBPM();
+                checkNewRecord(newBpm);
+                
+                const alertBox = document.getElementById('speed-alert');
+                alertBox.style.display = 'block';
+                setTimeout(() => alertBox.style.display = 'none', 800);
+            }
+        }
+
         function updateProgressBar() {
             const fill = document.getElementById('progress-fill');
-            if (!challengeMode) { fill.style.width = '0%'; return; }
+            if (!challengeMode) { fill.style.width = (streak % 10) * 10 + '%'; return; }
             const percent = ((hits % 50) / 50) * 100;
             fill.style.width = percent + '%';
         }
 
         function checkNewRecord(bpm) {
-            if (!challengeMode) return;
             const currentRecord = parseInt(localStorage.getItem('ninja_drill_record')) || 0;
             if (bpm > currentRecord) {
                 localStorage.setItem('ninja_drill_record', bpm);
                 loadRecord();
-                document.getElementById('record-display').style.color = 'var(--green)';
-                setTimeout(() => document.getElementById('record-display').style.color = 'var(--blue)', 1000);
+                
+                // Log to Teacher Portal (examLog)
+                let examLog = JSON.parse(localStorage.getItem('examLog') || "[]");
+                examLog.push({
+                    timestamp: new Date().toLocaleString(),
+                    gradeAttempted: "RHYTHM_DRILL",
+                    accuracy: bpm + " BPM",
+                    status: "NEW_RECORD"
+                });
+                localStorage.setItem('examLog', JSON.stringify(examLog));
             }
         }
 
@@ -423,6 +456,7 @@
             const acc = totalHits > 0 ? Math.floor((hits/totalHits)*100) : 100;
             document.getElementById('acc-display').innerText = `ACC: ${acc}%`;
             document.getElementById('streak-display').innerText = `STREAK: ${streak}`;
+            updateProgressBar();
             if (challengeMode && acc < 80 && totalHits > 10) { alert("CHALLENGE FAILED: Accuracy dropped below 80%!"); toggleGame(); }
         }
 
@@ -469,7 +503,6 @@
                 notes.forEach(n => n.el.remove()); notes = [];
                 hits = 0; totalHits = 0; streak = 0; missCount = 0; patternStep = 0;
                 updateHUD(); updateProgressBar();
-                if (challengeMode) checkNewRecord(parseInt(document.getElementById('bpmSlider').value));
                 startMasterClock(); gameTick(performance.now());
             } else { clearInterval(masterInterval); cancelAnimationFrame(gameLoop); }
         }
@@ -481,6 +514,5 @@
             if (e.key.toLowerCase() === 'j') triggerHit(1);
         });
     </script>
-<script src="jarvis.js"></script>
 </body>
 </html>
