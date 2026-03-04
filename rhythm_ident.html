@@ -6,16 +6,77 @@
     <title>RHYTHM_IDENT // Neural LMS</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <script>
+        function getCurrentNinjaName() {
+            return localStorage.getItem('ninjaUser') || 'GUEST_NINJA';
+        }
+        function getRoster() {
+            try { return JSON.parse(localStorage.getItem('ninja_roster_full')) || {}; }
+            catch { return {}; }
+        }
+        function saveRoster(roster) {
+            localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+        }
+        function ensureNinjaXPEntry() {
+            const ninjaName = getCurrentNinjaName();
+            const roster = getRoster();
+            if (!roster[ninjaName] || typeof roster[ninjaName] !== 'object') {
+                roster[ninjaName] = {
+                    pass: '',
+                    xp: 0,
+                    joined: new Date().toLocaleDateString(),
+                    status: 'LEVEL 01'
+                };
+            }
+            const numericXP = Number(roster[ninjaName].xp);
+            roster[ninjaName].xp = Number.isFinite(numericXP) && numericXP > 0 ? Math.floor(numericXP) : 0;
+            if (!roster[ninjaName].joined) roster[ninjaName].joined = new Date().toLocaleDateString();
+            if (!roster[ninjaName].status) roster[ninjaName].status = 'LEVEL 01';
+            saveRoster(roster);
+            return { ninjaName, roster };
+        }
+        function syncXPCompat(xpValue) {
+            const safeXP = Number.isFinite(xpValue) && xpValue > 0 ? Math.floor(xpValue) : 0;
+            const ninjaName = getCurrentNinjaName();
+            localStorage.setItem('totalXP', String(safeXP));
+            localStorage.setItem(`xp_${ninjaName}`, String(safeXP));
+            localStorage.setItem('currentLevel', String(Math.floor(safeXP / 2500) + 1));
+        }
+        function getCanonicalXP() {
+            const { ninjaName, roster } = ensureNinjaXPEntry();
+            const xp = Number(roster[ninjaName].xp) || 0;
+            syncXPCompat(xp);
+            return xp;
+        }
+        function adjustCanonicalXP(delta) {
+            const { ninjaName, roster } = ensureNinjaXPEntry();
+            const currentXP = Number(roster[ninjaName].xp) || 0;
+            const nextXP = Math.max(0, Math.floor(currentXP + delta));
+            roster[ninjaName].xp = nextXP;
+            saveRoster(roster);
+            syncXPCompat(nextXP);
+            return nextXP;
+        }
+
         const LMS = {
-            profile: { xp: 1685, level: 1, streak: 0 },
-            isUnlocked: (lvl) => lvl <= 2,
-            award: (type, amt) => { 
+            profile: { xp: getCanonicalXP(), level: Math.floor(getCanonicalXP() / 2500) + 1, streak: 0 },
+            isUnlocked: (lvl) => lvl <= Math.max(2, LMS.profile.level),
+            award: (type, amt) => {
                 LMS.profile.streak++;
-                let bonus = Math.floor(LMS.profile.streak / 3) * 25;
-                LMS.profile.xp += (amt + bonus); 
-                updateLMSUI(); 
+                const bonus = Math.floor(LMS.profile.streak / 3) * 25;
+                const earned = Math.max(0, Math.floor((Number(amt) || 0) + bonus));
+                LMS.profile.xp = adjustCanonicalXP(earned);
+                LMS.profile.level = Math.floor(LMS.profile.xp / 2500) + 1;
+                updateLMSUI();
             },
-            resetStreak: () => { LMS.profile.streak = 0; updateLMSUI(); }
+            resetStreak: () => {
+                LMS.profile.streak = 0;
+                updateLMSUI();
+            },
+            refresh: () => {
+                LMS.profile.xp = getCanonicalXP();
+                LMS.profile.level = Math.floor(LMS.profile.xp / 2500) + 1;
+                updateLMSUI();
+            }
         };
     </script>
     <style>
@@ -215,13 +276,15 @@
 
     function updateLMSUI() {
         document.getElementById('xp-val').innerText = LMS.profile.xp.toString().padStart(5, '0');
+        document.getElementById('lvl-val').innerText = String(LMS.profile.level);
         const sTag = document.getElementById('streak-val');
         sTag.innerText = `STREAK: ${LMS.profile.streak}`;
         sTag.style.opacity = LMS.profile.streak > 0 ? 1 : 0;
-        const progress = (LMS.profile.xp % 2000) / 20;
+        const progress = (LMS.profile.xp % 2500) / 25;
         document.getElementById('progress-fill').style.width = progress + '%';
     }
     updateLMSUI();
+    window.addEventListener('focus', () => LMS.refresh());
 
     function initAudio() { 
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 

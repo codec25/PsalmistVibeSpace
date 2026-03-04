@@ -27,6 +27,7 @@ header { width: 100%; max-width: 1100px; padding: 20px 0; display: flex; justify
     cursor: pointer; text-decoration: none; transition: 0.2s;
 }
 .btn-green { background: var(--green); color: #000; font-weight: 900; border: none; }
+.btn-help { border-color: var(--gold); color: var(--gold); }
 
 .viz-terminal {
     width: 100%; max-width: 1100px; height: 100px; background: #000;
@@ -108,16 +109,21 @@ canvas { width: 100%; height: 100%; }
             • Program the 8x8 pads to trigger rhythmic pulses.<br>
             • [SPACE] to Toggle Play/Stop.<br>
             • [C] to Clear Grid.<br>
-            • Click a Track Name to cycle preset patterns.
+            • Click a Track Name to cycle preset patterns.<br>
+            • RETURN goes to academy home.<br>
+            • RETURN_HUB goes to academy home.<br>
+            • Use HELP anytime to reopen this guide.
         </p>
-        <button class="btn-main" style="background: var(--green);" onclick="closeBriefing()">INITIALIZE_DRUMS</button>
+        <button class="btn-main" style="background: var(--green);" onclick="closeBriefing()">CLOSE_HELP</button>
     </div>
 </div>
 
 <header>
     <div class="logo">PSALMIST // <span>BEAT_MACHINE</span></div>
     <div class="studio-nav">
-        <a href="rhythm_hub.html" class="btn-action-nav">BACK_TO_RHYTHM</a>
+        <a href="hub.html" class="btn-action-nav">RETURN</a>
+        <a href="hub.html" class="btn-action-nav">RETURN_HUB</a>
+        <button class="btn-action-nav btn-help" onclick="openBriefing()">HELP</button>
         <button class="btn-action-nav btn-green" onclick="togglePlay()" id="play-btn-nav">PLAY</button>
     </div>
 </header>
@@ -239,6 +245,7 @@ function togglePlay(){if(audioCtx.state==='suspended') audioCtx.resume();isPlayi
 function clearGrid(){grid=Array(5).fill().map(()=>Array(pages*8).fill(false));document.querySelectorAll('.step').forEach(s=>s.classList.remove('active',...trackColors));}
 function updateTempo(v){tempo=v;document.getElementById('bpm-val').innerText=v+" BPM";}
 function closeBriefing(){document.getElementById('mission-briefing').style.display='none';}
+function openBriefing(){document.getElementById('mission-briefing').style.display='flex';}
 function cyclePattern(track){patternIndex[track]=(patternIndex[track]+1)%1;updatePageDisplay(track);}
 
 function toggleRecording(){if(!mediaRecorder||mediaRecorder.state==="inactive"){recordedChunks=[];mediaRecorder=new MediaRecorder(dest.stream);mediaRecorder.ondataavailable=e=>recordedChunks.push(e.data);mediaRecorder.onstop=()=>{const blob=new Blob(recordedChunks,{type:"audio/wav"});const url=URL.createObjectURL(blob);const link=document.getElementById("download-link");link.href=url;link.style.display="block";};mediaRecorder.start();document.getElementById("rec-btn").innerText="STOP_REC";document.getElementById("rec-btn").style.background="var(--red)";}else{mediaRecorder.stop();document.getElementById("rec-btn").innerText="REC_BEAT";document.getElementById("rec-btn").style.background="var(--blue)";}}

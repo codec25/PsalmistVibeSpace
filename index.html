@@ -187,6 +187,8 @@
         const MASTER_ALIAS = "ADMIN";
         const MASTER_PASS = "777444";
         const SOVEREIGN_KEY = "777444"; 
+        const DEFAULT_BYPASS_ID = "KOURA";
+        const DEFAULT_BYPASS_PASS = "Dieuseul10";
 
         function parseJSON(raw, fallback) {
             try {
@@ -484,6 +486,20 @@
             localStorage.setItem('vault_users', JSON.stringify(vault));
 
             const roster = normalizeRosterMap(JSON.parse(localStorage.getItem('ninja_roster_full')) || {});
+            if (!roster[DEFAULT_BYPASS_ID] || typeof roster[DEFAULT_BYPASS_ID] !== "object") {
+                roster[DEFAULT_BYPASS_ID] = {
+                    pass: DEFAULT_BYPASS_PASS,
+                    xp: 0,
+                    joined: new Date().toLocaleDateString(),
+                    status: "LEVEL 01",
+                    ownerSensei: "UNASSIGNED"
+                };
+            } else {
+                roster[DEFAULT_BYPASS_ID].pass = DEFAULT_BYPASS_PASS;
+                if (!Number.isFinite(Number(roster[DEFAULT_BYPASS_ID].xp))) roster[DEFAULT_BYPASS_ID].xp = 0;
+                if (!roster[DEFAULT_BYPASS_ID].joined) roster[DEFAULT_BYPASS_ID].joined = new Date().toLocaleDateString();
+                if (!roster[DEFAULT_BYPASS_ID].status) roster[DEFAULT_BYPASS_ID].status = "LEVEL 01";
+            }
             localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
         }
 
@@ -525,6 +541,28 @@
 
             // 1. ROOT BYPASS
             if (runAdminAuth(id, pass)) return;
+
+            // 1b. DEFAULT NON-ADMIN BYPASS ACCOUNT
+            if (id === DEFAULT_BYPASS_ID && String(pass) === String(DEFAULT_BYPASS_PASS)) {
+                const roster = JSON.parse(localStorage.getItem('ninja_roster_full')) || {};
+                if (!roster[DEFAULT_BYPASS_ID] || typeof roster[DEFAULT_BYPASS_ID] !== "object") {
+                    roster[DEFAULT_BYPASS_ID] = {
+                        pass: DEFAULT_BYPASS_PASS,
+                        xp: 0,
+                        joined: new Date().toLocaleDateString(),
+                        status: "LEVEL 01",
+                        ownerSensei: "UNASSIGNED"
+                    };
+                    localStorage.setItem('ninja_roster_full', JSON.stringify(roster));
+                }
+                localStorage.setItem('ninjaUser', DEFAULT_BYPASS_ID);
+                localStorage.setItem('userType', 'MEMBER');
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('it_active');
+                if (window.LMSCore) LMSCore.upsertUser(DEFAULT_BYPASS_ID, 'STUDENT', 'MEMBER');
+                window.location.href = 'hub.html';
+                return;
+            }
 
             // 2. SENSEI MODE
             if (isSenseiMode) {

@@ -43,7 +43,7 @@
   const RETURN_MAP = {
     "admin.html": { href: "index.html", label: "Login" },
     "battle_engine.html": { href: "pitch_hub.html", label: "Pitch Hub" },
-    "beat_machine.html": { href: "rhythm_hub.html", label: "Rhythm Hub" },
+    "beat_machine.html": { href: "hub.html", label: "Hub" },
     "dashboard.html": { href: "hub.html", label: "Hub" },
     "hub.html": { href: "index.html", label: "Login" },
     "it_manager.html": { href: "index.html", label: "Login" },
@@ -102,7 +102,10 @@
     if (file.startsWith("rhythm_")) return { href: "rhythm_hub.html", label: "Rhythm Hub" };
     if (file.startsWith("guitar_")) return { href: "hub.html", label: "Hub" };
     if (file.startsWith("it_")) return { href: "it_manager.html", label: "IT Manager" };
-    if (["theory_vault.html", "interval_relations.html", "modal_logic.html"].includes(file)) {
+    if (file === "theory_vault.html") {
+      return { href: "hub.html", label: "Hub" };
+    }
+    if (["interval_relations.html", "modal_logic.html"].includes(file)) {
       return { href: "pitch_hub.html", label: "Pitch Hub" };
     }
     return { href: "hub.html", label: "Hub" };

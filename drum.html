@@ -1,0 +1,2603 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>PSALMIST_DRUM_ACADEMY // Rhythm Core</title>
+    <meta name="theme-color" content="#020617" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
+
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Tone.js CDN -->
+    <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
+
+    <!-- React 18 + Babel (single-file JSX) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+      :root{
+        --academy-bg: #020406;
+        --academy-blue: #4facfe;
+        --academy-green: #00ff88;
+        --academy-gold: #ffcc00;
+        --academy-border: rgba(79, 172, 254, 0.2);
+      }
+      body{
+        font-family: 'Orbitron', sans-serif;
+        background: var(--academy-bg);
+        background-image:
+          radial-gradient(circle at 0% 0%, rgba(79, 172, 254, 0.12) 0%, transparent 40%),
+          radial-gradient(circle at 100% 100%, rgba(0, 255, 136, 0.09) 0%, transparent 40%);
+      }
+      .subtle-grid{
+        background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px);
+        background-size: 18px 18px;
+      }
+      .kit-piece{
+        transition: transform 120ms ease, filter 120ms ease, opacity 120ms ease;
+        transform-origin: center;
+      }
+      .hit-float{ animation: pop 240ms ease-out forwards; }
+      @keyframes pop{
+        0%{ transform: translate(-50%, -50%) scale(.95); opacity:0;}
+        30%{opacity:1;}
+        100%{ transform: translate(-50%, -80%) scale(1.05); opacity:0;}
+      }
+      .no-select{
+        -webkit-user-select:none; user-select:none;
+        -webkit-touch-callout:none;
+        touch-action: manipulation;
+      }
+      input[type="range"]{ width: 100%; }
+      .scrollbar-thin::-webkit-scrollbar{ height: 8px; width: 8px; }
+      .scrollbar-thin::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.14); border-radius: 999px; }
+      .scrollbar-thin::-webkit-scrollbar-track{ background: rgba(255,255,255,.05); border-radius: 999px; }
+    </style>
+  </head>
+
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useEffect, useMemo, useRef, useState } = React;
+
+      /***********************
+       * Drum mappings
+       ***********************/
+      const DRUM_PIECES = [
+        { id: "kick",  label: "Kick",  midi: [36, 35] },
+        { id: "snare", label: "Snare", midi: [38, 40] },
+        { id: "hihat", label: "Hi-Hat", midi: [42, 44, 46] }, // closed/pedal/open
+        { id: "tom1",  label: "Tom 1", midi: [48, 50] },
+        { id: "tom2",  label: "Tom 2", midi: [45, 47] },
+        { id: "tom3",  label: "Tom 3", midi: [41, 43] },
+        { id: "crash", label: "Crash", midi: [49, 57] },
+        { id: "ride",  label: "Ride",  midi: [51, 59] },
+      ];
+      const pieceMeta = (id) => DRUM_PIECES.find(p => p.id === id);
+
+      const midiNoteToPiece = (() => {
+        const map = new Map();
+        for (const p of DRUM_PIECES) for (const n of p.midi) map.set(n, p.id);
+        return (note) => map.get(note) || null;
+      })();
+
+      /***********************
+       * Staff positions (simple)
+       ***********************/
+      const STAFF_NOTE_Y = {
+        crash: 18, ride: 26, hihat: 30, tom1: 44, tom2: 54, snare: 60, tom3: 70, kick: 84,
+      };
+      const STEPS_PER_BAR = 8;
+
+      /***********************
+       * Lesson step model (REAL)
+       * A step can be:
+       * - string: "snare"
+       * - array: ["hihat","snare"] (multi-limb at the same time)
+       ***********************/
+      const toStepArray = (step) => Array.isArray(step) ? step : [step];
+
+      const makeGridLesson = ({
+        id, title, bpm, subdiv=8, bars=1,
+        lanes, // {hihat:[...], snare:[...], kick:[...], ride:[...], crash:[...], tom1:[...], tom2:[...], tom3:[...]}
+        hint="", tips=[], focus=[]
+      }) => {
+        const totalSteps = subdiv * bars;
+        const steps = Array.from({ length: totalSteps }, (_, i) => {
+          const hit = [];
+          for (const [pieceId, arr] of Object.entries(lanes || {})) {
+            if (arr[i]) hit.push(pieceId);
+          }
+          return hit.length ? hit : []; // empty allowed (rests)
+        });
+
+        return {
+          id, title, bpm, subdiv, bars,
+          steps,
+          lanes,
+          hint,
+          tips,
+          focus
+        };
+      };
+
+      const makeRudimentLesson = ({ id, title, bpm=90, patternLen=16, sticking="RLRLRLRLRLRLRLRL", hint="", tips=[] }) => {
+        const steps = Array.from({ length: patternLen }, () => ["snare"]);
+        const stick = sticking.split("").slice(0, patternLen);
+        return { id, title, bpm, subdiv: patternLen, bars: 1, steps, sticking: stick, hint, tips, focus:["Hands","Consistency","Rebound"] };
+      };
+
+      const RUDIMENT_40 = [
+        { title:"Single Stroke Roll", bpm:90, patternLen:16, sticking:"RLRLRLRLRLRLRLRL", hint:"Alternate evenly and stay relaxed." },
+        { title:"Single Stroke Four", bpm:92, patternLen:16, sticking:"RLRLRLRLRLRLRLRL", hint:"Group in fours without rushing transitions." },
+        { title:"Single Stroke Seven", bpm:84, patternLen:14, sticking:"RLRLRLRLRLRLRL", hint:"Keep all seven notes even per group." },
+        { title:"Multiple Bounce Roll", bpm:72, patternLen:16, sticking:"RRLLRRLLRRLLRRLL", hint:"Let rebound do most of the work." },
+        { title:"Triple Stroke Roll", bpm:78, patternLen:18, sticking:"RRRLLLRRRLLLRRRLLL", hint:"Three strokes per hand with matched volume." },
+        { title:"Double Stroke Open Roll", bpm:86, patternLen:16, sticking:"RRLLRRLLRRLLRRLL", hint:"Open and controlled; clean second notes." },
+        { title:"Five Stroke Roll", bpm:82, patternLen:10, sticking:"RRLLRLLRRL", hint:"Play strict 5-note groupings." },
+        { title:"Six Stroke Roll", bpm:88, patternLen:12, sticking:"RLLRRLRLLRRL", hint:"Think in 6-note phrases and stay smooth." },
+        { title:"Seven Stroke Roll", bpm:80, patternLen:14, sticking:"RRLLRRLRLLRRLL", hint:"Keep the roll centered and even." },
+        { title:"Nine Stroke Roll", bpm:76, patternLen:18, sticking:"RRLLRRLLRLLRRLLRRL", hint:"Long roll groups must stay consistent." },
+        { title:"Ten Stroke Roll", bpm:78, patternLen:20, sticking:"RRLLRRLLRLRRLLRRLLRL", hint:"Maintain spacing across all 10 strokes." },
+        { title:"Eleven Stroke Roll", bpm:74, patternLen:22, sticking:"RRLLRRLLRRLRRLLRRLLRRL", hint:"Control the length of each roll phrase." },
+        { title:"Thirteen Stroke Roll", bpm:72, patternLen:26, sticking:"RRLLRRLLRRLLRLRRLLRRLLRRLLRL", hint:"Stay patient and keep dynamic control." },
+        { title:"Fifteen Stroke Roll", bpm:70, patternLen:30, sticking:"RRLLRRLLRRLLRRLRRLLRRLLRRLLRRLR", hint:"Use rebound and avoid tension." },
+        { title:"Seventeen Stroke Roll", bpm:68, patternLen:34, sticking:"RRLLRRLLRRLLRRLLRLRRLLRRLLRRLLRRLLRLR", hint:"Long roll phrasing, no rushing at the end." },
+        { title:"Single Paradiddle", bpm:92, patternLen:16, sticking:"RLRRLRLLRLRRLRLL", hint:"Keep accents controlled and diddles smooth." },
+        { title:"Double Paradiddle", bpm:86, patternLen:12, sticking:"RLRLRRLRLRLL", hint:"Six-note cycle with consistent hand flow." },
+        { title:"Triple Paradiddle", bpm:82, patternLen:16, sticking:"RLRLRLRRLRLRLRLL", hint:"Longer paradiddle cycle, same touch." },
+        { title:"Paradiddle-Diddle", bpm:88, patternLen:12, sticking:"RLRRLLRLRRLL", hint:"Two diddles should connect cleanly." },
+        { title:"Flam", bpm:78, patternLen:16, sticking:"RLRLRLRLRLRLRLRL", hint:"Keep grace notes low and primary notes clear." },
+        { title:"Flam Accent", bpm:82, patternLen:12, sticking:"RLRRLRLLRLRR", hint:"Accent placement should be deliberate." },
+        { title:"Flam Tap", bpm:80, patternLen:12, sticking:"RLRRLRRLRRLR", hint:"Flam then tap with matched spacing." },
+        { title:"Flamacue", bpm:78, patternLen:14, sticking:"RLRLRRLLRLRRLL", hint:"Keep the flam texture consistent." },
+        { title:"Flam Paradiddle", bpm:84, patternLen:16, sticking:"RLRRLRLLRLRRLRLL", hint:"Paradiddle flow with clean flams." },
+        { title:"Single Flammed Mill", bpm:80, patternLen:16, sticking:"RLRLRRLLRLRLRRLL", hint:"Stay relaxed through the inverted feel." },
+        { title:"Pataflafla", bpm:76, patternLen:12, sticking:"RLRLRLRLRLRL", hint:"Keep each flam compact and controlled." },
+        { title:"Swiss Army Triplet", bpm:86, patternLen:12, sticking:"RLRRLLRLRRLL", hint:"Drive triplet flow evenly." },
+        { title:"Inverted Flam Tap", bpm:78, patternLen:12, sticking:"RRLRLLRLRRLL", hint:"Watch sticking accuracy on inversions." },
+        { title:"Flam Drag", bpm:74, patternLen:12, sticking:"RLRRLLRLRRLL", hint:"Grace notes must stay light and tight." },
+        { title:"Drag", bpm:82, patternLen:16, sticking:"RRLRLLRLRRLRLLRL", hint:"Double grace note cleanly before the primary stroke." },
+        { title:"Single Drag Tap", bpm:84, patternLen:16, sticking:"RRLRRLLRRLRRLLR", hint:"Keep taps even after each drag." },
+        { title:"Double Drag Tap", bpm:80, patternLen:16, sticking:"RRLLRRLRRLLRRLR", hint:"Two drags before the tap; no flams." },
+        { title:"Lesson 25", bpm:86, patternLen:12, sticking:"RRLRLLRRLRLL", hint:"Classic drag rudiment; stay relaxed." },
+        { title:"Single Dragadiddle", bpm:82, patternLen:16, sticking:"RRLRRLRLLRRLRRLL", hint:"Drag into paradiddle motion smoothly." },
+        { title:"Drag Paradiddle No. 1", bpm:80, patternLen:16, sticking:"RRLRLRRLLRRLRLRL", hint:"Control the drag into each sticking turn." },
+        { title:"Drag Paradiddle No. 2", bpm:78, patternLen:16, sticking:"RRLRLLRLRRLRLLRL", hint:"Keep left/right balance consistent." },
+        { title:"Single Ratamacue", bpm:84, patternLen:12, sticking:"RRLRLRRLLRRL", hint:"Drag lead into clear accented notes." },
+        { title:"Double Ratamacue", bpm:80, patternLen:14, sticking:"RRLLRLRRLLRLRR", hint:"Two drag textures, one steady pulse." },
+        { title:"Triple Ratamacue", bpm:76, patternLen:16, sticking:"RRRLLRLRRLLRLRRL", hint:"Stay even through extended ratamacue phrasing." },
+        { title:"Double Stroke Roll (Closed)", bpm:88, patternLen:16, sticking:"RRLLRRLLRRLLRRLL", hint:"Close the doubles with equal bounce." },
+      ];
+
+      /***********************
+       * “More real” lessons (multi-limb + counts)
+       ***********************/
+      const LESSONS = {
+        Rock: [
+          makeGridLesson({
+            id:"rock-beg-1",
+            title:"Rock 101 — 8th Hats + Backbeat (1 Bar)",
+            bpm: 80,
+            subdiv: 8,
+            bars: 1,
+            lanes:{
+              hihat:[1,1,1,1,1,1,1,1],
+              snare:[0,0,1,0,0,0,1,0], // 2 & 4
+              kick: [1,0,0,0,1,0,0,0], // 1 & 3
+            },
+            hint:"Lock the hi-hat time. Snare on 2 and 4. Kick on 1 and 3.",
+            focus:["Time","Backbeat","Foot control"],
+            tips:["Count: 1 & 2 & 3 & 4 &", "Keep hi-hat even; don’t chase the kick/snare."]
+          }),
+          makeGridLesson({
+            id:"rock-beg-2",
+            title:"Rock 102 — Add ‘& of 2’ Kick (1 Bar)",
+            bpm: 88,
+            subdiv: 8,
+            bars: 1,
+            lanes:{
+              hihat:[1,1,1,1,1,1,1,1],
+              snare:[0,0,1,0,0,0,1,0],
+              kick: [1,0,0,1,1,0,0,0], // 1, &2, 3
+            },
+            hint:"Same groove, but add a kick on the & of 2.",
+            focus:["Kick placement","Stability"],
+            tips:["Don’t rush the & of 2.", "Snare must stay solid and loud."]
+          }),
+          makeGridLesson({
+            id:"rock-int-1",
+            title:"Rock 201 — Crash + Groove Entry (2 Bars)",
+            bpm: 104,
+            subdiv: 8,
+            bars: 2,
+            lanes:{
+              crash:[1,0,0,0,0,0,0,0, 1,0,0,0,0,0,0,0],
+              hihat:[1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1],
+              snare:[0,0,1,0,0,0,1,0,  0,0,1,0,0,0,1,0],
+              kick: [1,0,0,1,1,0,0,0,  1,0,0,0,1,0,0,0],
+            },
+            hint:"Crash on bar starts. Keep hats steady underneath.",
+            focus:["Dynamics","Phrase control"],
+            tips:["Crash loud, hats controlled.", "Land back into pocket immediately."]
+          }),
+          makeGridLesson({
+            id:"rock-adv-1",
+            title:"Rock 301 — Tom Fill Resolve (2 Bars)",
+            bpm: 112,
+            subdiv: 8,
+            bars: 2,
+            lanes:{
+              hihat:[1,1,1,1,1,1,1,1,  0,0,0,0,0,0,0,0],
+              snare:[0,0,1,0,0,0,1,0,  0,0,0,0,0,0,1,0],
+              kick: [1,0,0,0,1,0,0,0,  1,0,0,0,0,0,0,0],
+              tom1: [0,0,0,0,0,0,0,0,  0,0,1,0,0,0,0,0],
+              tom2: [0,0,0,0,0,0,0,0,  0,0,0,1,0,0,0,0],
+              tom3: [0,0,0,0,0,0,0,0,  0,0,0,0,1,0,0,0],
+              crash:[0,0,0,0,0,0,0,0,  1,0,0,0,0,0,0,0],
+            },
+            hint:"Bar 1 pocket. Bar 2 fill across toms and resolve to snare.",
+            focus:["Fill timing","Return to 1"],
+            tips:["The fill must stay inside the grid.", "Resolve cleanly on the last backbeat."]
+          }),
+        ],
+
+        Funk: [
+          makeGridLesson({
+            id:"funk-beg-1",
+            title:"Funk 101 — 16ths Hat Feel (1 Bar)",
+            bpm: 96,
+            subdiv: 16,
+            bars: 1,
+            lanes:{
+              hihat:[1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
+              snare:[0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0], // 2 and 4 (on 16th grid = step 5 and 13)
+              kick: [1,0,0,1, 0,0,1,0, 1,0,0,0, 0,1,0,0],
+            },
+            hint:"Stay even on 16ths. Backbeat is the anchor.",
+            focus:["Subdivision","Pocket"],
+            tips:["Count: 1 e & a 2 e & a 3 e & a 4 e & a"]
+          }),
+        ],
+
+        Jazz: [
+          makeGridLesson({
+            id:"jazz-beg-1",
+            title:"Jazz 101 — Ride ‘Spang-a-lang’ (1 Bar)",
+            bpm: 132,
+            subdiv: 12, // triplet grid (swing feel)
+            bars: 1,
+            lanes:{
+              // ride on 1, 1a, 2&, 3, 3a, 4& (triplet positions)
+              ride:[1,0,1,  1,0,1,  1,0,1,  1,0,1],
+              hihat:[0,0,0,  1,0,0,  0,0,0,  1,0,0], // chick on 2 and 4 (approx)
+            },
+            hint:"Make the ride flow. Hi-hat chick is crisp (2 & 4).",
+            focus:["Swing time","Hi-hat foot"],
+            tips:["Keep ride consistent, don’t stab it.", "Hi-hat chick short + tight."]
+          }),
+          makeGridLesson({
+            id:"jazz-int-1",
+            title:"Jazz 201 — Add Snare Comping (1 Bar)",
+            bpm: 148,
+            subdiv: 12,
+            bars: 1,
+            lanes:{
+              ride:[1,0,1,  1,0,1,  1,0,1,  1,0,1],
+              hihat:[0,0,0,  1,0,0,  0,0,0,  1,0,0],
+              snare:[0,0,0,  0,1,0,  0,0,0,  0,1,0],
+            },
+            hint:"Comp quietly—ride time stays king.",
+            focus:["Independence","Control"],
+            tips:["Snare comp should feel like conversation, not chaos."]
+          }),
+        ],
+
+        Gospel: [
+          makeGridLesson({
+            id:"gospel-beg-1",
+            title:"Gospel 101 — Pocket Builder (2 Bars)",
+            bpm: 84,
+            subdiv: 16,
+            bars: 2,
+            lanes:{
+              hihat:[
+                1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0,
+                1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0
+              ],
+              snare:[
+                0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0,
+                0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0
+              ],
+              kick:[
+                1,0,0,0, 0,0,1,0, 1,0,0,0, 0,1,0,0,
+                1,0,0,0, 0,0,0,1, 1,0,0,0, 0,1,0,0
+              ],
+            },
+            hint:"Gospel pocket is about *feel* + control. Don’t overplay.",
+            focus:["Pocket","Dynamics","Consistency"],
+            tips:["Snare backbeat consistent.", "Kick patterns must not rush."]
+          }),
+          makeGridLesson({
+            id:"gospel-int-1",
+            title:"Gospel 201 — Linear Fill Language (1 Bar)",
+            bpm: 108,
+            subdiv: 16,
+            bars: 1,
+            lanes:{
+              kick:[1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+              snare:[0,0,1,0, 0,0,0,1, 0,1,0,0, 1,0,0,0],
+              tom1:[0,0,0,0, 1,0,0,0, 0,0,0,0, 0,1,0,0],
+              tom2:[0,0,0,0, 0,1,0,0, 0,0,0,0, 0,0,1,0],
+              tom3:[0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,0,1],
+            },
+            hint:"One voice at a time (linear). Clean spacing.",
+            focus:["Clean orchestration","Timing"],
+            tips:["No flams here—each step = one limb."]
+          }),
+        ],
+
+        Afrobeat: [
+          makeGridLesson({
+            id:"afro-beg-1",
+            title:"Afrobeat 101 — Driving Pulse (2 Bars)",
+            bpm: 104,
+            subdiv: 8,
+            bars: 2,
+            lanes:{
+              ride:[1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1],
+              snare:[0,0,1,0,0,0,1,0,  0,0,1,0,0,0,1,0],
+              kick:[1,0,0,0,1,0,0,1,  1,0,0,0,1,0,0,0],
+            },
+            hint:"Make it danceable. Consistent pulse wins.",
+            focus:["Endurance","Repetition"],
+            tips:["Ride like a bell.", "Snare stays crisp."]
+          }),
+        ],
+
+        Reggae: [
+          makeGridLesson({
+            id:"reggae-beg-1",
+            title:"Reggae 101 — One Drop (1 Bar)",
+            bpm: 76,
+            subdiv: 8,
+            bars: 1,
+            lanes:{
+              hihat:[1,1,1,1,1,1,1,1],
+              snare:[0,0,0,0,0,0,1,0], // 3 (approx to one-drop vibe in this grid)
+              kick:[0,0,0,0,0,0,1,0],  // kick with snare on 3
+            },
+            hint:"One-drop: kick + snare together, relaxed feel.",
+            focus:["Relaxed timing","Control"],
+            tips:["Lay back slightly, don’t rush."]
+          }),
+        ],
+
+        Rudiments: RUDIMENT_40.map((rud, i) => makeRudimentLesson({
+          id: `rud-${String(i + 1).padStart(2, "0")}`,
+          title: `Rudiment ${i + 1} — ${rud.title} (${rud.patternLen})`,
+          bpm: rud.bpm,
+          patternLen: rud.patternLen,
+          sticking: rud.sticking,
+          hint: rud.hint,
+          tips: ["Start slow and prioritize clean sticking.", "Increase tempo only when timing stays consistent."]
+        })),
+      };
+
+      /***********************
+       * “More real” kit w/ hi-hat pedal, per-piece volumes, metronome
+       * + Tone.Recorder for audio recording
+       ***********************/
+      function createRealKit() {
+        const master = new Tone.Gain(0.9).toDestination();
+        const comp = new Tone.Compressor(-18, 3).connect(master);
+
+        // Recorder taps the same mixed chain (comp) so audio export matches what you hear
+        const recorder = new Tone.Recorder();
+        comp.connect(recorder);
+
+        const room = new Tone.Reverb({ decay: 1.7, preDelay: 0.01, wet: 0.22 }).connect(comp);
+        const dry  = new Tone.Gain(1).connect(comp);
+
+        const gains = {
+          kick: new Tone.Gain(1).connect(dry),
+          snare: new Tone.Gain(1).connect(dry),
+          tom1: new Tone.Gain(1).connect(room),
+          tom2: new Tone.Gain(1).connect(room),
+          tom3: new Tone.Gain(1).connect(room),
+          crash: new Tone.Gain(1).connect(room),
+          ride: new Tone.Gain(1).connect(room),
+          hatClosed: new Tone.Gain(1).connect(dry),
+          hatOpen: new Tone.Gain(1).connect(room),
+          hatPedal: new Tone.Gain(1).connect(dry),
+          metro: new Tone.Gain(0.6).connect(dry),
+        };
+
+        function velToDb(v01, min=-28, max=-6) {
+          const v = Math.max(0, Math.min(1, v01));
+          const c = Math.pow(v, 1.75);
+          return min + (max - min) * c;
+        }
+
+        const kickBody = new Tone.MembraneSynth({
+          pitchDecay: 0.04,
+          octaves: 10,
+          oscillator: { type: "sine" },
+          envelope: { attack: 0.001, decay: 0.38, sustain: 0, release: 0.08 },
+        }).connect(gains.kick);
+
+        const kickClick = new Tone.NoiseSynth({
+          noise: { type: "white" },
+          envelope: { attack: 0.001, decay: 0.02, sustain: 0 },
+        });
+        const kickClickHP = new Tone.Filter(2200, "highpass").connect(gains.kick);
+        kickClick.connect(kickClickHP);
+
+        const snareNoise = new Tone.NoiseSynth({
+          noise: { type: "white" },
+          envelope: { attack: 0.001, decay: 0.16, sustain: 0 },
+        });
+        const snareBP = new Tone.Filter({ type: "bandpass", frequency: 2200, Q: 1.4 }).connect(gains.snare);
+        snareNoise.connect(snareBP);
+
+        const snareBody = new Tone.MembraneSynth({
+          pitchDecay: 0.01,
+          octaves: 2,
+          oscillator: { type: "triangle" },
+          envelope: { attack: 0.001, decay: 0.11, sustain: 0, release: 0.03 },
+        }).connect(room);
+
+        const snareSnap = new Tone.Synth({
+          oscillator: { type: "square" },
+          envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.01 },
+        });
+        const snareSnapHP = new Tone.Filter(3000, "highpass").connect(gains.snare);
+        snareSnap.connect(snareSnapHP);
+
+        const mkTom = (note, outGain, bodyGain=-10, attackFreq=1050, ringNote="C3") => {
+          const body = new Tone.MembraneSynth({
+            pitchDecay: 0.045,
+            octaves: 4.2,
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.001, decay: 0.42, sustain: 0, release: 0.12 },
+          }).connect(outGain);
+
+          const attack = new Tone.NoiseSynth({
+            noise: { type: "pink" },
+            envelope: { attack: 0.001, decay: 0.018, sustain: 0 },
+          });
+          const attackBP = new Tone.Filter({ type: "bandpass", frequency: attackFreq, Q: 1.25 }).connect(outGain);
+          attack.connect(attackBP);
+
+          const ring = new Tone.Synth({
+            oscillator: { type: "triangle" },
+            envelope: { attack: 0.001, decay: 0.16, sustain: 0, release: 0.05 },
+          }).connect(room);
+
+          body._note = note;
+          body._bodyGain = bodyGain;
+          body._ringNote = ringNote;
+          return { body, attack, ring };
+        };
+
+        const tom1 = mkTom("E2", gains.tom1, -10, 1300, "E3");
+        const tom2 = mkTom("C2", gains.tom2, -11, 1150, "C3");
+        const tom3 = mkTom("A1", gains.tom3, -12, 980,  "A2");
+
+        const cymHP = new Tone.Filter(600, "highpass");
+
+        const rideMetal = new Tone.MetalSynth({
+          frequency: 230,
+          envelope: { attack: 0.001, decay: 0.42, release: 0.06 },
+          harmonicity: 10,
+          modulationIndex: 18,
+          resonance: 9000,
+          octaves: 1.15,
+        }).connect(cymHP);
+
+        const rideAir = new Tone.NoiseSynth({
+          noise: { type: "white" },
+          envelope: { attack: 0.001, decay: 0.18, sustain: 0 },
+        });
+        const rideAirHP = new Tone.Filter(7000, "highpass");
+        rideAir.connect(rideAirHP);
+
+        const crashMetal = new Tone.MetalSynth({
+          frequency: 290,
+          envelope: { attack: 0.001, decay: 1.05, release: 0.20 },
+          harmonicity: 12,
+          modulationIndex: 36,
+          resonance: 10000,
+          octaves: 1.55,
+        }).connect(cymHP);
+
+        const crashAir = new Tone.NoiseSynth({
+          noise: { type: "white" },
+          envelope: { attack: 0.001, decay: 0.55, sustain: 0 },
+        });
+        const crashAirHP = new Tone.Filter(6500, "highpass");
+        crashAir.connect(crashAirHP);
+
+        cymHP.connect(gains.ride);
+        cymHP.connect(gains.crash);
+        rideAirHP.connect(gains.ride);
+        crashAirHP.connect(gains.crash);
+
+        const hatClosedMetal = new Tone.MetalSynth({
+          frequency: 420,
+          envelope: { attack: 0.001, decay: 0.055, release: 0.01 },
+          harmonicity: 7.8,
+          modulationIndex: 52,
+          resonance: 10000,
+          octaves: 1.25
+        }).connect(gains.hatClosed);
+
+        const hatClosedNoise = new Tone.NoiseSynth({
+          noise: { type: "white" },
+          envelope: { attack: 0.001, decay: 0.03, sustain: 0 }
+        });
+        const hatClosedHP = new Tone.Filter(6500, "highpass").connect(gains.hatClosed);
+        hatClosedNoise.connect(hatClosedHP);
+
+        const hatOpenMetal = new Tone.MetalSynth({
+          frequency: 380,
+          envelope: { attack: 0.001, decay: 0.22, release: 0.03 },
+          harmonicity: 7.2,
+          modulationIndex: 44,
+          resonance: 10000,
+          octaves: 1.35
+        }).connect(gains.hatOpen);
+
+        const hatOpenNoise = new Tone.NoiseSynth({
+          noise: { type: "white" },
+          envelope: { attack: 0.001, decay: 0.16, sustain: 0 }
+        });
+        const hatOpenHP = new Tone.Filter(6000, "highpass").connect(gains.hatOpen);
+        hatOpenNoise.connect(hatOpenHP);
+
+        const hatPedalMetal = new Tone.MetalSynth({
+          frequency: 520,
+          envelope: { attack: 0.001, decay: 0.035, release: 0.01 },
+          harmonicity: 6.5,
+          modulationIndex: 35,
+          resonance: 9000,
+          octaves: 1.1
+        }).connect(gains.hatPedal);
+
+        const hatPedalNoise = new Tone.NoiseSynth({
+          noise: { type: "white" },
+          envelope: { attack: 0.001, decay: 0.02, sustain: 0 }
+        });
+        const hatPedalHP = new Tone.Filter(7000, "highpass").connect(gains.hatPedal);
+        hatPedalNoise.connect(hatPedalHP);
+
+        let hatIsOpen = false;
+        let hatPedalDown = false;
+        const samplePlayers = {};
+
+        const metro = new Tone.Synth({
+          oscillator: { type: "triangle" },
+          envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.01 },
+        }).connect(gains.metro);
+
+        function triggerMetronome(accent=false){
+          const now = Tone.now();
+          metro.volume.value = accent ? -10 : -14;
+          metro.triggerAttackRelease(accent ? "A5" : "E5", 0.02, now);
+        }
+
+        const api = {
+          setMaster(v){ master.gain.value = Math.max(0, Math.min(1.25, v)); },
+          setVol(name, v){
+            const g = gains[name];
+            if (g) g.gain.value = Math.max(0, Math.min(1.25, v));
+          },
+          async setSample(pieceId, dataUrl){
+            if (!dataUrl) {
+              if (samplePlayers[pieceId]) {
+                samplePlayers[pieceId].dispose();
+                delete samplePlayers[pieceId];
+              }
+              return;
+            }
+            const player = new Tone.Player({ url: dataUrl }).connect(comp);
+            await Tone.loaded();
+            if (samplePlayers[pieceId]) samplePlayers[pieceId].dispose();
+            samplePlayers[pieceId] = player;
+          },
+          hasSample(pieceId){ return !!samplePlayers[pieceId]; },
+
+          setHatOpenState(open){ hatIsOpen = !!open; },
+          setHatPedalDown(down){
+            hatPedalDown = !!down;
+            if (hatPedalDown) hatIsOpen = false;
+          },
+          getHatPedalDown(){ return hatPedalDown; },
+          getHatOpenState(){ return hatIsOpen; },
+
+          async startAudioRecord(){
+            recorder.stop(); // safe reset
+            recorder.start();
+          },
+          async stopAudioRecord(){
+            const blob = await recorder.stop();
+            return blob;
+          },
+
+          trigger(pieceId, v01=0.8, opts={}) {
+            const now = Tone.now();
+            const sample = samplePlayers[pieceId];
+            if (sample) {
+              sample.volume.value = velToDb(v01, -26, -2);
+              sample.start(now);
+              return;
+            }
+            switch(pieceId){
+              case "kick":
+                kickBody.volume.value = velToDb(v01, -22, -4);
+                kickBody.triggerAttackRelease("C1", 0.06, now);
+                kickClick.volume.value = velToDb(v01, -34, -14);
+                kickClick.triggerAttackRelease(0.02, now + 0.001);
+                break;
+
+              case "snare":
+                snareNoise.volume.value = velToDb(v01, -30, -10);
+                snareNoise.triggerAttackRelease(0.05, now);
+                snareBody.volume.value = velToDb(v01, -24, -8);
+                snareBody.triggerAttackRelease("D2", 0.03, now);
+                snareSnap.volume.value = velToDb(v01, -34, -18);
+                snareSnap.triggerAttackRelease("A5", 0.02, now + 0.001);
+                break;
+
+              case "tom1":
+                tom1.body.volume.value = velToDb(v01, -30, tom1.body._bodyGain);
+                tom1.body.triggerAttackRelease(tom1.body._note, 0.07, now);
+                tom1.attack.volume.value = velToDb(v01, -42, -22);
+                tom1.attack.triggerAttackRelease(0.014, now + 0.0008);
+                tom1.ring.volume.value = velToDb(v01, -36, -18);
+                tom1.ring.triggerAttackRelease(tom1.body._ringNote, 0.02, now + 0.0015);
+                break;
+
+              case "tom2":
+                tom2.body.volume.value = velToDb(v01, -30, tom2.body._bodyGain);
+                tom2.body.triggerAttackRelease(tom2.body._note, 0.08, now);
+                tom2.attack.volume.value = velToDb(v01, -42, -22);
+                tom2.attack.triggerAttackRelease(0.014, now + 0.0008);
+                tom2.ring.volume.value = velToDb(v01, -36, -18);
+                tom2.ring.triggerAttackRelease(tom2.body._ringNote, 0.02, now + 0.0015);
+                break;
+
+              case "tom3":
+                tom3.body.volume.value = velToDb(v01, -30, tom3.body._bodyGain);
+                tom3.body.triggerAttackRelease(tom3.body._note, 0.09, now);
+                tom3.attack.volume.value = velToDb(v01, -42, -22);
+                tom3.attack.triggerAttackRelease(0.014, now + 0.0008);
+                tom3.ring.volume.value = velToDb(v01, -36, -18);
+                tom3.ring.triggerAttackRelease(tom3.body._ringNote, 0.02, now + 0.0015);
+                break;
+
+              case "ride":
+                rideMetal.volume.value = velToDb(v01, -34, -10);
+                rideMetal.triggerAttackRelease(0.02, now);
+                rideAir.volume.value = velToDb(v01, -42, -20);
+                rideAir.triggerAttackRelease(0.03, now);
+                break;
+
+              case "crash":
+                crashMetal.volume.value = velToDb(v01, -30, -8);
+                crashMetal.triggerAttackRelease(0.05, now);
+                crashAir.volume.value = velToDb(v01, -38, -16);
+                crashAir.triggerAttackRelease(0.06, now);
+                break;
+
+              case "hihat": {
+                let type = opts.hatType;
+                if (hatPedalDown) type = "closed";
+                if (!type) type = (hatIsOpen && !hatPedalDown ? "open" : "closed");
+
+                if (type === "pedal") {
+                  hatIsOpen = false;
+                  hatPedalDown = true;
+                  hatPedalMetal.volume.value = velToDb(v01, -36, -14);
+                  hatPedalMetal.triggerAttackRelease(0.01, now);
+                  hatPedalNoise.volume.value = velToDb(v01, -44, -22);
+                  hatPedalNoise.triggerAttackRelease(0.01, now);
+
+                  hatClosedMetal.volume.value = velToDb(Math.min(1, v01*0.75), -42, -22);
+                  hatClosedMetal.triggerAttackRelease(0.005, now + 0.001);
+                } else if (type === "open") {
+                  if (hatPedalDown) {
+                    hatClosedMetal.volume.value = velToDb(v01, -36, -14);
+                    hatClosedMetal.triggerAttackRelease(0.01, now);
+                    hatClosedNoise.volume.value = velToDb(v01, -44, -20);
+                    hatClosedNoise.triggerAttackRelease(0.01, now);
+                    break;
+                  }
+                  hatIsOpen = true;
+                  hatOpenMetal.volume.value = velToDb(v01, -34, -12);
+                  hatOpenMetal.triggerAttackRelease(0.02, now);
+                  hatOpenNoise.volume.value = velToDb(v01, -42, -18);
+                  hatOpenNoise.triggerAttackRelease(0.02, now);
+                } else {
+                  hatIsOpen = false;
+                  hatClosedMetal.volume.value = velToDb(v01, -34, -12);
+                  hatClosedMetal.triggerAttackRelease(0.01, now);
+                  hatClosedNoise.volume.value = velToDb(v01, -42, -18);
+                  hatClosedNoise.triggerAttackRelease(0.01, now);
+                }
+                break;
+              }
+
+              case "metronome":
+                triggerMetronome(!!opts.accent);
+                break;
+
+              default: break;
+            }
+          }
+        };
+
+        return api;
+      }
+
+      /***********************
+       * Scoring (timing window)
+       ***********************/
+      function gradeFromDeltaMs(deltaMs){
+        const d = Math.abs(deltaMs);
+        const early = deltaMs < 0;
+        if (d <= 60)  return { grade: "Perfect", pts: 100 };
+        if (d <= 120) return { grade: "Great",   pts: 70 };
+        if (d <= 200) return { grade: "Ok",      pts: 40 };
+        return { grade: early ? "Too Early" : "Late", pts: 15 };
+      }
+
+      function getCurrentNinjaName() {
+        return localStorage.getItem("ninjaUser") || "GUEST_NINJA";
+      }
+      function getRoster() {
+        try { return JSON.parse(localStorage.getItem("ninja_roster_full")) || {}; }
+        catch { return {}; }
+      }
+      function saveRoster(roster) {
+        localStorage.setItem("ninja_roster_full", JSON.stringify(roster));
+      }
+      function ensureNinjaXPEntry() {
+        const ninjaName = getCurrentNinjaName();
+        const roster = getRoster();
+        if (!roster[ninjaName] || typeof roster[ninjaName] !== "object") {
+          roster[ninjaName] = {
+            pass: "",
+            xp: 0,
+            joined: new Date().toLocaleDateString(),
+            status: "LEVEL 01"
+          };
+        }
+        const numericXP = Number(roster[ninjaName].xp);
+        roster[ninjaName].xp = Number.isFinite(numericXP) && numericXP > 0 ? Math.floor(numericXP) : 0;
+        if (!roster[ninjaName].joined) roster[ninjaName].joined = new Date().toLocaleDateString();
+        if (!roster[ninjaName].status) roster[ninjaName].status = "LEVEL 01";
+        saveRoster(roster);
+        return { ninjaName, roster };
+      }
+      function syncXPCompat(xpValue) {
+        const safeXP = Number.isFinite(xpValue) && xpValue > 0 ? Math.floor(xpValue) : 0;
+        const ninjaName = getCurrentNinjaName();
+        localStorage.setItem("totalXP", String(safeXP));
+        localStorage.setItem(`xp_${ninjaName}`, String(safeXP));
+        localStorage.setItem("currentLevel", String(Math.floor(safeXP / 2500) + 1));
+      }
+      function getCanonicalXP() {
+        const { ninjaName, roster } = ensureNinjaXPEntry();
+        const xp = roster[ninjaName].xp;
+        syncXPCompat(xp);
+        return xp;
+      }
+      function adjustCanonicalXP(delta) {
+        const { ninjaName, roster } = ensureNinjaXPEntry();
+        const currentXP = Number(roster[ninjaName].xp) || 0;
+        const nextXP = Math.max(0, Math.floor(currentXP + delta));
+        roster[ninjaName].xp = nextXP;
+        saveRoster(roster);
+        syncXPCompat(nextXP);
+        return nextXP;
+      }
+
+      /***********************
+       * Lesson Sheet View (fills the “empty space”)
+       ***********************/
+      function LessonSheet({ lesson, currentIndex, satisfiedSet, loopEnabled=false, loopStartBar=1, loopEndBar=1 }) {
+        const subdiv = lesson?.subdiv || 8;
+        const bars = lesson?.bars || 1;
+        const total = (subdiv * bars) || 0;
+        const pageStart = loopEnabled ? Math.max(0, (loopStartBar - 1) * subdiv) : 0;
+        const pageEnd = loopEnabled ? Math.min(total - 1, loopEndBar * subdiv - 1) : (total - 1);
+        const pageTotal = Math.max(0, pageEnd - pageStart + 1);
+
+        const countLabel = (i) => {
+          // 8ths: 1 & 2 & 3 & 4 &
+          if (subdiv === 8) return ["1","&","2","&","3","&","4","&"][i % 8];
+          // 16ths: 1 e & a...
+          if (subdiv === 16) return ["1","e","&","a","2","e","&","a","3","e","&","a","4","e","&","a"][i % 16];
+          // 12ths (triplets): 1 tri p let / just show 1 & a style
+          if (subdiv === 12) return ["1","&","a","2","&","a","3","&","a","4","&","a"][i % 12];
+          return String((i%subdiv)+1);
+        };
+
+        const laneOrder = ["hihat","ride","crash","snare","kick","tom1","tom2","tom3"];
+        const activeLanes = laneOrder.filter(id => (lesson?.lanes && lesson.lanes[id]?.some(Boolean)));
+
+        const isCurrent = (i) => i === currentIndex;
+        const hasHit = (pieceId) => satisfiedSet?.has(pieceId);
+
+        return (
+          <div className="mt-3 rounded-2xl border border-white/10 bg-slate-950/30 p-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-xs text-slate-300">Lesson Sheet</div>
+                <div className="text-[11px] text-slate-500">
+                  Subdivision: <span className="text-slate-200 font-semibold">{subdiv}</span> • Bars: <span className="text-slate-200 font-semibold">{bars}</span>
+                  {loopEnabled ? <> • Page: <span className="text-sky-200 font-semibold">{loopStartBar}-{loopEndBar}</span></> : null}
+                </div>
+              </div>
+              <div className="text-[11px] text-slate-400">
+                Current step: <span className="text-sky-200 font-semibold">{total ? (currentIndex + 1) : 0}/{total}</span>
+              </div>
+            </div>
+
+            <div className="mt-3 overflow-x-auto scrollbar-thin">
+              <div className="min-w-[720px]">
+                {/* Count row */}
+                <div className="grid" style={{ gridTemplateColumns: `120px repeat(${pageTotal}, 1fr)` }}>
+                  <div className="text-[10px] text-slate-500 pr-2 flex items-center">Count</div>
+                  {Array.from({ length: pageTotal }, (_, i) => {
+                    const sIdx = pageStart + i;
+                    return (
+                    <div
+                      key={sIdx}
+                      className={[
+                        "text-[10px] text-center py-1 border-r border-white/5",
+                        isCurrent(sIdx) ? "bg-sky-400/10 text-sky-100 font-semibold" : "text-slate-400"
+                      ].join(" ")}
+                    >
+                      {countLabel(sIdx)}
+                    </div>
+                  )})}
+                </div>
+
+                {/* Lanes */}
+                <div className="mt-2 space-y-1">
+                  {activeLanes.map((laneId) => (
+                    <div key={laneId} className="grid items-center" style={{ gridTemplateColumns: `120px repeat(${pageTotal}, 1fr)` }}>
+                      <div className="text-[11px] text-slate-300 pr-2 flex items-center gap-2">
+                        <span className="inline-block w-2 h-2 rounded-full bg-white/15"></span>
+                        {pieceMeta(laneId)?.label || laneId}
+                        {hasHit(laneId) ? <span className="ml-1 text-[10px] text-emerald-200">✓</span> : null}
+                      </div>
+                      {Array.from({ length: pageTotal }, (_, i) => {
+                        const sIdx = pageStart + i;
+                        const on = !!(lesson?.lanes?.[laneId]?.[sIdx]);
+                        const cur = isCurrent(sIdx);
+                        return (
+                          <div
+                            key={i}
+                            className={[
+                              "h-7 border-r border-white/5 flex items-center justify-center",
+                              cur ? "bg-sky-400/10" : "bg-transparent"
+                            ].join(" ")}
+                          >
+                            <div className={[
+                              "w-3.5 h-3.5 rounded-full border",
+                              on ? "bg-white/70 border-white/25" : "bg-white/5 border-white/10",
+                              cur && on ? "ring-2 ring-sky-300/40" : ""
+                            ].join(" ")} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {!!lesson?.focus?.length && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {lesson.focus.map((x) => (
+                  <span key={x} className="text-[10px] px-2 py-1 rounded-full border border-white/10 bg-white/5 text-slate-300">
+                    {x}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {!!lesson?.tips?.length && (
+              <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-2">
+                <div className="text-[10px] text-slate-400">Coach Tips</div>
+                <ul className="mt-1 text-[11px] text-slate-300 list-disc pl-4 space-y-0.5">
+                  {lesson.tips.slice(0,3).map((t, i) => <li key={i}>{t}</li>)}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      /***********************
+       * Staff view (supports chord steps)
+       ***********************/
+      function StaffView({
+        sequence, currentIndex, lastHit, sticking,
+        loopEnabled=false, loopStartBar=1, loopEndBar=1
+      }) {
+        const windowSize = 10;
+        const loopStart = Math.max(0, (loopStartBar - 1) * STEPS_PER_BAR);
+        const loopEnd = Math.min(sequence.length - 1, loopEndBar * STEPS_PER_BAR - 1);
+        const start = loopEnabled ? loopStart : Math.max(0, currentIndex - 2);
+        const slice = loopEnabled
+          ? sequence.slice(loopStart, loopEnd + 1)
+          : sequence.slice(start, start + windowSize);
+
+        const width = Math.max(720, 120 + slice.length * 54);
+        const height = 160;
+        const staffTop = 44;
+        const lineGap = 12;
+
+        const linesY = Array.from({ length: 5 }, (_, i) => staffTop + i * lineGap);
+        const x0 = 90;
+        const dx = 54;
+
+        const flattenLabel = (step) => {
+          const arr = toStepArray(step).filter(Boolean);
+          if (!arr.length) return "—";
+          return arr.map(p => (pieceMeta(p)?.label || p)).join("+");
+        };
+
+        return (
+          <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-4 shadow-[0_24px_80px_rgba(0,0,0,.45)]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-sm text-slate-300">Staff View</div>
+                <div className="text-xs text-slate-400">
+                  {loopEnabled
+                    ? `Lesson Sheet: bars ${loopStartBar}-${loopEndBar}`
+                    : "Now supports real multi-limb steps (chords)."}
+                </div>
+              </div>
+              <div className="text-xs text-slate-400">
+                Last hit:{" "}
+                <span className="text-slate-200 font-semibold">
+                  {lastHit?.piece ? pieceMeta(lastHit.piece)?.label : "—"}
+                </span>{" "}
+                <span className="text-slate-500">
+                  {lastHit?.vel != null ? `(${Math.round(lastHit.vel * 127)})` : ""}
+                </span>{" "}
+                <span className="text-slate-600">
+                  {lastHit?.grade ? `• ${lastHit.grade}` : ""}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-3 overflow-x-auto">
+              <div className="min-w-[520px]">
+                <svg width={width} height={height} className="block max-w-full h-auto">
+                  {linesY.map((y, i) => (
+                    <line key={i} x1="24" x2={width - 24} y1={y} y2={y}
+                      stroke="rgba(255,255,255,.22)" strokeWidth="1" />
+                  ))}
+                  <text x="34" y={staffTop + 3 * lineGap} fill="rgba(255,255,255,.6)" fontSize="20">𝄶</text>
+
+                  {slice.map((step, i) => {
+                    const seqIndex = start + i;
+                    const isCurrent = seqIndex === currentIndex;
+                    const x = x0 + i * dx;
+
+                    const stepArr = toStepArray(step).filter(Boolean);
+                    const stroke = isCurrent ? "rgba(79,172,254,.9)" : "rgba(255,255,255,.25)";
+                    const glow = isCurrent ? "drop-shadow(0 0 10px rgba(79,172,254,.65))" : "none";
+
+                    const stick = sticking?.[seqIndex] || "";
+
+                    return (
+                      <g key={seqIndex} style={{ filter: glow }}>
+                        {/* draw each note in chord */}
+                        {stepArr.length ? stepArr.map((pieceId, k) => {
+                          const y = (STAFF_NOTE_Y[pieceId] ?? (staffTop + 2 * lineGap)) + k*0; // same time
+                          const fill = isCurrent ? "rgba(255,255,255,.95)" : "rgba(255,255,255,.55)";
+                          return (
+                            <g key={pieceId}>
+                              <line x1={x + 10} x2={x + 10} y1={y} y2={y - 20} stroke={stroke} strokeWidth="2" />
+                              <ellipse cx={x} cy={y} rx="10" ry="7" fill={fill} stroke={stroke} strokeWidth="2" />
+                            </g>
+                          );
+                        }) : (
+                          <circle cx={x} cy={staffTop + 2*lineGap} r="3" fill="rgba(255,255,255,.18)" />
+                        )}
+
+                        <text x={x - 18} y={height - 12}
+                          fill={isCurrent ? "rgba(255,255,255,.9)" : "rgba(255,255,255,.45)"}
+                          fontSize="10">
+                          {stick ? stick : flattenLabel(step)}
+                        </text>
+                      </g>
+                    );
+                  })}
+
+                  <rect x="24" y="16" width={width - 48} height={height - 32}
+                    fill="transparent" stroke="rgba(255,255,255,.06)" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      /***********************
+       * Drum Visual (SVG kit) - responsive height
+       * On-kit controls are truly “on the kit”
+       ***********************/
+      function RealDrumKitView({
+        onHit, pulse, expectedStep, fullViewport=false,
+        showOnKitControls=false, partVol={}, onPartVolChange=()=>{},
+        onSampleUpload=()=>{}, onSampleClear=()=>{}, sampleMap={}
+      }) {
+        const vel = (id) => pulse[id]?.vel ?? 0;
+        const ageMs = (id) => pulse[id]?.t ? (performance.now() - pulse[id].t) : 999999;
+
+        const intensity = (id) => {
+          const decay = Math.max(0, 1 - ageMs(id) / 260);
+          return Math.max(vel(id), 0) * decay;
+        };
+
+        const expectedSet = useMemo(() => new Set((expectedStep || []).filter(Boolean)), [expectedStep]);
+
+        const glowStyle = (id) => {
+          const I = intensity(id);
+          const s = 1 + I * 0.085;
+          const g = 6 + I * 28;
+          const isExpected = expectedSet.has(id);
+          return {
+            transform: `scale(${s})`,
+            filter: `drop-shadow(0 0 ${g}px rgba(79,172,254,${0.12 + I * 0.55}))
+                     drop-shadow(0 0 ${g*1.25}px rgba(34,197,94,${0.04 + I * 0.22}))`,
+            opacity: 0.92 + I * 0.08,
+            outline: isExpected ? "2px solid rgba(165,243,252,.35)" : "none",
+          };
+        };
+
+        const labelStyle = (id) => {
+          const I = intensity(id);
+          const isExpected = expectedSet.has(id);
+          return {
+            fill: isExpected ? "rgba(165,243,252,.95)" : "rgba(226,232,240,.85)",
+            opacity: 0.7 + I * 0.3,
+          };
+        };
+
+        const [floats, setFloats] = useState([]);
+        const [stickBursts, setStickBursts] = useState([]);
+        const [pedalHeld, setPedalHeld] = useState(false);
+
+        const PART_POS = {
+          crash: { x: 22, y: 19 },
+          ride:  { x: 78, y: 19 },
+          hihat: { x: 16, y: 55 },
+          tom1:  { x: 48, y: 42 },
+          tom2:  { x: 62, y: 56 },
+          snare: { x: 40, y: 68 },
+          tom3:  { x: 70, y: 80 },
+          kick:  { x: 55, y: 90 },
+        };
+
+        const sampleLabel = (pieceId) => sampleMap[pieceId] ? "Sample" : "Synth";
+
+        const spawnFloat = (xPct, yPct, v01) => {
+          const id = Math.random().toString(36).slice(2);
+          setFloats((prev) => [...prev, { id, xPct, yPct, text: Math.round(v01*127) }]);
+          setTimeout(() => setFloats((prev) => prev.filter(f => f.id !== id)), 260);
+        };
+        const spawnSticks = (xPct, yPct) => {
+          const id = Math.random().toString(36).slice(2);
+          setStickBursts((prev) => [...prev, { id, xPct, yPct }]);
+          setTimeout(() => setStickBursts((prev) => prev.filter(s => s.id !== id)), 200);
+        };
+        const hitWithFloat = (pieceId, xPct, yPct, vel01, extra={}) => {
+          spawnFloat(xPct, yPct, vel01);
+          spawnSticks(xPct, yPct);
+          onHit(pieceId, vel01, "ui", extra);
+        };
+        const pedalDown = (xPct, yPct) => {
+          if (pedalHeld) return;
+          setPedalHeld(true);
+          spawnSticks(xPct, yPct);
+          onHit("hihat", 0.75, "ui", { hatType: "pedal", pedalDown: true });
+        };
+        const pedalUp = () => {
+          if (!pedalHeld) return;
+          setPedalHeld(false);
+          onHit("hihat", 0.01, "ui", { pedalDown: false, silent: true });
+        };
+
+        return (
+          <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-3 sm:p-4 shadow-[0_24px_80px_rgba(0,0,0,.45)] no-select">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-sm text-slate-300">Drum Visual</div>
+                <div className="text-xs text-slate-400">
+                  Tap pads (or play MIDI). Toggle On-Kit controls to edit volume + load samples directly on the kit.
+                </div>
+              </div>
+              <div className="text-xs text-slate-400">
+                Next:{" "}
+                <span className="text-slate-200 font-semibold">
+                  {expectedStep?.length ? expectedStep.map(p => pieceMeta(p)?.label || p).join(" + ") : "—"}
+                </span>
+              </div>
+            </div>
+
+            <div className={[
+              "mt-2 sm:mt-3 relative w-full rounded-2xl border border-white/10 bg-slate-950/30 subtle-grid overflow-hidden",
+              fullViewport ? "h-[82vh] min-h-[420px]" : "h-[54vh] min-h-[320px] sm:min-h-[380px] md:h-[64vh] md:min-h-[460px]"
+            ].join(" ")}>
+              <div className="absolute -inset-24 bg-[radial-gradient(circle_at_30%_20%,rgba(79,172,254,.18),transparent_40%),radial-gradient(circle_at_70%_80%,rgba(34,197,94,.12),transparent_45%)] pointer-events-none"></div>
+
+              {floats.map(f => (
+                <div key={f.id} className="absolute hit-float text-xs font-bold text-sky-200"
+                     style={{ left: `${f.xPct}%`, top: `${f.yPct}%`, transform: "translate(-50%,-50%)" }}>
+                  {f.text}
+                </div>
+              ))}
+              {stickBursts.map(s => (
+                <div key={s.id} className="absolute hit-float pointer-events-none"
+                     style={{ left: `${s.xPct}%`, top: `${s.yPct}%`, transform: "translate(-50%,-50%)" }}>
+                  <div className="relative w-14 h-14">
+                    <div className="absolute left-1 top-6 w-12 h-1.5 rounded bg-amber-200 rotate-[28deg] opacity-90"></div>
+                    <div className="absolute left-1 top-6 w-12 h-1.5 rounded bg-amber-300 -rotate-[28deg] opacity-90"></div>
+                  </div>
+                </div>
+              ))}
+
+              <svg viewBox="0 0 900 520" className="absolute inset-0 w-full h-full">
+                <g opacity="0.55" stroke="rgba(255,255,255,.22)" strokeWidth="6" strokeLinecap="round">
+                  <line x1="210" y1="130" x2="210" y2="440" />
+                  <line x1="690" y1="130" x2="690" y2="440" />
+                  <line x1="130" y1="270" x2="130" y2="460" />
+                </g>
+
+                <g className="kit-piece" style={glowStyle("crash")}
+                   onPointerDown={(e)=>{e.preventDefault(); hitWithFloat("crash", 22, 22, 0.88);}}
+                   cursor="pointer">
+                  <ellipse cx="210" cy="120" rx="120" ry="34" fill="rgba(251,191,36,.18)" stroke="rgba(255,255,255,.14)" strokeWidth="2" />
+                  <ellipse cx="210" cy="120" rx="36" ry="10" fill="rgba(251,191,36,.22)" />
+                  <text x="210" y="125" textAnchor="middle" fontSize="18" style={labelStyle("crash")}>Crash</text>
+                </g>
+
+                <g className="kit-piece" style={glowStyle("ride")}
+                   onPointerDown={(e)=>{e.preventDefault(); hitWithFloat("ride", 78, 22, 0.86);}}
+                   cursor="pointer">
+                  <ellipse cx="690" cy="120" rx="130" ry="36" fill="rgba(251,191,36,.14)" stroke="rgba(255,255,255,.14)" strokeWidth="2" />
+                  <ellipse cx="690" cy="120" rx="42" ry="12" fill="rgba(251,191,36,.18)" />
+                  <text x="690" y="125" textAnchor="middle" fontSize="18" style={labelStyle("ride")}>Ride</text>
+                </g>
+
+                <g className="kit-piece" style={glowStyle("hihat")}
+                   onPointerDown={(e)=>{
+                     e.preventDefault();
+                     hitWithFloat("hihat", 18, 54, 0.78, { hatType: pedalHeld ? "closed" : "open" });
+                   }}
+                   cursor="pointer">
+                  <ellipse cx="150" cy="280" rx="90" ry="26" fill="rgba(251,191,36,.14)" stroke="rgba(255,255,255,.14)" strokeWidth="2" />
+                  <ellipse cx="150" cy="296" rx="78" ry="22" fill="rgba(251,191,36,.10)" stroke="rgba(255,255,255,.10)" strokeWidth="2" />
+                  <text x="150" y="292" textAnchor="middle" fontSize="16" style={labelStyle("hihat")}>Hi-Hat</text>
+                </g>
+
+                <g className="kit-piece"
+                   onPointerDown={(e)=>{e.preventDefault(); pedalDown(14, 78);}}
+                   onPointerUp={(e)=>{e.preventDefault(); pedalUp();}}
+                   onPointerCancel={(e)=>{e.preventDefault(); pedalUp();}}
+                   onPointerLeave={(e)=>{e.preventDefault(); pedalUp();}}
+                   cursor="pointer">
+                  <rect x="86" y="405" rx="14" ry="14" width="140" height="64"
+                        fill={pedalHeld ? "rgba(22,163,74,.28)" : "rgba(15,23,42,.75)"} stroke="rgba(255,255,255,.18)" strokeWidth="2"/>
+                  <text x="156" y="444" textAnchor="middle" fontSize="16" fill="rgba(226,232,240,.85)">{pedalHeld ? "Pedal (Held)" : "Pedal"}</text>
+                </g>
+
+                <g className="kit-piece" style={glowStyle("tom1")}
+                   onPointerDown={(e)=>{e.preventDefault(); hitWithFloat("tom1", 48, 44, 0.80);}}
+                   cursor="pointer">
+                  <ellipse cx="420" cy="230" rx="92" ry="54" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.12)" strokeWidth="2" />
+                  <ellipse cx="420" cy="230" rx="72" ry="40" fill="rgba(15,23,42,.55)" stroke="rgba(255,255,255,.10)" strokeWidth="2" />
+                  <text x="420" y="236" textAnchor="middle" fontSize="16" style={labelStyle("tom1")}>Tom 1</text>
+                </g>
+
+                <g className="kit-piece" style={glowStyle("tom2")}
+                   onPointerDown={(e)=>{e.preventDefault(); hitWithFloat("tom2", 62, 58, 0.80);}}
+                   cursor="pointer">
+                  <ellipse cx="560" cy="280" rx="92" ry="54" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.12)" strokeWidth="2" />
+                  <ellipse cx="560" cy="280" rx="72" ry="40" fill="rgba(15,23,42,.55)" stroke="rgba(255,255,255,.10)" strokeWidth="2" />
+                  <text x="560" y="286" textAnchor="middle" fontSize="16" style={labelStyle("tom2")}>Tom 2</text>
+                </g>
+
+                <g className="kit-piece" style={glowStyle("snare")}
+                   onPointerDown={(e)=>{e.preventDefault(); hitWithFloat("snare", 42, 66, 0.86);}}
+                   cursor="pointer">
+                  <ellipse cx="360" cy="330" rx="100" ry="58" fill="rgba(255,255,255,.09)" stroke="rgba(255,255,255,.12)" strokeWidth="2" />
+                  <ellipse cx="360" cy="330" rx="78" ry="44" fill="rgba(15,23,42,.55)" stroke="rgba(255,255,255,.10)" strokeWidth="2" />
+                  <text x="360" y="336" textAnchor="middle" fontSize="16" style={labelStyle("snare")}>Snare</text>
+                </g>
+
+                <g className="kit-piece" style={glowStyle("tom3")}
+                   onPointerDown={(e)=>{e.preventDefault(); hitWithFloat("tom3", 68, 78, 0.80);}}
+                   cursor="pointer">
+                  <ellipse cx="600" cy="390" rx="104" ry="64" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.12)" strokeWidth="2" />
+                  <ellipse cx="600" cy="390" rx="82" ry="48" fill="rgba(15,23,42,.55)" stroke="rgba(255,255,255,.10)" strokeWidth="2" />
+                  <text x="600" y="396" textAnchor="middle" fontSize="16" style={labelStyle("tom3")}>Tom 3</text>
+                </g>
+
+                <g className="kit-piece" style={glowStyle("kick")}
+                   onPointerDown={(e)=>{e.preventDefault(); hitWithFloat("kick", 55, 86, 0.92);}}
+                   cursor="pointer">
+                  <ellipse cx="470" cy="420" rx="150" ry="92" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.12)" strokeWidth="2" />
+                  <ellipse cx="470" cy="420" rx="120" ry="74" fill="rgba(2,6,23,.70)" stroke="rgba(255,255,255,.10)" strokeWidth="2" />
+                  <circle cx="520" cy="440" r="28" fill="rgba(255,255,255,.08)" />
+                  <text x="470" y="425" textAnchor="middle" fontSize="18" style={labelStyle("kick")}>Kick</text>
+                </g>
+              </svg>
+
+              {showOnKitControls && (
+                <div className="absolute inset-0 pointer-events-none">
+                  {Object.entries(PART_POS).map(([pieceId, pos]) => (
+                    <div
+                      key={pieceId}
+                      className="absolute pointer-events-auto w-44 rounded-xl border border-white/15 bg-slate-950/90 p-2 text-[10px] text-slate-200 shadow-[0_10px_30px_rgba(0,0,0,.55)]"
+                      style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: "translate(-50%,-50%)" }}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold">{pieceMeta(pieceId)?.label || pieceId}</span>
+                        <span className="text-slate-400">{Math.round((partVol[pieceId] ?? 1) * 100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1.25"
+                        step="0.01"
+                        value={partVol[pieceId] ?? 1}
+                        onChange={(e)=>onPartVolChange(pieceId, parseFloat(e.target.value))}
+                        className="mt-1 w-full"
+                      />
+                      <div className="mt-1 flex items-center justify-between">
+                        <span className="text-[9px] text-slate-400">{sampleLabel(pieceId)}</span>
+                        {sampleMap[pieceId] ? <span className="text-[9px] text-emerald-200">loaded</span> : <span className="text-[9px] text-slate-500">—</span>}
+                      </div>
+                      <div className="mt-1 flex gap-1">
+                        <label className="flex-1 rounded-lg border border-white/15 bg-white/5 px-1 py-1 text-center cursor-pointer">
+                          Upload
+                          <input
+                            type="file"
+                            accept="audio/*"
+                            className="hidden"
+                            onChange={(e)=>{ onSampleUpload(pieceId, e.target.files?.[0]); e.target.value=""; }}
+                          />
+                        </label>
+                        <button
+                          className="rounded-lg border border-white/15 bg-white/5 px-2 py-1"
+                          onPointerDown={(e)=>{e.preventDefault(); onSampleClear(pieceId);}}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3 text-xs text-slate-500">
+              Tip: Hold Pedal to keep hi-hat tight/closed. Release Pedal to allow open hats.
+            </div>
+          </div>
+        );
+      }
+
+      /***********************
+       * Main App
+       ***********************/
+      function App() {
+        const [category, setCategory] = useState("Rock");
+        const [sharedLessons, setSharedLessons] = useState([]);
+        const lessonsData = useMemo(() => ({
+          ...LESSONS,
+          ...(sharedLessons.length ? { Shared: sharedLessons } : {})
+        }), [sharedLessons]);
+
+        const [lessonId, setLessonId] = useState(LESSONS["Rock"][0].id);
+
+        const lesson = useMemo(() => {
+          const list = lessonsData[category] || [];
+          return list.find(l => l.id === lessonId) || list[0];
+        }, [category, lessonId, lessonsData]);
+
+        useEffect(() => {
+          const list = lessonsData[category] || [];
+          if (!list.some(l => l.id === lessonId)) setLessonId(list[0]?.id);
+        }, [category, lessonId, lessonsData]);
+
+        const [drumOnlyMode, setDrumOnlyMode] = useState(false);
+        const [canInstall, setCanInstall] = useState(false);
+        const installPromptRef = useRef(null);
+        const [academyXP, setAcademyXP] = useState(() => getCanonicalXP());
+        const [academyLevel, setAcademyLevel] = useState(() => Math.floor(getCanonicalXP() / 2500) + 1);
+        const [xpToast, setXpToast] = useState("");
+        const [ninjaName, setNinjaName] = useState(() => getCurrentNinjaName());
+        const [showHelp, setShowHelp] = useState(false);
+
+        const sequence = lesson?.steps || [];
+        const lessonBpm = lesson?.bpm || 100;
+        const subdiv = Number(lesson?.subdiv || STEPS_PER_BAR);
+        const totalBars = Math.max(1, Number(lesson?.bars || Math.ceil(sequence.length / subdiv) || 1));
+        const [metBpm, setMetBpm] = useState(lessonBpm);
+
+        const [currentIndex, setCurrentIndex] = useState(0);
+        useEffect(() => { setCurrentIndex(0); }, [lessonId, category]);
+        useEffect(() => { setMetBpm(lessonBpm); }, [lessonId, category, lessonBpm]);
+
+        const [viewMode, setViewMode] = useState("drum"); // drum | staff
+        const [playMode, setPlayMode] = useState("training"); // training | free
+        const [rightOpen, setRightOpen] = useState(true);
+        const [loopEnabled, setLoopEnabled] = useState(false);
+        const [loopStartBar, setLoopStartBar] = useState(1);
+        const [loopEndBar, setLoopEndBar] = useState(1);
+        const [backingEnabled, setBackingEnabled] = useState(false);
+        const [backingVol, setBackingVol] = useState(0.35);
+        const [autoFollow, setAutoFollow] = useState(true);
+        useEffect(() => {
+          setLoopStartBar(1);
+          setLoopEndBar(totalBars);
+        }, [lessonId, category, totalBars]);
+        useEffect(() => {
+          if (loopEndBar < loopStartBar) setLoopEndBar(loopStartBar);
+        }, [loopStartBar, loopEndBar]);
+
+        const refreshAcademyXP = () => {
+          const xp = getCanonicalXP();
+          setAcademyXP(xp);
+          setAcademyLevel(Math.floor(xp / 2500) + 1);
+          setNinjaName(getCurrentNinjaName());
+        };
+        useEffect(() => {
+          refreshAcademyXP();
+          const onFocus = () => refreshAcademyXP();
+          const onStorage = (e) => {
+            if (!e || ["ninja_roster_full", "ninjaUser", "totalXP"].includes(e.key)) refreshAcademyXP();
+          };
+          window.addEventListener("focus", onFocus);
+          window.addEventListener("storage", onStorage);
+          return () => {
+            window.removeEventListener("focus", onFocus);
+            window.removeEventListener("storage", onStorage);
+          };
+        }, []);
+
+        const kitAnchorRef = useRef(null);
+        useEffect(() => {
+          setTimeout(() => {
+            if (kitAnchorRef.current) kitAnchorRef.current.scrollIntoView({ block: "start" });
+          }, 0);
+        }, []);
+
+        const awardAcademyXP = (amount, reason) => {
+          const safeAmount = Math.max(0, Math.floor(Number(amount) || 0));
+          if (!safeAmount) return;
+          const next = adjustCanonicalXP(safeAmount);
+          setAcademyXP(next);
+          setAcademyLevel(Math.floor(next / 2500) + 1);
+          setXpToast(`+${safeAmount} XP • ${reason}`);
+          setTimeout(() => setXpToast(""), 1800);
+        };
+
+        // ✅ This is your requested toggle: show/hide per-part volume + sample upload ON THE KIT
+        const [showOnKitControls, setShowOnKitControls] = useState(false);
+
+        const [audioReady, setAudioReady] = useState(false);
+        const [midiReady, setMidiReady] = useState(false);
+        const [midiError, setMidiError] = useState(null);
+
+        const [lastHit, setLastHit] = useState(null);
+        const [pulse, setPulse] = useState({});
+        const [sampleMap, setSampleMap] = useState({});
+
+        const [metEnabled, setMetEnabled] = useState(false);
+
+        const [vol, setVol] = useState({
+          master: 0.9,
+          kick: 1.0,
+          snare: 1.0,
+          tom1: 1.0,
+          tom2: 1.0,
+          tom3: 1.0,
+          crash: 1.0,
+          ride: 1.0,
+          hihat: 1.0,
+          metro: 0.6,
+        });
+
+        const partVol = useMemo(() => ({
+          kick: vol.kick,
+          snare: vol.snare,
+          tom1: vol.tom1,
+          tom2: vol.tom2,
+          tom3: vol.tom3,
+          crash: vol.crash,
+          ride: vol.ride,
+          hihat: vol.hihat,
+        }), [vol]);
+
+        const setPartVol = (pieceId, value) => {
+          const v = Math.max(0, Math.min(1.25, value));
+          if (pieceId === "hihat") setVol((s) => ({ ...s, hihat: v }));
+          else setVol((s) => ({ ...s, [pieceId]: v }));
+        };
+
+        // Lesson-share recording (events)
+        const [isLessonRecording, setIsLessonRecording] = useState(false);
+        const recordStartRef = useRef(0);
+        const recordedHitsRef = useRef([]);
+
+        // Audio recording (wav)
+        const [isAudioRecording, setIsAudioRecording] = useState(false);
+
+        // Scoring state
+        const [score, setScore] = useState(0);
+        const [streak, setStreak] = useState(0);
+        const [hits, setHits] = useState({ total: 0, perfect: 0, great: 0, ok: 0, late: 0, wrong: 0 });
+
+        // ✅ Multi-limb step tracking: for the current step, which required pieces are already satisfied?
+        const [stepSatisfied, setStepSatisfied] = useState(() => new Set());
+
+        // Audio engine
+        const kitRef = useRef(null);
+        if (!kitRef.current) kitRef.current = createRealKit();
+
+        // Apply volumes
+        useEffect(() => {
+          const kit = kitRef.current;
+          if (!kit) return;
+          kit.setMaster(vol.master);
+          kit.setVol("kick", vol.kick);
+          kit.setVol("snare", vol.snare);
+          kit.setVol("tom1", vol.tom1);
+          kit.setVol("tom2", vol.tom2);
+          kit.setVol("tom3", vol.tom3);
+          kit.setVol("crash", vol.crash);
+          kit.setVol("ride", vol.ride);
+          kit.setVol("hatClosed", vol.hihat);
+          kit.setVol("hatOpen", vol.hihat);
+          kit.setVol("hatPedal", vol.hihat);
+          kit.setVol("metro", vol.metro);
+        }, [vol]);
+
+        useEffect(() => {
+          const kit = kitRef.current;
+          if (!kit) return;
+          Object.entries(sampleMap).forEach(([pieceId, dataUrl]) => {
+            kit.setSample(pieceId, dataUrl).catch(() => {});
+          });
+        }, [sampleMap]);
+
+        const initRef = useRef({ started: false });
+        const initEngines = async () => {
+          if (initRef.current.started) return;
+          initRef.current.started = true;
+
+          try { await Tone.start(); setAudioReady(true); }
+          catch { setAudioReady(false); }
+
+          try {
+            if (!navigator.requestMIDIAccess) {
+              setMidiError("WebMIDI not supported in this browser.");
+              setMidiReady(false);
+              return;
+            }
+            const access = await navigator.requestMIDIAccess({ sysex: false });
+            const inputs = Array.from(access.inputs.values());
+            setMidiReady(inputs.length > 0);
+            setMidiError(null);
+
+            const onMIDIMessage = (ev) => {
+              const data = ev.data || [];
+              const status = data[0] || 0;
+              const d1 = data[1] || 0;
+              const d2 = data[2] || 0;
+              const cmd = status & 0xf0;
+
+              if (cmd === 0xB0) {
+                const cc = d1, value = d2;
+                if (cc === 4) {
+                  const open = value >= 90;
+                  kitRef.current?.setHatOpenState(open);
+                  kitRef.current?.setHatPedalDown(value <= 25);
+                }
+                return;
+              }
+
+              const isNoteOn = cmd === 0x90 && d2 > 0;
+              if (!isNoteOn) return;
+
+              const note = d1, vel127 = d2;
+              const pieceId = midiNoteToPiece(note);
+              if (!pieceId) return;
+
+              const v01 = Math.max(0, Math.min(1, vel127 / 127));
+
+              if (!audioReady) Tone.start().then(()=>setAudioReady(true)).catch(()=>{});
+
+              let extra = {};
+              if (pieceId === "hihat") {
+                if (note === 44) extra.hatType = "pedal";
+                else if (note === 46) extra.hatType = "open";
+                else extra.hatType = "closed";
+              }
+
+              handleHit(pieceId, v01, "midi", extra);
+            };
+
+            for (const input of inputs) input.onmidimessage = onMIDIMessage;
+
+            access.onstatechange = () => {
+              const inputsNow = Array.from(access.inputs.values());
+              setMidiReady(inputsNow.length > 0);
+              for (const input of inputsNow) input.onmidimessage = onMIDIMessage;
+            };
+          } catch (e) {
+            setMidiError(String(e?.message || e));
+            setMidiReady(false);
+          }
+        };
+
+        useEffect(() => {
+          const handler = () => initEngines();
+          window.addEventListener("pointerdown", handler, { once: true, passive: true });
+          return () => window.removeEventListener("pointerdown", handler);
+        }, []);
+
+        // PWA SW
+        useEffect(() => {
+          if (!("serviceWorker" in navigator)) return;
+          navigator.serviceWorker.register("./sw.js").catch(() => {});
+        }, []);
+
+        useEffect(() => {
+          const onBeforeInstall = (e) => {
+            e.preventDefault();
+            installPromptRef.current = e;
+            setCanInstall(true);
+          };
+          window.addEventListener("beforeinstallprompt", onBeforeInstall);
+          return () => window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+        }, []);
+
+        const installApp = async () => {
+          const promptEvent = installPromptRef.current;
+          if (!promptEvent) return;
+          await promptEvent.prompt();
+          installPromptRef.current = null;
+          setCanInstall(false);
+        };
+
+        const refreshOfflineCache = async () => {
+          try {
+            if ("caches" in window) {
+              const keys = await caches.keys();
+              await Promise.all(keys.map((k) => caches.delete(k)));
+            }
+            if ("serviceWorker" in navigator) {
+              const regs = await navigator.serviceWorker.getRegistrations();
+              await Promise.all(regs.map((r) => r.unregister()));
+            }
+          } catch {}
+          window.location.reload();
+        };
+
+        const enterDrumOnly = async () => {
+          setDrumOnlyMode(true);
+          try {
+            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+              await document.documentElement.requestFullscreen();
+            }
+          } catch {}
+        };
+
+        const exitDrumOnly = async () => {
+          setDrumOnlyMode(false);
+          try {
+            if (document.fullscreenElement && document.exitFullscreen) {
+              await document.exitFullscreen();
+            }
+          } catch {}
+        };
+
+        useEffect(() => {
+          const onFsChange = () => {
+            if (!document.fullscreenElement) setDrumOnlyMode(false);
+          };
+          document.addEventListener("fullscreenchange", onFsChange);
+          return () => document.removeEventListener("fullscreenchange", onFsChange);
+        }, []);
+
+        const onSampleUpload = (pieceId, file) => {
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = String(reader.result || "");
+            setSampleMap((prev) => ({ ...prev, [pieceId]: dataUrl }));
+          };
+          reader.readAsDataURL(file);
+        };
+
+        const clearSample = (pieceId) => {
+          setSampleMap((prev) => {
+            const next = { ...prev };
+            delete next[pieceId];
+            return next;
+          });
+          kitRef.current?.setSample(pieceId, null).catch(() => {});
+        };
+
+        // Lesson share recording (JSON)
+        const startLessonRecording = () => {
+          recordedHitsRef.current = [];
+          recordStartRef.current = performance.now();
+          setIsLessonRecording(true);
+        };
+
+        const stopLessonRecordingAndDownload = () => {
+          setIsLessonRecording(false);
+          if (!recordedHitsRef.current.length) return;
+
+          const payload = {
+            app: "Drum Academy",
+            version: 2,
+            exportedAt: new Date().toISOString(),
+            title: `Shared Lesson ${new Date().toLocaleString()}`,
+            category,
+            bpm: metBpm,
+            lessonMeta: {
+              subdiv: lesson?.subdiv || 8,
+              bars: lesson?.bars || 1,
+            },
+            // ✅ export step-structure (real lessons)
+            steps: sequence,
+            // keep a simple sequence fallback (flattened)
+            sequence: sequence.map(step => (toStepArray(step).filter(Boolean)[0] || null)).filter(Boolean),
+            events: recordedHitsRef.current,
+            // ✅ include samples so it works “everywhere”
+            samples: sampleMap,
+            author: "Moise T. Sahouo"
+          };
+
+          const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `drum-academy-lesson-${Date.now()}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+
+        const importSharedLesson = (file) => {
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const parsed = JSON.parse(String(reader.result || "{}"));
+
+              const steps =
+                Array.isArray(parsed.steps) && parsed.steps.length
+                  ? parsed.steps
+                  : (Array.isArray(parsed.sequence) ? parsed.sequence.map(x => Array.isArray(x) ? x : [x]) : []);
+
+              if (!steps.length) return;
+
+              const shared = {
+                id: `shared-${Date.now()}`,
+                title: parsed.title || `Shared Lesson ${sharedLessons.length + 1}`,
+                bpm: Number(parsed.bpm || 100),
+                subdiv: Number(parsed.lessonMeta?.subdiv || 8),
+                bars: Number(parsed.lessonMeta?.bars || 1),
+                steps,
+                lanes: parsed.lanes || null,
+                hint: "Imported shared lesson (includes samples if provided).",
+                tips: ["If timing feels off, adjust BPM to match the recording."]
+              };
+
+              setSharedLessons((prev) => [...prev, shared]);
+              setCategory("Shared");
+              setLessonId(shared.id);
+
+              if (parsed.samples && typeof parsed.samples === "object") {
+                setSampleMap((prev) => ({ ...prev, ...parsed.samples }));
+              }
+            } catch {}
+          };
+          reader.readAsText(file);
+        };
+
+        const safeLoopStartBar = Math.max(1, Math.min(totalBars, loopStartBar));
+        const safeLoopEndBar = Math.max(safeLoopStartBar, Math.min(totalBars, loopEndBar));
+        const loopStartIdx = (safeLoopStartBar - 1) * subdiv;
+        const loopEndIdx = Math.min(sequence.length - 1, safeLoopEndBar * subdiv - 1);
+
+        const nextIndexWithLoop = (i) => {
+          if (!sequence.length) return 0;
+          if (loopEnabled) {
+            if (i < loopStartIdx || i > loopEndIdx) return loopStartIdx;
+            return (i + 1 > loopEndIdx) ? loopStartIdx : (i + 1);
+          }
+          return (i + 1 >= sequence.length) ? 0 : (i + 1);
+        };
+
+        // Audio recording (WAV)
+        const startAudioRecording = async () => {
+          await initEngines();
+          try {
+            await kitRef.current?.startAudioRecord();
+            setIsAudioRecording(true);
+          } catch {}
+        };
+
+        const stopAudioRecordingAndDownload = async () => {
+          try {
+            const blob = await kitRef.current?.stopAudioRecord();
+            setIsAudioRecording(false);
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `drum-academy-audio-${Date.now()}.wav`;
+            a.click();
+            URL.revokeObjectURL(url);
+          } catch {
+            setIsAudioRecording(false);
+          }
+        };
+
+        // ✅ expected step (multi-limb)
+        const expectedStep = useMemo(() => {
+          if (playMode !== "training") return null;
+          const step = sequence[currentIndex];
+          const arr = toStepArray(step).filter(Boolean);
+          return arr.length ? arr : []; // can be rest
+        }, [playMode, sequence, currentIndex]);
+
+        // Timing grid: step size depends on lesson subdivision
+        const gridRef = useRef({ startedAtMs: 0, stepMs: 0, expectedAtMs: 0, stepIndex: 0 });
+
+        const ensureGridStarted = () => {
+          const subdiv = Number(lesson?.subdiv || 8);
+          const stepMs = (60_000 / metBpm) * (4 / subdiv); // 4 beats/bar. subdiv steps per bar.
+          if (!gridRef.current.startedAtMs) {
+            const now = performance.now();
+            gridRef.current = { startedAtMs: now, stepMs, expectedAtMs: now + stepMs, stepIndex: 0 };
+          } else {
+            gridRef.current.stepMs = stepMs;
+          }
+        };
+
+        // Reset on lesson changes
+        useEffect(() => {
+          gridRef.current = { startedAtMs: 0, stepMs: 0, expectedAtMs: 0, stepIndex: 0 };
+          setScore(0);
+          setStreak(0);
+          setHits({ total: 0, perfect: 0, great: 0, ok: 0, late: 0, wrong: 0 });
+          setCurrentIndex(0);
+          setStepSatisfied(new Set());
+        }, [lessonId, category, playMode]);
+
+        useEffect(() => {
+          if (!loopEnabled || !sequence.length) return;
+          if (currentIndex < loopStartIdx || currentIndex > loopEndIdx) {
+            setCurrentIndex(loopStartIdx);
+            setStepSatisfied(new Set());
+          }
+        }, [loopEnabled, loopStartIdx, loopEndIdx, currentIndex, sequence.length]);
+
+        const metroTimerRef = useRef(null);
+        const playbackTimerRef = useRef(null);
+        const backingStepRef = useRef(0);
+        const backingBassRef = useRef(null);
+        const backingGainRef = useRef(null);
+
+        useEffect(() => {
+          if (!backingGainRef.current) {
+            backingGainRef.current = new Tone.Gain(backingVol).toDestination();
+            backingBassRef.current = new Tone.MonoSynth({
+              oscillator: { type: "triangle" },
+              envelope: { attack: 0.01, decay: 0.18, sustain: 0.15, release: 0.12 },
+              filterEnvelope: { attack: 0.005, decay: 0.08, sustain: 0.1, release: 0.1, baseFrequency: 120, octaves: 2 }
+            }).connect(backingGainRef.current);
+          }
+          return () => {
+            if (playbackTimerRef.current) clearInterval(playbackTimerRef.current);
+          };
+        }, []);
+
+        useEffect(() => {
+          if (backingGainRef.current) backingGainRef.current.gain.value = Math.max(0, Math.min(1, backingVol));
+        }, [backingVol]);
+        useEffect(() => {
+          if (!metEnabled) {
+            if (metroTimerRef.current) clearInterval(metroTimerRef.current);
+            metroTimerRef.current = null;
+            return;
+          }
+          if (metroTimerRef.current) {
+            clearInterval(metroTimerRef.current);
+            metroTimerRef.current = null;
+            startMetronomeIfNeeded();
+          }
+          return () => {
+            if (metroTimerRef.current) clearInterval(metroTimerRef.current);
+            metroTimerRef.current = null;
+          };
+        }, [metEnabled, metBpm, lesson?.subdiv]);
+
+        const backingRoot = useMemo(() => {
+          const map = {
+            Rock: "E2", Gospel: "F2", Jazz: "D2", Funk: "E2",
+            "Bossa Nova": "A2", Afrobeat: "G2", Reggae: "C2", Latin: "D2", Rudiments: "E2", Shared: "E2"
+          };
+          return map[category] || "E2";
+        }, [category]);
+
+        const playBackingStep = (stepInBar) => {
+          const kit = kitRef.current;
+          if (!kit) return;
+          const s = stepInBar;
+          if (["Rock","Funk","Gospel","Reggae"].includes(category)) {
+            if ([0,4,6].includes(s)) kit.trigger("kick", 0.45);
+            if ([2,6].includes(s)) kit.trigger("snare", 0.38);
+            kit.trigger("hihat", 0.24, { hatType: "closed" });
+          } else if (["Jazz","Bossa Nova","Latin"].includes(category)) {
+            kit.trigger("ride", 0.22);
+            if ([2,6].includes(s)) kit.trigger("hihat", 0.24, { hatType: "pedal" });
+            if ([0,4].includes(s)) kit.trigger("kick", 0.28);
+          } else if (category === "Afrobeat") {
+            kit.trigger("ride", 0.24);
+            if ([0,3,5].includes(s)) kit.trigger("kick", 0.34);
+            if ([2,6].includes(s)) kit.trigger("snare", 0.3);
+          }
+          if (backingBassRef.current && [0,4].includes(s)) {
+            backingBassRef.current.triggerAttackRelease(backingRoot, "8n");
+          }
+        };
+
+        useEffect(() => {
+          if (playbackTimerRef.current) {
+            clearInterval(playbackTimerRef.current);
+            playbackTimerRef.current = null;
+          }
+          if (!backingEnabled) return;
+
+          const stepMs = (60_000 / metBpm) * (4 / Number(lesson?.subdiv || 8));
+          backingStepRef.current = currentIndex % Math.max(1, subdiv);
+
+          playbackTimerRef.current = setInterval(() => {
+            playBackingStep(backingStepRef.current);
+            backingStepRef.current = (backingStepRef.current + 1) % Math.max(1, subdiv);
+            if (autoFollow && playMode === "training") {
+              setStepSatisfied(new Set());
+              setCurrentIndex((i) => {
+                if (!sequence.length) return 0;
+                if (loopEnabled) {
+                  if (i < loopStartIdx || i > loopEndIdx) return loopStartIdx;
+                  return (i + 1 > loopEndIdx) ? loopStartIdx : (i + 1);
+                }
+                return (i + 1 >= sequence.length) ? 0 : (i + 1);
+              });
+              advanceExpectedTime();
+            }
+          }, stepMs);
+
+          return () => {
+            if (playbackTimerRef.current) clearInterval(playbackTimerRef.current);
+            playbackTimerRef.current = null;
+          };
+        }, [backingEnabled, autoFollow, playMode, metBpm, lesson?.subdiv, category, subdiv, backingRoot, loopEnabled, loopStartIdx, loopEndIdx, sequence.length]);
+
+        const startMetronomeIfNeeded = () => {
+          if (!metEnabled) return;
+          if (metroTimerRef.current) return;
+
+          ensureGridStarted();
+
+          const tick = () => {
+            const g = gridRef.current;
+            const subdiv = Number(lesson?.subdiv || 8);
+            // accent on each beat (every subdiv/4 steps)
+            const beatStep = Math.max(1, Math.round(subdiv / 4));
+            const accent = (g.stepIndex % beatStep === 0);
+            kitRef.current?.trigger("metronome", 0.9, { accent });
+            g.stepIndex += 1;
+          };
+
+          const stepMs = gridRef.current.stepMs || ((60_000 / metBpm) * (4 / Number(lesson?.subdiv || 8)));
+          metroTimerRef.current = setInterval(tick, stepMs);
+          tick();
+        };
+
+        const stopMetronome = () => {
+          if (metroTimerRef.current) clearInterval(metroTimerRef.current);
+          metroTimerRef.current = null;
+        };
+
+        const advanceExpectedTime = () => {
+          const g = gridRef.current;
+          const stepMs = g.stepMs || ((60_000 / metBpm) * (4 / Number(lesson?.subdiv || 8)));
+          g.expectedAtMs += stepMs;
+        };
+
+        const handleHit = (pieceId, v01, source="ui", extra={}) => {
+          if (pieceId === "hihat" && Object.prototype.hasOwnProperty.call(extra, "pedalDown")) {
+            kitRef.current?.setHatPedalDown(!!extra.pedalDown);
+          }
+          if (extra?.silent) return;
+
+          ensureGridStarted();
+
+          setPulse((prev) => ({ ...prev, [pieceId]: { vel: v01, t: performance.now() } }));
+
+          // record events for lesson share export
+          if (isLessonRecording) {
+            const tMs = Math.max(0, Math.round(performance.now() - recordStartRef.current));
+            recordedHitsRef.current.push({ tMs, piece: pieceId, vel: Number(v01.toFixed(3)) });
+          }
+
+          if (!audioReady) Tone.start().then(()=>setAudioReady(true)).catch(()=>{});
+          kitRef.current?.trigger(pieceId, v01, extra);
+
+          if (playMode !== "training") {
+            setLastHit({ piece: pieceId, vel: v01, source, at: Date.now(), grade: "Free Play" });
+            return;
+          }
+
+          const required = new Set((expectedStep || []).filter(Boolean));
+          const nowMs = performance.now();
+          const expectedAtMs = gridRef.current.expectedAtMs || nowMs;
+          const delta = nowMs - expectedAtMs;
+
+          // If this step is a rest (no required hits), auto-advance on any hit as “Wrong”
+          if (!required.size) {
+            setLastHit({ piece: pieceId, vel: v01, source, at: Date.now(), grade: "Wrong" });
+            setStreak(0);
+            setHits((h) => ({ ...h, total: h.total + 1, wrong: h.wrong + 1 }));
+            return;
+          }
+
+          // ✅ Multi-limb: satisfy pieces until all required are hit
+          if (required.has(pieceId)) {
+            const g = gradeFromDeltaMs(delta);
+            const grade = g.grade;
+            const pts = g.pts;
+
+            setHits((h) => {
+              const next = { ...h, total: h.total + 1 };
+              if (grade === "Perfect") next.perfect += 1;
+              else if (grade === "Great") next.great += 1;
+              else if (grade === "Ok") next.ok += 1;
+              else next.late += 1;
+              return next;
+            });
+
+            // satisfy
+            setStepSatisfied((prev) => {
+              const next = new Set(prev);
+              next.add(pieceId);
+              return next;
+            });
+
+            setLastHit({ piece: pieceId, vel: v01, source, at: Date.now(), grade });
+
+            // score
+            const newStreak = streak + 1;
+            const bonus = Math.min(50, Math.floor(newStreak / 5) * 10);
+            setStreak(newStreak);
+            setScore((s) => s + pts + bonus);
+
+            // if all required satisfied -> advance
+            const willBeSatisfied = new Set(stepSatisfied);
+            willBeSatisfied.add(pieceId);
+
+            let allDone = true;
+            for (const r of required) {
+              if (!willBeSatisfied.has(r)) { allDone = false; break; }
+            }
+
+            if (allDone) {
+              setStepSatisfied(new Set());
+              setCurrentIndex((i) => nextIndexWithLoop(i));
+              advanceExpectedTime();
+            }
+          } else {
+            setLastHit({ piece: pieceId, vel: v01, source, at: Date.now(), grade: "Wrong" });
+            setStreak(0);
+            setHits((h) => ({ ...h, total: h.total + 1, wrong: h.wrong + 1 }));
+          }
+        };
+
+        const progressPct = (() => {
+          if (playMode !== "training" || !sequence.length) return 0;
+          if (!loopEnabled) return Math.round((currentIndex / sequence.length) * 100);
+          const span = Math.max(1, loopEndIdx - loopStartIdx + 1);
+          const p = Math.max(0, currentIndex - loopStartIdx);
+          return Math.round((p / span) * 100);
+        })();
+
+        const accuracyPct = useMemo(() => {
+          if (playMode !== "training") return 0;
+          const t = hits.total || 0;
+          if (!t) return 0;
+          const good = hits.perfect + hits.great + hits.ok + hits.late;
+          return Math.round((good / t) * 100);
+        }, [hits, playMode]);
+
+        const prevIndexRef = useRef(0);
+        useEffect(() => {
+          const prev = prevIndexRef.current;
+          const completedCycle =
+            playMode === "training" &&
+            !loopEnabled &&
+            sequence.length > 0 &&
+            prev === sequence.length - 1 &&
+            currentIndex === 0;
+          if (completedCycle) {
+            const minHits = Math.max(4, Math.floor(sequence.length * 0.4));
+            if (hits.total >= minHits && accuracyPct >= 60) {
+              const base = 50;
+              const accBonus = accuracyPct >= 95 ? 50 : accuracyPct >= 85 ? 25 : 0;
+              const streakBonus = streak >= 20 ? 25 : 0;
+              awardAcademyXP(base + accBonus + streakBonus, `${lesson?.title || "Lesson"} clear`);
+            }
+          }
+          prevIndexRef.current = currentIndex;
+        }, [currentIndex, sequence.length, loopEnabled, playMode, hits.total, accuracyPct, streak, lesson?.title]);
+
+        const resetAll = () => {
+          stopMetronome();
+          gridRef.current = { startedAtMs: 0, stepMs: 0, expectedAtMs: 0, stepIndex: 0 };
+          setCurrentIndex(0);
+          setScore(0);
+          setStreak(0);
+          setHits({ total: 0, perfect: 0, great: 0, ok: 0, late: 0, wrong: 0 });
+          setStepSatisfied(new Set());
+        };
+
+        return (
+          <div className="min-h-screen">
+            <header className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/70 backdrop-blur overflow-x-auto scrollbar-thin">
+              <div className="mx-auto max-w-6xl min-w-[980px] sm:min-w-0 px-3 sm:px-4 py-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-2xl bg-white/5 border border-white/10 grid place-items-center shadow-[0_18px_60px_rgba(0,0,0,.5)]">
+                    🥁
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold leading-tight text-emerald-300">PSALMIST DRUM ACADEMY</div>
+                    <div className="text-xs text-slate-400 leading-tight">
+                      RHYTHM_CORE // Real lessons • On-kit controls • Psalmist Ninja training
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-nowrap sm:flex-wrap items-center justify-end gap-2">
+                  <span className="hidden sm:inline-flex px-2 py-1 rounded-full border border-[color:var(--academy-border)] bg-white/5 text-[11px] text-slate-200">
+                    NINJA: {ninjaName}
+                  </span>
+                  <span className="hidden sm:inline-flex px-2 py-1 rounded-full border border-amber-400/35 bg-amber-400/10 text-[11px] text-amber-200">
+                    XP: {academyXP.toString().padStart(5, "0")} • LVL {academyLevel}
+                  </span>
+                  <a
+                    className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm"
+                    href="hub.html"
+                  >
+                    Return Hub
+                  </a>
+                  <a
+                    className="px-3 py-2 rounded-xl border border-sky-400/35 bg-sky-400/10 hover:bg-sky-400/20 text-sm text-sky-100"
+                    href="beat_machine.html"
+                  >
+                    Sequencer
+                  </a>
+                  <button
+                    className="px-3 py-2 rounded-xl border border-amber-400/35 bg-amber-400/10 hover:bg-amber-400/20 text-sm text-amber-200"
+                    onPointerDown={(e)=>{ e.preventDefault(); setShowHelp(true); }}
+                  >
+                    Help
+                  </button>
+                </div>
+              </div>
+            </header>
+
+            {showHelp ? (
+              <div className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm p-4 grid place-items-center">
+                <div className="w-full max-w-2xl rounded-2xl border border-emerald-400/40 bg-slate-950 p-4">
+                  <div className="text-base font-bold text-emerald-300">DRUM ACADEMY // HELP</div>
+                  <div className="mt-2 text-sm text-slate-200 space-y-1">
+                    <div>1. You land directly on the drum kit first.</div>
+                    <div>2. `Return Hub` takes you back to `hub.html`.</div>
+                    <div>3. `Sequencer` opens `beat_machine.html`.</div>
+                    <div>4. Hit drums by click/touch/MIDI. Training mode gives score, streak, and academy XP on clean lesson clears.</div>
+                    <div>5. Use lesson and practice panels below the kit for BPM, loops, metronome, backing, recording, and imports.</div>
+                  </div>
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm"
+                      onPointerDown={(e)=>{ e.preventDefault(); setShowHelp(false); }}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            <main className={drumOnlyMode ? "mx-auto max-w-6xl px-2 py-2" : "mx-auto max-w-6xl px-3 sm:px-4 py-3 sm:py-4"}>
+              {!drumOnlyMode && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
+                  {/* Lessons (now filled like a real course) */}
+                  <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-slate-900/40 p-3 shadow-[0_24px_80px_rgba(0,0,0,.45)] self-start">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <div className="text-sm text-slate-300">Lessons</div>
+                        <div className="text-xs text-slate-400">
+                          Category: <span className="text-slate-200 font-semibold">{category}</span> • Lesson BPM <span className="text-slate-200 font-semibold">{lessonBpm}</span> • Metronome BPM <span className="text-slate-200 font-semibold">{metBpm}</span>
+                        </div>
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        Multi-limb steps enabled (hi-hat+snare etc.)
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <label className="rounded-xl border border-white/10 bg-white/5 p-2">
+                        <div className="text-[11px] text-slate-400 mb-1">Category</div>
+                        <select
+                          value={category}
+                          onChange={(e) => {
+                            const cat = e.target.value;
+                            setCategory(cat);
+                            setLessonId((lessonsData[cat] || [])[0]?.id);
+                          }}
+                          className="w-full rounded-lg border border-white/10 bg-slate-950/50 px-2 py-2 text-sm text-slate-100"
+                        >
+                          {Object.keys(lessonsData).map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="rounded-xl border border-white/10 bg-white/5 p-2">
+                        <div className="text-[11px] text-slate-400 mb-1">Lesson</div>
+                        <select
+                          value={lessonId}
+                          onChange={(e) => setLessonId(e.target.value)}
+                          className="w-full rounded-lg border border-white/10 bg-slate-950/50 px-2 py-2 text-sm text-slate-100"
+                        >
+                          {(lessonsData[category] || []).map((l) => (
+                            <option key={l.id} value={l.id}>{l.title}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <div className="mt-2 rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="font-semibold text-slate-100">{lesson?.title}</div>
+                        <div className="text-xs text-slate-300 whitespace-nowrap">BPM {lesson?.bpm}</div>
+                      </div>
+                      <div className="text-xs text-slate-300 mt-1">{lesson?.hint}</div>
+                    </div>
+
+                    {/* ✅ Fills the “empty space”: real lesson sheet */}
+                    <LessonSheet
+                      lesson={lesson}
+                      currentIndex={currentIndex}
+                      satisfiedSet={stepSatisfied}
+                      loopEnabled={loopEnabled}
+                      loopStartBar={safeLoopStartBar}
+                      loopEndBar={safeLoopEndBar}
+                    />
+                  </div>
+
+                  {/* Practice + Score + Controls */}
+                  <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-3 shadow-[0_24px_80px_rgba(0,0,0,.45)] self-start">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-sm text-slate-300">Practice</div>
+                      <button
+                        className="px-2 py-1 rounded-lg border border-white/10 bg-white/5 text-xs text-slate-200"
+                        onPointerDown={(e)=>{e.preventDefault(); setRightOpen(v=>!v);}}
+                      >
+                        {rightOpen ? "Fold" : "Unfold"}
+                      </button>
+                    </div>
+
+                    {rightOpen ? (
+                    <>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="mt-1 text-sm font-semibold text-slate-100">
+                          Next:{" "}
+                          <span className="text-sky-200">
+                            {expectedStep?.length ? expectedStep.map(p => pieceMeta(p)?.label || p).join(" + ") : "—"}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-400 mt-1">
+                          {playMode === "training"
+                            ? `Step ${sequence.length ? (currentIndex + 1) : 0}/${sequence.length}`
+                            : "Free Play active"}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2 min-w-[170px]">
+                        <label className="rounded-xl border border-white/10 bg-white/5 p-2">
+                          <div className="text-[10px] text-slate-400 mb-1">Mode</div>
+                          <select
+                            value={playMode}
+                            onChange={(e)=>setPlayMode(e.target.value)}
+                            className="w-full rounded-lg border border-white/10 bg-slate-950/50 px-2 py-1.5 text-sm text-slate-100"
+                          >
+                            <option value="training">Training (On)</option>
+                            <option value="free">Free Play</option>
+                          </select>
+                        </label>
+
+                        <label className="rounded-xl border border-white/10 bg-white/5 p-2">
+                          <div className="text-[10px] text-slate-400 mb-1">View</div>
+                          <select
+                            value={viewMode}
+                            onChange={(e)=>setViewMode(e.target.value)}
+                            className="w-full rounded-lg border border-white/10 bg-slate-950/50 px-2 py-1.5 text-sm text-slate-100"
+                          >
+                            <option value="drum">Drum</option>
+                            <option value="staff">Staff</option>
+                          </select>
+                        </label>
+
+                        {/* ✅ THE TOGGLE YOU ASKED FOR */}
+                        <label className="rounded-xl border border-white/10 bg-white/5 p-2">
+                          <div className="text-[10px] text-slate-400 mb-1">On-Kit Controls</div>
+                          <button
+                            className={[
+                              "w-full rounded-lg border px-2 py-1.5 text-sm",
+                              showOnKitControls
+                                ? "border-emerald-400/35 bg-emerald-400/10 text-emerald-200"
+                                : "border-white/10 bg-slate-950/50 text-slate-100"
+                            ].join(" ")}
+                            onPointerDown={(e)=>{e.preventDefault(); setShowOnKitControls((v)=>!v);}}
+                          >
+                            {showOnKitControls ? "Hide" : "Show"}
+                          </button>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-xs text-slate-300">Backing Track (Built-in)</div>
+                        <button
+                          className={[
+                            "px-2 py-1 rounded-lg border text-xs",
+                            backingEnabled ? "border-emerald-400/35 bg-emerald-400/10 text-emerald-200" : "border-white/10 bg-slate-950/50 text-slate-100"
+                          ].join(" ")}
+                          onPointerDown={(e)=>{e.preventDefault(); initEngines(); setBackingEnabled(v=>!v);}}
+                        >
+                          {backingEnabled ? "On" : "Off"}
+                        </button>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <label className="text-[11px] text-slate-400 flex items-center gap-2">
+                          <input type="checkbox" checked={autoFollow} onChange={(e)=>setAutoFollow(e.target.checked)} />
+                          Auto-follow playback
+                        </label>
+                        <span className="text-[11px] text-slate-500">{Math.round(backingVol*100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={backingVol}
+                        onChange={(e)=>setBackingVol(parseFloat(e.target.value))}
+                        className="mt-2 w-full"
+                      />
+                    </div>
+
+                    <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-xs text-slate-300">Loop Selector</div>
+                        <button
+                          className={[
+                            "px-2 py-1 rounded-lg border text-xs",
+                            loopEnabled ? "border-sky-400/35 bg-sky-400/10 text-sky-200" : "border-white/10 bg-slate-950/50 text-slate-100"
+                          ].join(" ")}
+                          onPointerDown={(e)=>{e.preventDefault(); setLoopEnabled(v=>!v);}}
+                        >
+                          {loopEnabled ? "Loop On" : "Loop Off"}
+                        </button>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        <label className="text-[11px] text-slate-400">
+                          Start Bar
+                          <select
+                            value={safeLoopStartBar}
+                            onChange={(e)=>setLoopStartBar(parseInt(e.target.value,10))}
+                            className="mt-1 w-full rounded-lg border border-white/10 bg-slate-950/50 px-2 py-1 text-xs text-slate-100"
+                          >
+                            {Array.from({ length: totalBars }, (_, i) => i + 1).map((n) => (
+                              <option key={`ls-${n}`} value={n}>{n}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="text-[11px] text-slate-400">
+                          End Bar
+                          <select
+                            value={safeLoopEndBar}
+                            onChange={(e)=>setLoopEndBar(parseInt(e.target.value,10))}
+                            className="mt-1 w-full rounded-lg border border-white/10 bg-slate-950/50 px-2 py-1 text-xs text-slate-100"
+                          >
+                            {Array.from({ length: totalBars }, (_, i) => i + 1).map((n) => (
+                              <option key={`le-${n}`} value={n}>{n}</option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 h-3 rounded-full bg-white/5 border border-white/10 overflow-hidden">
+                      <div className="h-full bg-sky-400/40" style={{ width: `${progressPct}%` }} />
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-2">
+                        <div className="text-[10px] text-slate-400">Score</div>
+                        <div className="text-sm font-extrabold text-slate-100">{playMode === "training" ? score : "—"}</div>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-2">
+                        <div className="text-[10px] text-slate-400">Streak</div>
+                        <div className="text-sm font-extrabold text-slate-100">{playMode === "training" ? streak : "—"}</div>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-2">
+                        <div className="text-[10px] text-slate-400">Accuracy</div>
+                        <div className="text-sm font-extrabold text-slate-100">{playMode === "training" ? `${accuracyPct}%` : "Free"}</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        className="flex-1 px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm"
+                        onPointerDown={(e)=>{e.preventDefault(); resetAll();}}
+                      >
+                        Reset
+                      </button>
+                      <button
+                        className="flex-1 px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm"
+                        onPointerDown={(e)=>{
+                          e.preventDefault();
+                          if (playMode === "training") {
+                            setStepSatisfied(new Set());
+                            setCurrentIndex((i)=> nextIndexWithLoop(i));
+                            advanceExpectedTime();
+                          }
+                        }}
+                      >
+                        Skip
+                      </button>
+                    </div>
+
+                    {midiError && (
+                      <div className="mt-3 text-xs text-rose-200 border border-rose-400/20 bg-rose-400/10 rounded-xl p-3">
+                        MIDI: {midiError}
+                      </div>
+                    )}
+
+                    {/* Metronome */}
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <div className="text-xs text-slate-300">
+                        Metronome
+                        <div className="text-[10px] text-slate-500">Accent on beats (based on subdivision)</div>
+                      </div>
+                      <button
+                        className={[
+                          "px-3 py-2 rounded-xl border text-sm",
+                          metEnabled ? "border-emerald-400/35 bg-emerald-400/10 text-emerald-200" : "border-white/10 bg-white/5 text-slate-200"
+                        ].join(" ")}
+                        onPointerDown={(e)=>{e.preventDefault(); setMetEnabled(v=>!v); if (metEnabled) stopMetronome();}}
+                      >
+                        {metEnabled ? "On" : "Off"}
+                      </button>
+                    </div>
+
+                    <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-[11px] text-slate-300">Metronome BPM</div>
+                        <div className="text-[11px] text-slate-500">{metBpm}</div>
+                      </div>
+                      <div className="mt-2 grid grid-cols-[1fr_auto] gap-2 items-center">
+                        <input
+                          type="range"
+                          min="40"
+                          max="220"
+                          step="1"
+                          value={metBpm}
+                          onChange={(e)=>setMetBpm(Math.max(40, Math.min(220, parseInt(e.target.value || "100", 10))))}
+                        />
+                        <input
+                          type="number"
+                          min="40"
+                          max="220"
+                          step="1"
+                          value={metBpm}
+                          onChange={(e)=>setMetBpm(Math.max(40, Math.min(220, parseInt(e.target.value || "100", 10))))}
+                          className="w-20 rounded-lg border border-white/10 bg-slate-950/50 px-2 py-1 text-xs text-slate-100"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Volume panel */}
+                    <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/30 p-3">
+                      <div className="text-xs text-slate-300 mb-2">Volumes</div>
+                      <div className="space-y-3">
+                        <VolRow label="Master" value={vol.master} onChange={(v)=>setVol(s=>({...s, master:v}))} />
+                        <VolRow label="Metronome" value={vol.metro} onChange={(v)=>setVol(s=>({...s, metro:v}))} />
+                        <div className="text-[11px] text-slate-500">
+                          Per-drum volume + sample upload appear directly on the kit when <span className="text-slate-200 font-semibold">On-Kit Controls</span> is shown.
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sharing + Recording */}
+                    <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/30 p-3 space-y-3">
+                      <div className="text-xs text-slate-300">Share / Recording</div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          className={[
+                            "px-3 py-2 rounded-xl border text-sm",
+                            isLessonRecording ? "border-rose-400/35 bg-rose-400/10 text-rose-200" : "border-white/10 bg-white/5 text-slate-100"
+                          ].join(" ")}
+                          onPointerDown={(e)=>{e.preventDefault(); isLessonRecording ? stopLessonRecordingAndDownload() : startLessonRecording();}}
+                        >
+                          {isLessonRecording ? "Stop + Download Lesson File" : "Record Lesson File"}
+                        </button>
+
+                        <label className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-slate-100 cursor-pointer text-center">
+                          Import Shared Lesson
+                          <input
+                            type="file"
+                            accept="application/json"
+                            className="hidden"
+                            onChange={(e)=>{ importSharedLesson(e.target.files?.[0]); e.target.value = ""; }}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          className={[
+                            "px-3 py-2 rounded-xl border text-sm",
+                            isAudioRecording ? "border-amber-400/35 bg-amber-400/10 text-amber-200" : "border-white/10 bg-white/5 text-slate-100"
+                          ].join(" ")}
+                          onPointerDown={(e)=>{
+                            e.preventDefault();
+                            isAudioRecording ? stopAudioRecordingAndDownload() : startAudioRecording();
+                          }}
+                        >
+                          {isAudioRecording ? "Stop + Download WAV" : "Record Audio (WAV)"}
+                        </button>
+
+                        <button
+                          className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm"
+                          onPointerDown={(e)=>{e.preventDefault(); startMetronomeIfNeeded();}}
+                        >
+                          Start Metronome Now
+                        </button>
+                      </div>
+
+                      <div className="text-[11px] text-slate-500">
+                        Lesson File = teaches someone else + carries your samples. WAV = your actual performance audio.
+                      </div>
+                    </div>
+
+                  <div className="mt-3 text-xs text-slate-500">
+                    Last: <span className="text-slate-200 font-semibold">{lastHit?.piece ? pieceMeta(lastHit.piece)?.label : "—"}</span>{" "}
+                    {lastHit?.grade ? <span className="text-slate-400">• {lastHit.grade}</span> : null}
+                  </div>
+                  </>
+                  ) : (
+                    <div className="text-xs text-slate-400">
+                      Panel folded. Use <span className="text-slate-200">Unfold</span> to access controls.
+                    </div>
+                  )}
+                </div>
+                </div>
+              )}
+
+              {!drumOnlyMode && xpToast ? (
+                <div className="mt-2 rounded-xl border border-amber-400/35 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">
+                  {xpToast}
+                </div>
+              ) : null}
+
+              {/* Main View */}
+              <div ref={kitAnchorRef} className={drumOnlyMode ? "mt-0" : "mt-3"}>
+                {(viewMode === "drum" || drumOnlyMode) ? (
+                  <RealDrumKitView
+                    onHit={(id, v, src, extra) => { initEngines(); handleHit(id, v, src, extra); }}
+                    pulse={pulse}
+                    expectedStep={expectedStep}
+                    fullViewport={drumOnlyMode}
+                    showOnKitControls={showOnKitControls}
+                    partVol={partVol}
+                    onPartVolChange={setPartVol}
+                    onSampleUpload={onSampleUpload}
+                    onSampleClear={clearSample}
+                    sampleMap={sampleMap}
+                  />
+                ) : (
+                  <StaffView
+                    sequence={sequence}
+                    currentIndex={currentIndex}
+                    lastHit={lastHit}
+                    sticking={lesson?.sticking || null}
+                    loopEnabled={loopEnabled}
+                    loopStartBar={safeLoopStartBar}
+                    loopEndBar={safeLoopEndBar}
+                  />
+                )}
+              </div>
+
+              {!drumOnlyMode && (
+                <div className="mt-4 text-xs text-slate-500">
+                  <div className="border-t border-white/10 pt-4">
+                    Created by <span className="text-slate-200 font-semibold">Moise T. Sahouo</span>.
+                  </div>
+                  <div className="border-t border-white/10 pt-4 mt-3">
+                    Hi-hat pedal:
+                    MIDI note <span className="text-slate-200">44</span> = foot chick + closes hat.
+                    MIDI note <span className="text-slate-200">46</span> = open hat.
+                    CC#4 pedal openness supported.
+                  </div>
+                </div>
+              )}
+            </main>
+          </div>
+        );
+      }
+
+      function VolRow({ label, value, onChange }) {
+        return (
+          <div className="rounded-xl border border-white/10 bg-white/5 p-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[11px] text-slate-300">{label}</div>
+              <div className="text-[11px] text-slate-500">{Math.round(value*100)}%</div>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1.25"
+              step="0.01"
+              value={value}
+              onChange={(e)=>onChange(parseFloat(e.target.value))}
+              className="mt-1"
+            />
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>
