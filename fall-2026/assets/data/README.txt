@@ -1,0 +1,1 @@
+Image page data for the Fall 2026 magic-book experience. The page artwork is reconstructed client-side from these chunks so the supplied poster designs can be used as interactive book pages on GitHub Pages.
