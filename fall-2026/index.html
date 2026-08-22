@@ -1,90 +1,42 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Psalmist Vibes — Magic Music Book</title>
-<meta name="theme-color" content="#17131c">
-<style>
-:root{--pink:#ff6f9f;--lav:#aa8be7;--blue:#77a9e8;--ink:#16131a;--paper:#fffdfb;--gold:#ffd78a}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#17131c;color:#fff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,a{font:inherit}.app{min-height:100%;padding:18px 12px 28px;background:radial-gradient(circle at 50% -10%,#4b354f 0,transparent 38%),linear-gradient(180deg,#17131c,#0e0c11 72%)}
-.bookbar{width:min(760px,100%);margin:0 auto 12px;display:flex;align-items:center;justify-content:space-between;gap:10px}.booktitle{font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;color:#ddd3e2;font-weight:800}.sound-toggle{border:1px solid #ffffff24;background:#ffffff0f;color:#fff;border-radius:999px;padding:9px 12px;min-height:42px}
-.stage{width:min(760px,100%);margin:auto;perspective:1600px}.page{position:relative;background:var(--paper);border-radius:16px;overflow:hidden;box-shadow:0 30px 80px #0009,0 0 0 1px #ffffff1e;transform-origin:left center;animation:pageIn .5s cubic-bezier(.2,.8,.2,1)}@keyframes pageIn{from{opacity:.3;transform:rotateY(-8deg) translateX(14px)}to{opacity:1;transform:none}}.page img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none}.page::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,#00000012,transparent 4%,transparent 96%,#00000012),linear-gradient(#fff8,transparent 3%,transparent 97%,#0001);mix-blend-mode:multiply}
-.hotspot{position:absolute;border:0;background:transparent;border-radius:18px;cursor:pointer;touch-action:manipulation;color:transparent;outline:none}.hotspot:focus-visible{box-shadow:0 0 0 4px #fff,0 0 0 8px var(--pink)}.hotspot::before{content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;box-shadow:0 0 0 2px #fff9,0 0 26px 8px #ff74ac9c;background:linear-gradient(110deg,#ffffff22,#ff78ad22,#8caef533);transition:.18s}.hotspot:active::before,.hotspot.pulse::before{opacity:1}.hint{position:absolute;left:50%;bottom:11px;transform:translateX(-50%);z-index:8;background:#0f0d13da;color:#fff;border:1px solid #ffffff30;box-shadow:0 8px 30px #0008;border-radius:999px;padding:8px 12px;font-size:.72rem;font-weight:800;letter-spacing:.03em;backdrop-filter:blur(10px);pointer-events:none;white-space:nowrap}
-.spark{position:absolute;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 16px 6px #ff8fba;pointer-events:none;animation:spark .7s ease-out forwards;z-index:20}@keyframes spark{to{opacity:0;transform:translate(var(--x),var(--y)) scale(.1)}}
-.controls{width:min(760px,100%);margin:14px auto 0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px}.turn{min-height:50px;border:1px solid #ffffff26;background:#ffffff0f;color:#fff;border-radius:16px;font-weight:850;padding:0 16px}.turn.next{text-align:right}.turn:disabled{opacity:.3}.dots{display:flex;gap:7px;justify-content:center}.dot{width:9px;height:9px;border-radius:50%;border:0;padding:0;background:#ffffff32}.dot.active{background:linear-gradient(135deg,var(--pink),var(--blue));box-shadow:0 0 12px #cf85d9}
-.sheet{position:fixed;inset:0;z-index:100;display:none;align-items:flex-end;justify-content:center;background:#08070ab8;backdrop-filter:blur(8px);padding:12px}.sheet.open{display:flex}.panel{width:min(620px,100%);max-height:88vh;overflow:auto;background:#fff;color:var(--ink);border-radius:26px;padding:22px;box-shadow:0 32px 90px #000b;animation:rise .28s ease-out}@keyframes rise{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}.panel-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.panel h2{font-family:Georgia,"Times New Roman",serif;font-size:2rem;line-height:1;margin:2px 0 10px}.panel p{color:#635b67;line-height:1.55}.close{width:44px;height:44px;border-radius:50%;border:1px solid #ddd3de;background:#fff;font-size:1.2rem}.cta{display:flex;align-items:center;justify-content:center;min-height:52px;margin-top:14px;border-radius:16px;text-decoration:none;font-weight:900;background:#151218;color:white;padding:12px}.cta.alt{background:linear-gradient(100deg,var(--pink),var(--lav),var(--blue));}.links{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}.links a{min-height:48px;border:1px solid #e5dce6;border-radius:14px;text-decoration:none;color:#27212b;font-weight:800;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px}
-.challenge-intro{text-align:center}.challenge-intro .glyph{font-size:2.5rem}.challenge-box{margin-top:14px;border:1px solid #e7deea;border-radius:20px;padding:16px;background:linear-gradient(145deg,#fff9fc,#f5f2ff)}.status{display:flex;justify-content:space-between;gap:10px;font-weight:850;font-size:.9rem}.memory{font-size:1rem;text-align:center;margin:16px 0;min-height:44px}.pads{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.pad{aspect-ratio:1.55;border:0;border-radius:18px;font-size:1.6rem;font-weight:950;background:white;box-shadow:0 9px 26px #50385118;border:1px solid #eee4ee}.pad.lit{transform:scale(.97);box-shadow:0 0 0 4px #fff,0 0 0 8px #a58ee5,0 12px 36px #a58ee559}.start{width:100%;min-height:52px;border:0;border-radius:16px;background:#151218;color:#fff;font-weight:900;margin-top:12px}.result{display:none;text-align:center;padding:16px;border-radius:18px;background:linear-gradient(120deg,#fff0f6,#f1edff,#eef6ff);margin-top:14px}.result.show{display:block}.result strong{display:block;font-size:1.35rem;margin-bottom:5px}
-@media(min-width:700px){.app{padding-top:30px}.page{border-radius:22px}.hint{bottom:18px;font-size:.8rem}.sheet{align-items:center}.panel{border-radius:30px}}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#100b17">
+  <meta name="description" content="Open the Psalmist Vibes Studio Fall 2026 interactive music book.">
+  <title>Psalmist Vibes — Find Your Sound</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="app" id="app">
-  <div class="bookbar"><div class="booktitle">Psalmist Vibes • Magic Music Book</div><button class="sound-toggle" id="soundToggle" type="button" aria-pressed="true">♪ Sound on</button></div>
-  <div class="stage"><div class="page" id="page"></div></div>
-  <div class="controls">
-    <button class="turn" id="prev" type="button">← Previous</button>
-    <div class="dots" id="dots" aria-label="Book pages"></div>
-    <button class="turn next" id="next" type="button">Next →</button>
-  </div>
-</div>
-<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><div class="panel" id="panel"></div></div>
-<script>
-(async()=>{
-const BOOKING='https://www.psalmistvibesstudio.com/schedule-a-free-consultation';
-const WEBSITE='https://www.psalmistvibesstudio.com/';
-const INSTAGRAM='https://www.instagram.com/psalmistvibesstudio/';
-const MAPS='https://www.google.com/maps/search/?api=1&query=Psalmist+Vibes+Studio+Ottawa';
-const pages=[
- {src:'',alt:'Psalmist Vibes Studio Find Your Sound event invitation',hint:'Tap the poster — the paper is alive ✨',spots:[
-  {x:31,y:51,w:49,h:9,a:'event'},
-  {x:28,y:68,w:50,h:10,a:'register'},
-  {x:27,y:79,w:48,h:10,a:'book'},
-  {x:8,y:89,w:19,h:6,a:'meet'},{x:29,y:89,w:25,h:6,a:'book'},{x:56,y:89,w:17,h:6,a:'challenge'},{x:74,y:89,w:20,h:6,a:'challenge'},
-  {x:5,y:95,w:18,h:4,a:'phone'},{x:24,y:95,w:29,h:4,a:'instagram'},{x:52,y:95,w:31,h:4,a:'website'},{x:84,y:95,w:14,h:4,a:'maps'}]},
- {src:'',alt:'Psalmist Vibes Studio free introductory class flyer',hint:'Tap FREE or the QR code to book',spots:[
-  {x:19,y:37,w:63,h:24,a:'book'},{x:51,y:61,w:33,h:15,a:'book'},
-  {x:5,y:76,w:21,h:7,a:'meet'},{x:27,y:76,w:27,h:7,a:'book'},{x:55,y:76,w:19,h:7,a:'challenge'},{x:74,y:76,w:23,h:7,a:'challenge'}]},
- {src:'',alt:'Psalmist Vibes Studio Can You Beat the Music Challenge flyer',hint:'Tap the challenge poster to play 🎵',spots:[
-  {x:1,y:20,w:98,h:60,a:'challenge'}]}
-];
-let current=0,soundOn=true,audioCtx=null,game=null;
-const pageEl=document.getElementById('page'),dots=document.getElementById('dots'),prev=document.getElementById('prev'),next=document.getElementById('next'),sheet=document.getElementById('sheet'),panel=document.getElementById('panel'),soundToggle=document.getElementById('soundToggle');
-function ping(freq=660,d=.08){if(!soundOn)return;audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=freq;o.type='sine';g.gain.setValueAtTime(.08,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+d);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d+.01)}
-function sparkle(x,y){const r=pageEl.getBoundingClientRect();for(let i=0;i<6;i++){const s=document.createElement('i');s.className='spark';s.style.left=(x-r.left)+'px';s.style.top=(y-r.top)+'px';s.style.setProperty('--x',((Math.random()-.5)*90)+'px');s.style.setProperty('--y',((Math.random()-.5)*90)+'px');pageEl.appendChild(s);setTimeout(()=>s.remove(),800)}}
-function render(){const p=pages[current];pageEl.innerHTML=`<img src="${p.src}" alt="${p.alt}"><div class="hint">${p.hint}</div>`;p.spots.forEach((s,i)=>{const b=document.createElement('button');b.type='button';b.className='hotspot';b.setAttribute('aria-label',labelFor(s.a));b.style.left=s.x+'%';b.style.top=s.y+'%';b.style.width=s.w+'%';b.style.height=s.h+'%';b.addEventListener('click',e=>{sparkle(e.clientX,e.clientY);ping(740+i*32);act(s.a)});pageEl.appendChild(b)});dots.innerHTML='';pages.forEach((_,i)=>{const d=document.createElement('button');d.type='button';d.className='dot'+(i===current?' active':'');d.setAttribute('aria-label','Open page '+(i+1));d.addEventListener('click',()=>go(i));dots.appendChild(d)});prev.disabled=current===0;next.disabled=current===pages.length-1}
-function labelFor(a){return({event:'Open student showcase details',register:'Open Fall 2026 registration',book:'Book a free introductory class',meet:'Meet Psalmist Vibes Studio',challenge:'Play the music challenge',phone:'Call Psalmist Vibes Studio',instagram:'Open Psalmist Vibes Studio Instagram',website:'Open Psalmist Vibes Studio website',maps:'Open Psalmist Vibes Studio in Maps'})[a]||'Open'}
-function go(i){current=Math.max(0,Math.min(pages.length-1,i));ping(520+current*100,.06);render();window.scrollTo({top:0,behavior:'smooth'})}
-function openPanel(html){panel.innerHTML=html;sheet.classList.add('open');const c=panel.querySelector('.close');if(c)c.focus()}
-function closePanel(){sheet.classList.remove('open');panel.innerHTML='';game=null}
-function header(title){return `<div class="panel-top"><div><div style="font-size:.75rem;font-weight:900;letter-spacing:.14em;color:#9a7fa3;text-transform:uppercase">Psalmist Vibes Studio</div><h2 id="sheetTitle">${title}</h2></div><button class="close" type="button" aria-label="Close">×</button></div>`}
-function act(a){if(a==='book'||a==='register'){window.open(BOOKING,'_blank','noopener');return}if(a==='phone'){location.href='tel:+16135014938';return}if(a==='instagram'){window.open(INSTAGRAM,'_blank','noopener');return}if(a==='website'){window.open(WEBSITE,'_blank','noopener');return}if(a==='maps'){window.open(MAPS,'_blank','noopener');return}if(a==='challenge'){startChallenge();return}if(a==='meet'){openPanel(header('Come meet the studio')+`<p>The paper becomes the doorway: call, visit the official site, or book the free introductory class directly.</p><div class="links"><a href="tel:+16135014938">Call 613-501-4938</a><a href="${MAPS}" target="_blank" rel="noopener">Open in Maps</a><a href="${INSTAGRAM}" target="_blank" rel="noopener">Instagram</a><a href="${WEBSITE}" target="_blank" rel="noopener">Official website</a></div><a class="cta alt" href="${BOOKING}" target="_blank" rel="noopener">Book a free introductory class</a>`);wireClose();return}if(a==='event'){openPanel(header('Find Your Sound • Student Showcase')+`<p><strong>Student performance: 1:30–2:00 PM.</strong><br>Come support the students, try an instrument, play the music challenge, and explore Fall 2026 registration from the invitation itself.</p><a class="cta alt" href="${BOOKING}" target="_blank" rel="noopener">Register / book a free intro</a><div class="links"><a href="#" data-jump="2">Play the challenge</a><a href="${WEBSITE}" target="_blank" rel="noopener">Official website</a></div>`);wireClose();panel.querySelector('[data-jump]').addEventListener('click',e=>{e.preventDefault();closePanel();go(2);setTimeout(startChallenge,350)});return}}
-function wireClose(){const c=panel.querySelector('.close');if(c)c.addEventListener('click',closePanel)}
-function startChallenge(){openPanel(header('Can You Beat the Music?')+`<div class="challenge-intro"><div class="glyph">🎵 ✨ 🎹</div><p>Listen to the pattern, then tap it back. Three rounds. Each round gets longer.</p></div><div class="challenge-box"><div class="status"><span id="roundLabel">Round 1 / 3</span><span id="scoreLabel">Score 0</span></div><div class="memory" id="memory">Press Start and listen carefully.</div><div class="pads"><button class="pad" type="button" data-pad="0">🥁</button><button class="pad" type="button" data-pad="1">👏</button><button class="pad" type="button" data-pad="2">🎹</button><button class="pad" type="button" data-pad="3">✨</button></div><button class="start" id="startGame" type="button">Start challenge</button><div class="result" id="result"><strong>You beat the music! 🎉</strong><span>Show this result at the event and ask Psalmist Vibes Studio about the prize.</span><a class="cta alt" href="${BOOKING}" target="_blank" rel="noopener">Book your free intro</a></div></div>`);wireClose();game={round:1,score:0,seq:[],input:[],locked:true};const start=panel.querySelector('#startGame');start.addEventListener('click',beginRound);panel.querySelectorAll('.pad').forEach(b=>b.addEventListener('click',()=>pressPad(+b.dataset.pad)))}
-const freqs=[180,260,392,540];
-function beginRound(){if(!game)return;game.input=[];game.seq=Array.from({length:game.round+2},()=>Math.floor(Math.random()*4));game.locked=true;panel.querySelector('#memory').textContent='Listen…';panel.querySelector('#startGame').disabled=true;playSequence(game.seq)}
-function lightPad(i){const b=panel.querySelector(`.pad[data-pad="${i}"]`);if(!b)return;b.classList.add('lit');ping(freqs[i],.18);setTimeout(()=>b.classList.remove('lit'),230)}
-function playSequence(seq){let i=0;const timer=setInterval(()=>{lightPad(seq[i]);i++;if(i>=seq.length){clearInterval(timer);setTimeout(()=>{if(!game)return;game.locked=false;panel.querySelector('#memory').textContent='Your turn — tap the pattern.'},350)}},520)}
-function pressPad(i){if(!game||game.locked)return;lightPad(i);game.input.push(i);const idx=game.input.length-1;if(i!==game.seq[idx]){game.locked=true;panel.querySelector('#memory').textContent='Almost! Listen again and retry this round.';panel.querySelector('#startGame').disabled=false;panel.querySelector('#startGame').textContent='Retry round '+game.round;game.score=Math.max(0,game.score-5);updateScore();return}if(game.input.length===game.seq.length){game.score+=game.round*25;updateScore();game.locked=true;if(game.round===3){panel.querySelector('#memory').textContent='Perfect finish!';panel.querySelector('#startGame').style.display='none';panel.querySelector('#result').classList.add('show');ping(880,.4);return}game.round++;panel.querySelector('#roundLabel').textContent='Round '+game.round+' / 3';panel.querySelector('#memory').textContent='Nice! Next round gets harder.';panel.querySelector('#startGame').disabled=false;panel.querySelector('#startGame').textContent='Start round '+game.round}}
-function updateScore(){panel.querySelector('#scoreLabel').textContent='Score '+game.score}
-prev.addEventListener('click',()=>go(current-1));next.addEventListener('click',()=>go(current+1));soundToggle.addEventListener('click',()=>{soundOn=!soundOn;soundToggle.textContent=soundOn?'♪ Sound on':'♪ Sound off';soundToggle.setAttribute('aria-pressed',soundOn?'true':'false');if(soundOn)ping(700,.08)});sheet.addEventListener('click',e=>{if(e.target===sheet)closePanel()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sheet.classList.contains('open'))closePanel()});
-async function loadImageData(name,count){
-  const parts=await Promise.all(Array.from({length:count},(_,i)=>fetch(`assets/data/${name}-${i+1}.txt`,{cache:'force-cache'}).then(r=>{if(!r.ok)throw new Error(`Could not load ${name} page`);return r.text()})));
-  return `data:image/webp;base64,${parts.join('').replace(/\s+/g,'')}`;
-}
-pageEl.innerHTML='<div style="aspect-ratio:2/3;display:grid;place-items:center;color:#342c39;background:#fffdfb;font-weight:850;text-align:center;padding:24px">Opening the magic book… ✨</div>';
-try{
-  const [eventSrc,introSrc,challengeSrc]=await Promise.all([
-    loadImageData('event',4),loadImageData('intro',3),loadImageData('challenge',2)
-  ]);
-  pages[0].src=eventSrc;pages[1].src=introSrc;pages[2].src=challengeSrc;
-  render();
-}catch(err){
-  console.error(err);
-  pageEl.innerHTML='<div style="aspect-ratio:2/3;display:grid;place-items:center;color:#342c39;background:#fffdfb;text-align:center;padding:30px"><div><strong>The magic book could not open.</strong><br><small>Please refresh in a moment.</small></div></div>';
-}
+  <main class="book-shell" aria-label="Psalmist Vibes interactive magic book">
+    <div class="ambient" aria-hidden="true"></div>
+    <header class="book-head">
+      <p>Psalmist Vibes Studio</p>
+      <button id="soundToggle" class="sound" type="button" aria-pressed="true" aria-label="Turn sound off">♪</button>
+    </header>
 
-})();
-</script>
-</body></html>
+    <section class="book" id="book" aria-live="polite">
+      <div class="page-frame" id="pageFrame">
+        <div class="page" id="page"></div>
+        <div class="edge edge-left" aria-hidden="true"></div>
+        <div class="edge edge-right" aria-hidden="true"></div>
+      </div>
+      <button class="turn previous" id="previous" type="button" aria-label="Previous page">‹</button>
+      <button class="turn next" id="next" type="button" aria-label="Next page">›</button>
+    </section>
+
+    <nav class="page-nav" aria-label="Book pages">
+      <div id="pageDots" class="dots"></div>
+      <p id="pageLabel">Invitation · 1 of 3</p>
+    </nav>
+    <p class="discovery" id="discovery">Tap glowing words and symbols · Swipe to turn</p>
+  </main>
+
+  <div class="veil" id="veil" hidden>
+    <section class="paper-panel" id="paperPanel" role="dialog" aria-modal="true" aria-labelledby="panelTitle"></section>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
