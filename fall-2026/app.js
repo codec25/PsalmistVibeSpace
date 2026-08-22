@@ -8,16 +8,16 @@
     phone:'tel:+16135014938'
   };
   const pages=[
-    {name:'Invitation',asset:'event',parts:6,mime:'jpeg',alt:'Find Your Sound — Psalmist Vibes Studio Fall 2026 event invitation',spots:[
+    {name:'Invitation',asset:'event',parts:6,mime:'jpeg',ratio:'1170 / 1750',alt:'Find Your Sound — Psalmist Vibes Studio Fall 2026 event invitation',spots:[
       [30,51,50,9,'event','Open student performance information'],[25,69,57,9,'register','Open Fall 2026 registration'],[25,79,51,11,'book','Book a free introductory class'],
       [8,90,19,5,'meet','Meet Psalmist Vibes Studio'],[28,90,25,5,'book','Try an instrument'],[55,90,17,5,'challenge','Play the music challenge'],[73,90,21,5,'challenge','Play to win prizes'],
       [5,95,19,4,'phone','Call Psalmist Vibes Studio'],[24,95,28,4,'instagram','Open Instagram'],[52,95,31,4,'website','Open the official website'],[83,95,15,4,'maps','Open the studio location']
     ]},
-    {name:'Free Intro',asset:'intro',parts:3,mime:'jpeg',alt:'Psalmist Vibes Studio free introductory class flyer',spots:[
+    {name:'Free Intro',asset:'intro',parts:3,mime:'jpeg',ratio:'710 / 1536',alt:'Psalmist Vibes Studio free introductory class flyer',spots:[
       [19,40,65,23,'book','Book a free introductory class'],[50,62,34,14,'book','Use the QR destination'],
       [5,77,21,6,'meet','Meet Psalmist Vibes Studio'],[27,77,27,6,'book','Try an instrument'],[55,77,19,6,'challenge','Play the music challenge'],[74,77,23,6,'challenge','Play to win prizes']
     ]},
-    {name:'Music Challenge',asset:'challenge',parts:3,mime:'jpeg',alt:'Can You Beat the Music Challenge flyer',spots:[[1,20,98,60,'challenge','Wake up the poster and play the music challenge']]}
+    {name:'Music Challenge',asset:'challenge',parts:3,mime:'jpeg',ratio:'710 / 1536',alt:'Can You Beat the Music Challenge flyer',spots:[[1,20,98,60,'challenge','Wake up the poster and play the music challenge']]}
   ];
   const el=id=>document.getElementById(id),page=el('page'),frame=el('pageFrame'),previous=el('previous'),next=el('next'),dots=el('pageDots'),label=el('pageLabel'),veil=el('veil'),panel=el('paperPanel'),toast=el('toast'),soundToggle=el('soundToggle');
   let current=0,soundOn=true,audio=null,game=null,touchStart=null,toastTimer;
@@ -26,7 +26,7 @@
   function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),1800)}
   function spark(x,y){const r=page.getBoundingClientRect();for(let i=0;i<7;i++){const s=document.createElement('i');s.className='spark';s.style.left=`${x-r.left}px`;s.style.top=`${y-r.top}px`;s.style.setProperty('--dx',`${(Math.random()-.5)*100}px`);s.style.setProperty('--dy',`${(Math.random()-.5)*100}px`);page.append(s);setTimeout(()=>s.remove(),800)}}
   function revealHotspots(){page.querySelectorAll('.hotspot').forEach((spot,i)=>setTimeout(()=>spot.classList.add('reveal'),i*75));setTimeout(()=>page.querySelectorAll('.hotspot').forEach(spot=>spot.classList.remove('reveal')),900)}
-  function render(){const p=pages[current];page.replaceChildren();const img=new Image();img.alt=p.alt;img.src=p.src;img.draggable=false;page.append(img);p.spots.forEach(([x,y,w,h,action,aria],i)=>{const b=document.createElement('button');b.type='button';b.className='hotspot';b.setAttribute('aria-label',aria);Object.assign(b.style,{left:`${x}%`,top:`${y}%`,width:`${w}%`,height:`${h}%`});b.addEventListener('click',e=>{spark(e.clientX,e.clientY);tone(600+i*24);act(action)});page.append(b)});dots.replaceChildren(...pages.map((item,i)=>{const d=document.createElement('button');d.type='button';d.className=`dot${i===current?' active':''}`;d.setAttribute('aria-label',`Open ${item.name} page`);d.onclick=()=>go(i);return d}));label.textContent=`${p.name} · ${current+1} of ${pages.length}`;previous.disabled=current===0;next.disabled=current===pages.length-1;setTimeout(revealHotspots,450)}
+  function render(){const p=pages[current];frame.style.aspectRatio=p.ratio;page.replaceChildren();const img=new Image();img.alt=p.alt;img.src=p.src;img.draggable=false;page.append(img);p.spots.forEach(([x,y,w,h,action,aria],i)=>{const b=document.createElement('button');b.type='button';b.className='hotspot';b.setAttribute('aria-label',aria);Object.assign(b.style,{left:`${x}%`,top:`${y}%`,width:`${w}%`,height:`${h}%`});b.addEventListener('click',e=>{spark(e.clientX,e.clientY);tone(600+i*24);act(action)});page.append(b)});dots.replaceChildren(...pages.map((item,i)=>{const d=document.createElement('button');d.type='button';d.className=`dot${i===current?' active':''}`;d.setAttribute('aria-label',`Open ${item.name} page`);d.onclick=()=>go(i);return d}));label.textContent=`${p.name} · ${current+1} of ${pages.length}`;previous.disabled=current===0;next.disabled=current===pages.length-1;setTimeout(revealHotspots,450)}
   function go(index){if(index<0||index>=pages.length||index===current)return;const forward=index>current;frame.classList.add(forward?'turn-forward':'turn-back');tone(forward?610:480,.11);setTimeout(()=>{current=index;render()},190);setTimeout(()=>frame.classList.remove('turn-forward','turn-back'),480)}
   const head=title=>`<div class="panel-top"><div><p class="eyebrow">Psalmist Vibes Studio</p><h2 id="panelTitle">${title}</h2></div><button class="close" type="button" aria-label="Close">×</button></div>`;
   function open(html){panel.innerHTML=html;veil.hidden=false;document.body.style.overflow='hidden';panel.querySelector('.close').onclick=close;panel.querySelector('.close').focus()}
