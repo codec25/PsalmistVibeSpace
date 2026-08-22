@@ -17,7 +17,7 @@
       [19,40,65,23,'book','Book a free introductory class'],[50,62,34,14,'book','Use the QR destination'],
       [5,77,21,6,'meet','Meet Psalmist Vibes Studio'],[27,77,27,6,'book','Try an instrument'],[55,77,19,6,'challenge','Play the music challenge'],[74,77,23,6,'challenge','Play to win prizes']
     ]},
-    {name:'Music Challenge',asset:'challenge',parts:3,mime:'jpeg',ratio:'710 / 1536',alt:'Can You Beat the Music Challenge flyer',spots:[[1,20,98,60,'challenge','Wake up the poster and play the music challenge']]}
+    {name:'Music Challenge',asset:'challenge',parts:3,mime:'jpeg',ratio:'1170 / 1516',alt:'Can You Beat the Music Challenge flyer',spots:[[4,18,92,77,'challenge','Wake up the poster and play the music challenge']]}
   ];
   const el=id=>document.getElementById(id),page=el('page'),frame=el('pageFrame'),previous=el('previous'),next=el('next'),dots=el('pageDots'),label=el('pageLabel'),veil=el('veil'),panel=el('paperPanel'),toast=el('toast'),soundToggle=el('soundToggle');
   let current=0,soundOn=true,audio=null,game=null,touchStart=null,toastTimer;
